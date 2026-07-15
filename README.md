@@ -6,7 +6,7 @@
 
 #### IEEE YESIST 2026 • IEngage Track
 
-<img src="assets/logo/logo.png" width="180"/>
+<img src="assets/IEEE YESIST.png" width="180"/>
 
 ---
 
