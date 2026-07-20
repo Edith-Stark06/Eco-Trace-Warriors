@@ -1,0 +1,12 @@
+// EcoTrace India — Prisma schema.
+// Phase 2 (Backend Foundation): generator and datasource only.
+// Entity models are introduced in Phase 3 (Database Layer) per docs/engineering/04_DATABASE.md.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
