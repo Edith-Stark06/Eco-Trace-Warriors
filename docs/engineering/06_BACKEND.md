@@ -39,8 +39,10 @@ This document defines how the EcoTrace India backend is structured and written. 
 - **Language:** TypeScript, `strict: true`
 - **ORM:** Prisma (see `04_DATABASE.md`)
 - **Validation:** Zod
+- **Logging:** Pino (`pino-http` for request logging)
 - **Auth:** JWT (`jsonwebtoken`), bcrypt/argon2 for password hashing
 - **Testing:** Jest + Supertest (see `10_TESTING.md`)
+- **Tooling:** ESLint, Prettier, Husky + lint-staged (pre-commit)
 
 New runtime dependencies require justification in the PR — prefer the standard library and existing utilities (`AGENTS.md` → Repository Awareness).
 

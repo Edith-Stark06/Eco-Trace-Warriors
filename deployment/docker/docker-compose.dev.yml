@@ -1,0 +1,43 @@
+# EcoTrace India — local development stack (Phase 2 scope)
+# Backend + PostgreSQL. Further services (AI, Fabric, dashboard, NGINX)
+# are added in later phases per docs/engineering/11_DEPLOYMENT.md.
+
+name: ecotrace-dev
+
+services:
+  backend:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    container_name: ecotrace-backend
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      API_PREFIX: /api/v1
+      LOG_LEVEL: debug
+      DATABASE_URL: postgresql://ecotrace:ecotrace@postgres:5432/ecotrace?schema=public
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: ecotrace-postgres
+    environment:
+      POSTGRES_USER: ecotrace
+      POSTGRES_PASSWORD: ecotrace
+      POSTGRES_DB: ecotrace
+    ports:
+      - '5432:5432'
+    volumes:
+      - ecotrace-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ecotrace -d ecotrace']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  ecotrace-pgdata:
