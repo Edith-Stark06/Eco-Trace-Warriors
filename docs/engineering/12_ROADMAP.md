@@ -49,7 +49,7 @@ flowchart LR
     style P1 fill:#e8f5e9
 ```
 
-Phases 0–1 are complete (repository and this handbook). Phases 7 and 8 can proceed in parallel once Phase 6 lands.
+Phases 0–2 are complete (repository, this handbook, and the backend foundation). Phases 7 and 8 can proceed in parallel once Phase 6 lands.
 
 ---
 

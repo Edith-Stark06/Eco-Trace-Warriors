@@ -83,7 +83,7 @@ flowchart TB
     end
 ```
 
-- `deployment/docker-compose.yml` defines the full stack; `deployment/docker-compose.dev.yml` overlays hot-reload volumes for development.
+- `deployment/docker/docker-compose.yml` defines the full stack; `deployment/docker/docker-compose.dev.yml` provides the development stack (currently backend + PostgreSQL; further services join per phase).
 - Database migrations run automatically on backend startup in `local`/`ci`; explicitly (scripted) in `demo`/`prod` (`04_DATABASE.md` → Migration Policy).
 - Flutter apps run on emulators/devices pointing at the local gateway.
 
