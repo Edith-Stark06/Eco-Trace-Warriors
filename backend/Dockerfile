@@ -3,8 +3,11 @@
 # ---- Build stage ----
 FROM node:20-alpine AS build
 WORKDIR /app
+# Skip Husky Git hook installation inside the image (no .git, no hooks needed)
+ENV HUSKY=0
 
 COPY package.json package-lock.json* ./
+COPY .husky/install.mjs ./.husky/install.mjs
 COPY prisma ./prisma
 RUN npm ci
 
@@ -16,8 +19,11 @@ RUN npm run build
 FROM node:20-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
+# Skip Husky Git hook installation inside the image (no .git, no hooks needed)
+ENV HUSKY=0
 
 COPY package.json package-lock.json* ./
+COPY .husky/install.mjs ./.husky/install.mjs
 COPY prisma ./prisma
 RUN npm ci --omit=dev && npm cache clean --force
 
