@@ -44,6 +44,8 @@ This document defines how the EcoTrace India backend is structured and written. 
 - **Testing:** Jest + Supertest (see `10_TESTING.md`)
 - **Tooling:** ESLint, Prettier, Husky + lint-staged (pre-commit)
 
+Husky hooks are installed via `backend/.husky/install.mjs` (the `prepare` script). The script is a no-op when `NODE_ENV=production`, `CI=true`, or `HUSKY=0`, so Docker image builds and CI runs skip Git hook installation (Husky is a devDependency and is absent in `npm ci --omit=dev` installs).
+
 New runtime dependencies require justification in the PR — prefer the standard library and existing utilities (`AGENTS.md` → Repository Awareness).
 
 ---
