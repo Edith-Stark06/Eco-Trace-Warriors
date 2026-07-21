@@ -1,1 +1,1 @@
-export { getPrismaClient, disconnectPrisma } from './prisma.client';
+export { getPrismaClient, disconnectPrisma, pingDatabase } from './prisma.client';

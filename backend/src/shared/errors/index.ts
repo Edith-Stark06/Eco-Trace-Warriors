@@ -8,5 +8,6 @@ export {
   NotFoundError,
   ConflictError,
   InternalError,
+  ServiceUnavailableError,
 } from './app-error';
 export type { ErrorDetail } from './app-error';

@@ -19,3 +19,18 @@ export async function disconnectPrisma(): Promise<void> {
     prismaClient = undefined;
   }
 }
+
+/**
+ * Lightweight connectivity probe for readiness checks.
+ * Runs Prisma's recommended `SELECT 1` round-trip and resolves `true` only
+ * when the database answers. Never throws — failures resolve to `false` so
+ * callers can map the outcome to an HTTP status without try/catch.
+ */
+export async function pingDatabase(): Promise<boolean> {
+  try {
+    await getPrismaClient().$queryRaw`SELECT 1`;
+    return true;
+  } catch {
+    return false;
+  }
+}
