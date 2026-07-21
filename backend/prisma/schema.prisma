@@ -1,7 +1,3 @@
-// EcoTrace India — Prisma schema.
-// Phase 2 (Backend Foundation): generator and datasource only.
-// Entity models are introduced in Phase 3 (Database Layer) per docs/engineering/04_DATABASE.md.
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,4 +5,58 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  GOVERNMENT
+  RECYCLER
+  COLLECTOR
+  CONSUMER
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        UserRole @unique
+  description String?
+
+  users User[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("roles")
+}
+
+model User {
+  id String @id @default(uuid())
+
+  fullName String
+
+  email String @unique
+
+  passwordHash String
+
+  phone String?
+
+  address String?
+
+  region String?
+
+  emailVerified Boolean @default(false)
+
+  isActive Boolean @default(true)
+
+  lastLogin DateTime?
+
+  roleId String
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@index([roleId])
+  @@map("users")
 }
