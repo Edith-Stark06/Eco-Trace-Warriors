@@ -3,7 +3,8 @@ dist
 coverage
 .env
 *.log
-.husky
+.husky/*
+!.husky/install.mjs
 tests
 jest.config.cjs
 eslint.config.mjs

@@ -21,7 +21,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "prisma:generate": "prisma generate",
-    "prepare": "cd .. && husky backend/.husky"
+    "prepare": "node .husky/install.mjs"
   },
   "lint-staged": {
     "*.ts": [
