@@ -1,1 +1,1 @@
-export { getAppVersion } from './version';
+export { getAppVersion, getAppName } from './version';

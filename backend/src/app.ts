@@ -3,8 +3,15 @@ import type { Express } from 'express';
 import type { AppConfig } from '@shared/config';
 import type { Logger } from '@shared/logging';
 import { errorHandler, notFoundHandler, requestId, requestLogger } from '@shared/middleware';
-import { getAppVersion } from '@shared/utils';
+import { getAppName, getAppVersion } from '@shared/utils';
+import { pingDatabase } from '@infrastructure/prisma';
 import { createHealthController, createHealthRouter, createHealthService } from '@modules/health';
+import {
+  API_NAME,
+  createApiInfoController,
+  createApiInfoRouter,
+  createApiInfoService,
+} from '@modules/api-info';
 
 /** Everything the app needs from the outside world, injected explicitly. */
 export interface AppDeps {
@@ -26,9 +33,24 @@ export function createApp({ config, logger }: AppDeps): Express {
   app.use(requestLogger(logger));
 
   // Module routers
-  const healthService = createHealthService({ version: getAppVersion() });
+  const healthService = createHealthService({
+    version: getAppVersion(),
+    serviceName: getAppName(),
+    environment: config.nodeEnv,
+    pingDatabase,
+  });
   const healthRouter = createHealthRouter(createHealthController(healthService));
   app.use(config.apiPrefix, healthRouter);
+
+  const apiInfoService = createApiInfoService({
+    name: API_NAME,
+    // API version label is the last segment of the mounted prefix (e.g. "/api/v1" → "v1").
+    version: config.apiPrefix.split('/').filter(Boolean).at(-1) ?? 'v1',
+    environment: config.nodeEnv,
+    documentationPath: `${config.apiPrefix}/docs`,
+  });
+  const apiInfoRouter = createApiInfoRouter(createApiInfoController(apiInfoService));
+  app.use(config.apiPrefix, apiInfoRouter);
 
   // Terminal handlers — must stay last
   app.use(notFoundHandler());
