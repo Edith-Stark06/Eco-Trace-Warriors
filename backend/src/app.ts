@@ -2,9 +2,15 @@ import express from 'express';
 import type { Express } from 'express';
 import type { AppConfig } from '@shared/config';
 import type { Logger } from '@shared/logging';
-import { errorHandler, notFoundHandler, requestId, requestLogger } from '@shared/middleware';
+import {
+  authenticate,
+  errorHandler,
+  notFoundHandler,
+  requestId,
+  requestLogger,
+} from '@shared/middleware';
 import { getAppName, getAppVersion } from '@shared/utils';
-import { pingDatabase } from '@infrastructure/prisma';
+import { getPrismaClient, pingDatabase } from '@infrastructure/prisma';
 import { createHealthController, createHealthRouter, createHealthService } from '@modules/health';
 import {
   API_NAME,
@@ -12,11 +18,28 @@ import {
   createApiInfoRouter,
   createApiInfoService,
 } from '@modules/api-info';
+import {
+  createAuthController,
+  createAuthRouter,
+  createAuthService,
+  createPasswordService,
+  createRefreshTokenRepository,
+  createTokenService,
+  createUserRepository,
+} from '@modules/auth';
+import type { RefreshTokenRepository, UserRepository } from '@modules/auth';
 
 /** Everything the app needs from the outside world, injected explicitly. */
 export interface AppDeps {
   readonly config: AppConfig;
   readonly logger: Logger;
+  /** Test seam: database connectivity probe override for deterministic readiness tests. */
+  readonly pingDatabase?: () => Promise<boolean>;
+  /** Test seam: repository overrides so integration tests run without a database. */
+  readonly authRepositories?: {
+    readonly users: UserRepository;
+    readonly refreshTokens: RefreshTokenRepository;
+  };
 }
 
 /**
@@ -24,7 +47,12 @@ export interface AppDeps {
  * Pure assembly — no listening, no environment access — so tests can build
  * an app instance directly (see docs/engineering/06_BACKEND.md).
  */
-export function createApp({ config, logger }: AppDeps): Express {
+export function createApp({
+  config,
+  logger,
+  pingDatabase: pingDatabaseOverride,
+  authRepositories,
+}: AppDeps): Express {
   const app = express();
 
   app.disable('x-powered-by');
@@ -37,7 +65,7 @@ export function createApp({ config, logger }: AppDeps): Express {
     version: getAppVersion(),
     serviceName: getAppName(),
     environment: config.nodeEnv,
-    pingDatabase,
+    pingDatabase: pingDatabaseOverride ?? pingDatabase,
   });
   const healthRouter = createHealthRouter(createHealthController(healthService));
   app.use(config.apiPrefix, healthRouter);
@@ -51,6 +79,28 @@ export function createApp({ config, logger }: AppDeps): Express {
   });
   const apiInfoRouter = createApiInfoRouter(createApiInfoController(apiInfoService));
   app.use(config.apiPrefix, apiInfoRouter);
+
+  // Auth module — repositories default to Prisma; tests may inject fakes.
+  const users = authRepositories?.users ?? createUserRepository({ prisma: getPrismaClient() });
+  const refreshTokens =
+    authRepositories?.refreshTokens ?? createRefreshTokenRepository({ prisma: getPrismaClient() });
+  const tokenService = createTokenService({
+    accessSecret: config.jwtSecret,
+    refreshSecret: config.jwtRefreshSecret,
+    accessExpiry: config.jwtAccessExpiry,
+    refreshExpiry: config.jwtRefreshExpiry,
+  });
+  const authService = createAuthService({
+    users,
+    refreshTokens,
+    passwords: createPasswordService({ rounds: config.bcryptRounds }),
+    tokens: tokenService,
+    logger,
+  });
+  const authRouter = createAuthRouter(createAuthController(authService), {
+    authenticate: authenticate(tokenService),
+  });
+  app.use(config.apiPrefix, authRouter);
 
   // Terminal handlers — must stay last
   app.use(notFoundHandler());

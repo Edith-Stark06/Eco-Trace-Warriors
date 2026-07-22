@@ -7,6 +7,11 @@ export interface AppConfig {
   readonly apiPrefix: string;
   readonly logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
   readonly databaseUrl: string | undefined;
+  readonly jwtSecret: string;
+  readonly jwtRefreshSecret: string;
+  readonly jwtAccessExpiry: string;
+  readonly jwtRefreshExpiry: string;
+  readonly bcryptRounds: number;
   readonly isProduction: boolean;
   readonly isTest: boolean;
 }
@@ -33,6 +38,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     apiPrefix: parsed.API_PREFIX,
     logLevel: parsed.LOG_LEVEL,
     databaseUrl: parsed.DATABASE_URL,
+    jwtSecret: parsed.JWT_SECRET,
+    jwtRefreshSecret: parsed.JWT_REFRESH_SECRET,
+    jwtAccessExpiry: parsed.JWT_ACCESS_EXPIRY,
+    jwtRefreshExpiry: parsed.JWT_REFRESH_EXPIRY,
+    bcryptRounds: parsed.BCRYPT_ROUNDS,
     isProduction: parsed.NODE_ENV === 'production',
     isTest: parsed.NODE_ENV === 'test',
   });
