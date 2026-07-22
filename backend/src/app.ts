@@ -4,6 +4,7 @@ import type { AppConfig } from '@shared/config';
 import type { Logger } from '@shared/logging';
 import {
   authenticate,
+  authorize,
   errorHandler,
   notFoundHandler,
   requestId,
@@ -28,6 +29,13 @@ import {
   createUserRepository,
 } from '@modules/auth';
 import type { RefreshTokenRepository, UserRepository } from '@modules/auth';
+import {
+  createSubmissionController,
+  createSubmissionRepository,
+  createSubmissionRouter,
+  createSubmissionService,
+} from '@modules/submission';
+import type { SubmissionRepository } from '@modules/submission';
 
 /** Everything the app needs from the outside world, injected explicitly. */
 export interface AppDeps {
@@ -40,6 +48,8 @@ export interface AppDeps {
     readonly users: UserRepository;
     readonly refreshTokens: RefreshTokenRepository;
   };
+  /** Test seam: submission repository override so integration tests run without a database. */
+  readonly submissionRepository?: SubmissionRepository;
 }
 
 /**
@@ -52,6 +62,7 @@ export function createApp({
   logger,
   pingDatabase: pingDatabaseOverride,
   authRepositories,
+  submissionRepository,
 }: AppDeps): Express {
   const app = express();
 
@@ -101,6 +112,17 @@ export function createApp({
     authenticate: authenticate(tokenService),
   });
   app.use(config.apiPrefix, authRouter);
+
+  // Submission module — repository defaults to Prisma; tests may inject a fake.
+  // Reuses the shared authenticate/authorize middleware — no new auth logic.
+  const submissions =
+    submissionRepository ?? createSubmissionRepository({ prisma: getPrismaClient() });
+  const submissionService = createSubmissionService({ submissions, logger });
+  const submissionRouter = createSubmissionRouter(createSubmissionController(submissionService), {
+    authenticate: authenticate(tokenService),
+    authorize,
+  });
+  app.use(config.apiPrefix, submissionRouter);
 
   // Terminal handlers — must stay last
   app.use(notFoundHandler());
