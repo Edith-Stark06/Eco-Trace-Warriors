@@ -84,7 +84,7 @@ Success envelope:
 ```json
 {
   "success": true,
-  "data": { },
+  "data": {},
   "meta": { "page": 1, "pageSize": 20, "total": 143 }
 }
 ```
@@ -104,9 +104,7 @@ All errors — validation, auth, business, server — use one shape:
   "error": {
     "code": "DEVICE_NOT_FOUND",
     "message": "No device exists with the given EcoID.",
-    "details": [
-      { "field": "ecoId", "issue": "not_found" }
-    ]
+    "details": [{ "field": "ecoId", "issue": "not_found" }]
   }
 }
 ```
@@ -119,19 +117,19 @@ All errors — validation, auth, business, server — use one shape:
 
 # HTTP Status Codes
 
-| Code | Use |
-|---|---|
-| 200 | Successful read or update |
-| 201 | Resource created |
-| 204 | Successful delete / no body |
-| 400 | Validation failure, malformed request |
-| 401 | Missing or invalid authentication |
-| 403 | Authenticated but not authorized (wrong role/ownership) |
-| 404 | Resource not found |
-| 409 | Conflict (duplicate registration, invalid state transition) |
-| 422 | Semantically invalid business operation |
-| 429 | Rate limit exceeded |
-| 500 | Unhandled server error (logged; generic message returned) |
+| Code | Use                                                         |
+| ---- | ----------------------------------------------------------- |
+| 200  | Successful read or update                                   |
+| 201  | Resource created                                            |
+| 204  | Successful delete / no body                                 |
+| 400  | Validation failure, malformed request                       |
+| 401  | Missing or invalid authentication                           |
+| 403  | Authenticated but not authorized (wrong role/ownership)     |
+| 404  | Resource not found                                          |
+| 409  | Conflict (duplicate registration, invalid state transition) |
+| 422  | Semantically invalid business operation                     |
+| 429  | Rate limit exceeded                                         |
+| 500  | Unhandled server error (logged; generic message returned)   |
 
 ---
 
@@ -139,12 +137,12 @@ All errors — validation, auth, business, server — use one shape:
 
 Query parameters on list endpoints:
 
-| Parameter | Example | Default |
-|---|---|---|
-| `page` | `?page=2` | `1` |
-| `pageSize` | `?pageSize=50` | `20` (max `100`) |
-| `sort` | `?sort=-createdAt` | endpoint-defined |
-| field filters | `?status=COLLECTED&region=TN` | none |
+| Parameter     | Example                       | Default          |
+| ------------- | ----------------------------- | ---------------- |
+| `page`        | `?page=2`                     | `1`              |
+| `pageSize`    | `?pageSize=50`                | `20` (max `100`) |
+| `sort`        | `?sort=-createdAt`            | endpoint-defined |
+| field filters | `?status=COLLECTED&region=TN` | none             |
 
 ---
 
@@ -154,13 +152,13 @@ Role legend: `C` Consumer, `CO` Collector, `R` Recycler, `G` Government, `A` Adm
 
 ## Auth
 
-| Method | Path | Roles | Description |
-|---|---|---|---|
-| POST | `/auth/register` | pub | Create consumer account |
-| POST | `/auth/login` | pub | Obtain access + refresh tokens |
-| POST | `/auth/refresh` | pub | Rotate tokens |
-| POST | `/auth/logout` | pub | Revoke a refresh token (idempotent) |
-| GET | `/auth/me` | * | Current user profile |
+| Method | Path             | Roles | Description                         |
+| ------ | ---------------- | ----- | ----------------------------------- |
+| POST   | `/auth/register` | pub   | Create consumer account             |
+| POST   | `/auth/login`    | pub   | Obtain access + refresh tokens      |
+| POST   | `/auth/refresh`  | pub   | Rotate tokens                       |
+| POST   | `/auth/logout`   | pub   | Revoke a refresh token (idempotent) |
+| GET    | `/auth/me`       | *     | Current user profile                |
 
 ### POST /auth/register — 201
 
@@ -218,58 +216,223 @@ Idempotent — unknown or already-revoked tokens still return `200`.
 Requires `Authorization: Bearer <accessToken>`. Response `data`: the `user` object shape from register.
 Missing/invalid token → `401`.
 
+## Submissions
+
+E-waste pickup submissions created by consumers, plus the collector workflow
+that drives a submission from assignment through collection, and the recycler
+workflow that continues it through processing. Consumers create and manage their
+own submissions; Admin/Government assign a collector and later a recycler; the
+assigned collector accepts, starts, and completes the pickup; the assigned
+recycler then processes the collected e-waste and records material recovery.
+
+| Method | Path                                 | Roles | Description                                                     |
+| ------ | ------------------------------------ | ----- | --------------------------------------------------------------- |
+| POST   | `/submissions`                       | C     | Create an e-waste pickup submission (status `PENDING`)          |
+| GET    | `/submissions`                       | *     | List submissions (consumer: own only; admin: all)               |
+| GET    | `/submissions/{id}`                  | *     | Submission detail (owner or admin only)                         |
+| PATCH  | `/submissions/{id}`                  | *     | Update a submission (owner while `PENDING`; admin always)       |
+| DELETE | `/submissions/{id}`                  | *     | Delete a submission (owner while `PENDING`; admin always)       |
+| PATCH  | `/submissions/{id}/assign`           | A, G  | Assign a collector (`PENDING → ASSIGNED`)                       |
+| PATCH  | `/submissions/{id}/accept`           | CO    | Assigned collector accepts (`ASSIGNED → ACCEPTED`)              |
+| PATCH  | `/submissions/{id}/start`            | CO    | Assigned collector starts pickup (`ACCEPTED → IN_PROGRESS`)     |
+| PATCH  | `/submissions/{id}/complete`         | CO    | Assigned collector completes pickup (`IN_PROGRESS → COLLECTED`) |
+| GET    | `/collector/submissions`             | CO    | Collector dashboard: own active assignments, newest first       |
+| PATCH  | `/submissions/{id}/assign-recycler`  | A, G  | Assign a recycler to a collected submission                     |
+| PATCH  | `/submissions/{id}/recycle/start`    | R     | Assigned recycler starts processing (`COLLECTED → RECYCLING`)   |
+| PATCH  | `/submissions/{id}/recycle/complete` | R     | Assigned recycler records recovery (`RECYCLING → RECYCLED`)     |
+| GET    | `/recycler/submissions`              | R     | Recycler dashboard: own active assignments, newest first        |
+
+`SubmissionStatus`: `PENDING`, `ASSIGNED`, `ACCEPTED`, `IN_PROGRESS`, `COLLECTED`, `RECYCLING`, `RECYCLED`, `COMPLETED`, `REJECTED` (see `04_DATABASE.md`).
+
+**Submission state machine.** Status changes are governed by a single
+transition validator in the submission service:
+
+```
+PENDING → ASSIGNED → ACCEPTED → IN_PROGRESS → COLLECTED → RECYCLING → RECYCLED
+```
+
+Any transition not on this path is rejected with `409 CONFLICT`. An Admin may
+override and (re)assign a submission — collector or recycler — regardless of its
+current status; Government must follow the strict path (collector assignment
+only while `PENDING`; recycler assignment only while `COLLECTED`).
+
+### POST /submissions — 201
+
+Consumer-only. Request:
+
+```json
+{
+  "category": "Laptop",
+  "description": "Old work laptop",
+  "estimatedWeight": 2.5,
+  "address": "12 MG Road, Bengaluru",
+  "latitude": 12.9716,
+  "longitude": 77.5946,
+  "imageUrls": ["https://cdn.example.com/a.jpg"]
+}
+```
+
+`description` and `imageUrls` are optional. `estimatedWeight` must be positive; `latitude` ∈ [-90, 90]; `longitude` ∈ [-180, 180]. The owner and `PENDING` status are set server-side; any client-supplied status is ignored. Non-consumer roles → `403`.
+
+Response `data`:
+
+```json
+{
+  "id": "uuid",
+  "userId": "uuid",
+  "category": "Laptop",
+  "description": "Old work laptop",
+  "estimatedWeight": 2.5,
+  "address": "12 MG Road, Bengaluru",
+  "latitude": 12.9716,
+  "longitude": 77.5946,
+  "imageUrls": ["https://cdn.example.com/a.jpg"],
+  "status": "PENDING",
+  "assignedCollectorId": null,
+  "assignedRecyclerId": null,
+  "pickupScheduledAt": null,
+  "completedAt": null,
+  "processingStartedAt": null,
+  "recycledAt": null,
+  "recyclerNotes": null,
+  "recoveredWeight": null,
+  "materialRecovery": null,
+  "createdAt": "2026-07-22T10:30:00.000Z",
+  "updatedAt": "2026-07-22T10:30:00.000Z"
+}
+```
+
+### GET /submissions — 200
+
+Response `data`: an array of submission objects, newest first. A consumer receives only their own submissions; an admin receives all.
+
+### GET /submissions/{id} — 200
+
+Response `data`: a single submission object. A consumer may read only their own submission; an admin may read any. To avoid leaking existence, a submission owned by another user returns `404`, not `403`.
+
+### PATCH /submissions/{id} — 200
+
+Partial update; at least one editable field must be provided (`category`, `description`, `estimatedWeight`, `address`, `latitude`, `longitude`, `imageUrls`). Owners may edit only while `status == PENDING`; an admin may edit at any time. Owner editing after assignment → `403`. Non-owner (non-admin) → `404`. Response `data`: the updated submission object.
+
+### DELETE /submissions/{id} — 204
+
+No response body. Owners may delete only while `status == PENDING`; an admin may delete at any time. Owner deleting after assignment → `403`. Non-owner (non-admin) → `404`.
+
+### PATCH /submissions/{id}/assign — 200
+
+Admin/Government only (`403` for any other role — a collector can never assign, including themselves). Request:
+
+```json
+{ "collectorId": "uuid" }
+```
+
+`collectorId` is required and must be a UUID naming an **active** user with the `COLLECTOR` role; otherwise `404 NOT_FOUND` (`Collector not found.`). An unknown submission → `404`. Government assigning a submission that is not `PENDING` → `409 CONFLICT`; an Admin may override and assign at any status. On success the submission moves to `ASSIGNED` with `assignedCollectorId` set. Response `data`: the updated submission object.
+
+### PATCH /submissions/{id}/accept — 200
+
+Collector only. The caller must be the assigned collector, else `404` (a collector must not learn about submissions that are not theirs). Requires `status == ASSIGNED`, else `409`. Moves the submission to `ACCEPTED`.
+
+### PATCH /submissions/{id}/start — 200
+
+Collector only, assigned collector only (`404` otherwise). Requires `status == ACCEPTED`, else `409`. Moves the submission to `IN_PROGRESS` and stamps `pickupScheduledAt` with the server clock.
+
+### PATCH /submissions/{id}/complete — 200
+
+Collector only, assigned collector only (`404` otherwise). Requires `status == IN_PROGRESS`, else `409`. Moves the submission to `COLLECTED`.
+
+The three transition endpoints carry no request body — only the `:id` path parameter is validated.
+
+### GET /collector/submissions — 200
+
+Collector only. Response `data`: an array of the authenticated collector's **active** assignments — submissions in `ASSIGNED`, `ACCEPTED`, or `IN_PROGRESS` assigned to them — newest first. `COLLECTED` and later statuses are excluded. Other roles → `403`.
+
+### PATCH /submissions/{id}/assign-recycler — 200
+
+Admin/Government only (`403` for any other role — a recycler can never assign, including themselves). Request:
+
+```json
+{ "recyclerId": "uuid" }
+```
+
+`recyclerId` is required and must be a UUID naming an **active** user with the `RECYCLER` role; otherwise `404 NOT_FOUND` (`Recycler not found.`). An unknown submission → `404`. Government assigning a submission that is not `COLLECTED` → `409 CONFLICT`; an Admin may override and assign at any status. Assignment sets `assignedRecyclerId` and does **not** change the submission status (the recycler advances it via the transition endpoints below). Response `data`: the updated submission object.
+
+### PATCH /submissions/{id}/recycle/start — 200
+
+Recycler only. The caller must be the assigned recycler, else `404` (a recycler must not learn about submissions that are not theirs). Requires `status == COLLECTED`, else `409`. Moves the submission to `RECYCLING` and stamps `processingStartedAt` with the server clock. Carries no request body — only the `:id` path parameter is validated.
+
+### PATCH /submissions/{id}/recycle/complete — 200
+
+Recycler only, assigned recycler only (`404` otherwise). Requires `status == RECYCLING`, else `409`. Records the recovery outcome and moves the submission to `RECYCLED`, stamping `recycledAt` with the server clock. Request:
+
+```json
+{
+  "recoveredWeight": 12.5,
+  "recyclerNotes": "Separated lithium batteries.",
+  "materialRecovery": {
+    "plastic": 3.2,
+    "metal": 6.1,
+    "glass": 3.2
+  }
+}
+```
+
+`recoveredWeight` is required and must be positive. `recyclerNotes` is optional (≤ 2000 chars). `materialRecovery` is an optional object mapping material names to non-negative recovered weights. Response `data`: the updated submission object with `recoveredWeight`, `recyclerNotes`, and `materialRecovery` populated.
+
+### GET /recycler/submissions — 200
+
+Recycler only. Response `data`: an array of the authenticated recycler's **active** assignments — submissions in `COLLECTED` or `RECYCLING` assigned to them — newest first. `RECYCLED` and later statuses are excluded. Other roles → `403`.
 
 ## Devices
 
-| Method | Path | Roles | Description |
-|---|---|---|---|
-| POST | `/devices` | C | Register device; triggers AI classification and EcoID generation |
-| GET | `/devices` | * | List own devices (admin: all, filterable) |
-| GET | `/devices/{ecoId}` | * | Device detail with lifecycle history |
-| GET | `/devices/{ecoId}/qr` | C, A | QR code payload for the device |
-| GET | `/devices/{ecoId}/history` | * | Lifecycle events incl. blockchain tx references |
+| Method | Path                       | Roles | Description                                                      |
+| ------ | -------------------------- | ----- | ---------------------------------------------------------------- |
+| POST   | `/devices`                 | C     | Register device; triggers AI classification and EcoID generation |
+| GET    | `/devices`                 | *     | List own devices (admin: all, filterable)                        |
+| GET    | `/devices/{ecoId}`         | *     | Device detail with lifecycle history                             |
+| GET    | `/devices/{ecoId}/qr`      | C, A  | QR code payload for the device                                   |
+| GET    | `/devices/{ecoId}/history` | *     | Lifecycle events incl. blockchain tx references                  |
 
 ## Collection
 
-| Method | Path | Roles | Description |
-|---|---|---|---|
-| POST | `/collection-requests` | C | Request pickup for a device |
-| GET | `/collection-requests` | C, CO, A | List (scoped by role) |
-| PATCH | `/collection-requests/{id}/assign` | A | Assign a collector |
-| PATCH | `/collection-requests/{id}/status` | CO | Update status (state machine enforced) |
-| POST | `/collection-requests/{id}/verify` | CO | Verify device at pickup (QR scan) |
+| Method | Path                               | Roles    | Description                            |
+| ------ | ---------------------------------- | -------- | -------------------------------------- |
+| POST   | `/collection-requests`             | C        | Request pickup for a device            |
+| GET    | `/collection-requests`             | C, CO, A | List (scoped by role)                  |
+| PATCH  | `/collection-requests/{id}/assign` | A        | Assign a collector                     |
+| PATCH  | `/collection-requests/{id}/status` | CO       | Update status (state machine enforced) |
+| POST   | `/collection-requests/{id}/verify` | CO       | Verify device at pickup (QR scan)      |
 
 ## Recycling
 
-| Method | Path | Roles | Description |
-|---|---|---|---|
-| POST | `/recycling/intake` | R | Record device intake at facility |
-| POST | `/recycling/{deviceId}/process` | R | Record material recovery & completion |
-| GET | `/recycling/records` | R, G, A | Processing reports |
-| GET | `/certificates/{certificateNumber}` | * | Verify a recycling certificate |
+| Method | Path                                | Roles   | Description                           |
+| ------ | ----------------------------------- | ------- | ------------------------------------- |
+| POST   | `/recycling/intake`                 | R       | Record device intake at facility      |
+| POST   | `/recycling/{deviceId}/process`     | R       | Record material recovery & completion |
+| GET    | `/recycling/records`                | R, G, A | Processing reports                    |
+| GET    | `/certificates/{certificateNumber}` | *       | Verify a recycling certificate        |
 
 ## Rewards
 
-| Method | Path | Roles | Description |
-|---|---|---|---|
-| GET | `/rewards/balance` | C | GreenCoin balance |
-| GET | `/rewards/transactions` | C | Reward history |
-| POST | `/rewards/redeem` | C | Redeem GreenCoins |
+| Method | Path                    | Roles | Description       |
+| ------ | ----------------------- | ----- | ----------------- |
+| GET    | `/rewards/balance`      | C     | GreenCoin balance |
+| GET    | `/rewards/transactions` | C     | Reward history    |
+| POST   | `/rewards/redeem`       | C     | Redeem GreenCoins |
 
 ## Analytics
 
-| Method | Path | Roles | Description |
-|---|---|---|---|
-| GET | `/analytics/overview` | G, A | National statistics |
-| GET | `/analytics/regions` | G, A | Regional breakdown / heatmap data |
-| GET | `/analytics/forecast` | G, A | AI demand forecast (proxied from AI service) |
-| GET | `/analytics/environmental-impact` | G, A | Impact metrics |
+| Method | Path                              | Roles | Description                                  |
+| ------ | --------------------------------- | ----- | -------------------------------------------- |
+| GET    | `/analytics/overview`             | G, A  | National statistics                          |
+| GET    | `/analytics/regions`              | G, A  | Regional breakdown / heatmap data            |
+| GET    | `/analytics/forecast`             | G, A  | AI demand forecast (proxied from AI service) |
+| GET    | `/analytics/environmental-impact` | G, A  | Impact metrics                               |
 
 ## System
 
-| Method | Path | Roles | Description |
-|---|---|---|---|
-| GET | `/health` | pub | Liveness/readiness for deployment (`11_DEPLOYMENT.md`) |
+| Method | Path      | Roles | Description                                            |
+| ------ | --------- | ----- | ------------------------------------------------------ |
+| GET    | `/health` | pub   | Liveness/readiness for deployment (`11_DEPLOYMENT.md`) |
 
 ---
 
@@ -277,12 +440,12 @@ Missing/invalid token → `401`.
 
 The AI service (`08_AI.md`) exposes an internal HTTP API consumed **only by the backend** — never by clients:
 
-| Method | Path | Description |
-|---|---|---|
-| POST | `/internal/classify` | Device image → category, condition, confidence |
-| POST | `/internal/forecast` | Historical volumes → demand forecast |
-| POST | `/internal/fraud-check` | Transaction context → fraud risk score |
-| GET | `/internal/health` | Service health |
+| Method | Path                    | Description                                    |
+| ------ | ----------------------- | ---------------------------------------------- |
+| POST   | `/internal/classify`    | Device image → category, condition, confidence |
+| POST   | `/internal/forecast`    | Historical volumes → demand forecast           |
+| POST   | `/internal/fraud-check` | Transaction context → fraud risk score         |
+| GET    | `/internal/health`      | Service health                                 |
 
 Internal APIs follow the same envelope and error contract as the public API.
 
