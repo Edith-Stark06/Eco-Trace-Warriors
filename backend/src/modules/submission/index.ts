@@ -1,4 +1,8 @@
-export { createSubmissionService } from './submission.service';
+export {
+  createSubmissionService,
+  validateTransition,
+  allowedTransitions,
+} from './submission.service';
 export type {
   SubmissionService,
   SubmissionServiceDeps,
@@ -12,6 +16,7 @@ export { createSubmissionRepository } from './submission.repository';
 export type {
   SubmissionRepository,
   SubmissionRecord,
+  CollectorRecord,
   CreateSubmissionInput as CreateSubmissionRepositoryInput,
   UpdateSubmissionInput as UpdateSubmissionRepositoryInput,
 } from './submission.repository';
@@ -19,11 +24,13 @@ export {
   createSubmissionSchema,
   updateSubmissionSchema,
   submissionIdSchema,
+  assignCollectorSchema,
 } from './submission.schemas';
 export type {
   CreateSubmissionInput,
   UpdateSubmissionInput,
   SubmissionIdParams,
+  AssignCollectorInput,
 } from './submission.schemas';
 export type {
   PublicSubmission,

@@ -49,6 +49,15 @@ export const submissionIdSchema = z.object({
   id: z.string().uuid('A valid submission id is required'),
 });
 
+/**
+ * Body for PATCH /submissions/:id/assign. The status-transition endpoints
+ * (accept/start/complete) carry no body — they validate only the :id param.
+ */
+export const assignCollectorSchema = z.object({
+  collectorId: z.string().uuid('A valid collector id is required'),
+});
+
 export type CreateSubmissionInput = z.infer<typeof createSubmissionSchema>;
 export type UpdateSubmissionInput = z.infer<typeof updateSubmissionSchema>;
 export type SubmissionIdParams = z.infer<typeof submissionIdSchema>;
+export type AssignCollectorInput = z.infer<typeof assignCollectorSchema>;
