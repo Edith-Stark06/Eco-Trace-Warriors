@@ -19,6 +19,11 @@ const publicSubmission: PublicSubmission = {
   assignedRecyclerId: null,
   pickupScheduledAt: null,
   completedAt: null,
+  processingStartedAt: null,
+  recycledAt: null,
+  recyclerNotes: null,
+  recoveredWeight: null,
+  materialRecovery: null,
   createdAt: '2026-07-20T00:00:00.000Z',
   updatedAt: '2026-07-20T00:00:00.000Z',
 };
@@ -35,6 +40,10 @@ function buildService(overrides: Partial<SubmissionService> = {}): jest.Mocked<S
     startPickup: jest.fn().mockResolvedValue(publicSubmission),
     completePickup: jest.fn().mockResolvedValue(publicSubmission),
     getCollectorDashboard: jest.fn().mockResolvedValue([publicSubmission]),
+    assignRecycler: jest.fn().mockResolvedValue(publicSubmission),
+    startRecycling: jest.fn().mockResolvedValue(publicSubmission),
+    completeRecycling: jest.fn().mockResolvedValue(publicSubmission),
+    getRecyclerDashboard: jest.fn().mockResolvedValue([publicSubmission]),
     ...overrides,
   } as jest.Mocked<SubmissionService>;
 }
@@ -184,6 +193,58 @@ describe('createSubmissionController', () => {
     await createSubmissionController(service).collectorDashboard(buildReq(), res);
 
     expect(service.getCollectorDashboard).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ success: true, data: [publicSubmission] });
+  });
+
+  it('assignRecycler → 200 and forwards id + recyclerId', async () => {
+    const service = buildService();
+    const res = buildRes();
+
+    await createSubmissionController(service).assignRecycler(
+      buildReq({ params: { id: 'sub-1' }, body: { recyclerId: 'recycler-1' } }),
+      res,
+    );
+
+    expect(service.assignRecycler).toHaveBeenCalledWith(expect.anything(), 'sub-1', 'recycler-1');
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ success: true, data: publicSubmission });
+  });
+
+  it('startRecycling → 200 and passes the path id', async () => {
+    const service = buildService();
+    const res = buildRes();
+
+    await createSubmissionController(service).startRecycling(
+      buildReq({ params: { id: 'sub-1' } }),
+      res,
+    );
+
+    expect(service.startRecycling).toHaveBeenCalledWith(expect.anything(), 'sub-1');
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it('completeRecycling → 200 and forwards id + body', async () => {
+    const service = buildService();
+    const res = buildRes();
+    const body = { recoveredWeight: 12.5, recyclerNotes: 'done' };
+
+    await createSubmissionController(service).completeRecycling(
+      buildReq({ params: { id: 'sub-1' }, body }),
+      res,
+    );
+
+    expect(service.completeRecycling).toHaveBeenCalledWith(expect.anything(), 'sub-1', body);
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it('recyclerDashboard → 200 with an array payload', async () => {
+    const service = buildService();
+    const res = buildRes();
+
+    await createSubmissionController(service).recyclerDashboard(buildReq(), res);
+
+    expect(service.getRecyclerDashboard).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ success: true, data: [publicSubmission] });
   });

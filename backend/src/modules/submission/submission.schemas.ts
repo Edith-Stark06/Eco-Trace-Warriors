@@ -57,7 +57,28 @@ export const assignCollectorSchema = z.object({
   collectorId: z.string().uuid('A valid collector id is required'),
 });
 
+/** Body for PATCH /submissions/:id/assign-recycler. */
+export const assignRecyclerSchema = z.object({
+  recyclerId: z.string().uuid('A valid recycler id is required'),
+});
+
+/**
+ * Body for PATCH /submissions/:id/recycle/complete. recoveredWeight is required
+ * and positive; recyclerNotes is optional (max 2000 chars); materialRecovery is
+ * an optional per-material breakdown of non-negative weights. The recycle/start
+ * endpoint carries no body — it validates only the :id param.
+ */
+export const completeRecyclingSchema = z.object({
+  recoveredWeight: z.number().positive('Recovered weight must be a positive number'),
+  recyclerNotes: z.string().trim().max(2000).optional(),
+  materialRecovery: z
+    .record(z.string(), z.number().nonnegative('Material weights must be non-negative'))
+    .optional(),
+});
+
 export type CreateSubmissionInput = z.infer<typeof createSubmissionSchema>;
 export type UpdateSubmissionInput = z.infer<typeof updateSubmissionSchema>;
 export type SubmissionIdParams = z.infer<typeof submissionIdSchema>;
 export type AssignCollectorInput = z.infer<typeof assignCollectorSchema>;
+export type AssignRecyclerInput = z.infer<typeof assignRecyclerSchema>;
+export type CompleteRecyclingInput = z.infer<typeof completeRecyclingSchema>;

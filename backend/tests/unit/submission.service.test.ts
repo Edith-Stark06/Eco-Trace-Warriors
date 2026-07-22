@@ -17,10 +17,18 @@ const ADMIN: SubmissionActor = { userId: 'admin-1', role: UserRole.ADMIN };
 const GOVERNMENT: SubmissionActor = { userId: 'gov-1', role: UserRole.GOVERNMENT };
 const COLLECTOR: SubmissionActor = { userId: 'collector-1', role: UserRole.COLLECTOR };
 const OTHER_COLLECTOR: SubmissionActor = { userId: 'collector-2', role: UserRole.COLLECTOR };
+const RECYCLER: SubmissionActor = { userId: 'recycler-1', role: UserRole.RECYCLER };
+const OTHER_RECYCLER: SubmissionActor = { userId: 'recycler-2', role: UserRole.RECYCLER };
 
 const activeCollectorRecord: CollectorRecord = {
   id: 'collector-1',
   role: UserRole.COLLECTOR,
+  isActive: true,
+};
+
+const activeRecyclerRecord: CollectorRecord = {
+  id: 'recycler-1',
+  role: UserRole.RECYCLER,
   isActive: true,
 };
 
@@ -39,6 +47,11 @@ const pendingRecord: SubmissionRecord = {
   assignedRecyclerId: null,
   pickupScheduledAt: null,
   completedAt: null,
+  processingStartedAt: null,
+  recycledAt: null,
+  recyclerNotes: null,
+  recoveredWeight: null,
+  materialRecovery: null,
   createdAt: new Date('2026-07-20T00:00:00.000Z'),
   updatedAt: new Date('2026-07-20T00:00:00.000Z'),
 };
@@ -64,6 +77,23 @@ const inProgressRecord: SubmissionRecord = {
   assignedCollectorId: 'collector-1',
 };
 
+const collectedRecord: SubmissionRecord = {
+  ...pendingRecord,
+  id: 'sub-5',
+  status: 'COLLECTED',
+  assignedCollectorId: 'collector-1',
+  assignedRecyclerId: 'recycler-1',
+};
+
+const recyclingRecord: SubmissionRecord = {
+  ...pendingRecord,
+  id: 'sub-6',
+  status: 'RECYCLING',
+  assignedCollectorId: 'collector-1',
+  assignedRecyclerId: 'recycler-1',
+  processingStartedAt: new Date('2026-07-22T09:00:00.000Z'),
+};
+
 function buildRepo(
   overrides: Partial<SubmissionRepository> = {},
 ): jest.Mocked<SubmissionRepository> {
@@ -80,6 +110,13 @@ function buildRepo(
     findByCollector: jest.fn().mockResolvedValue([assignedRecord]),
     findCollectorAssignments: jest.fn().mockResolvedValue([assignedRecord]),
     findCollectorById: jest.fn().mockResolvedValue(activeCollectorRecord),
+    assignRecycler: jest.fn().mockResolvedValue(collectedRecord),
+    findRecyclerAssignments: jest.fn().mockResolvedValue([collectedRecord]),
+    findRecyclerById: jest.fn().mockResolvedValue(activeRecyclerRecord),
+    updateRecyclerProcessing: jest.fn().mockResolvedValue(recyclingRecord),
+    updateRecyclerCompletion: jest
+      .fn()
+      .mockResolvedValue({ ...recyclingRecord, status: 'RECYCLED' }),
     ...overrides,
   } as jest.Mocked<SubmissionRepository>;
 }
@@ -268,19 +305,26 @@ describe('validateTransition', () => {
     expect(() => validateTransition('IN_PROGRESS', 'COLLECTED')).not.toThrow();
   });
 
+  it('permits each legal step of the recycler workflow', () => {
+    expect(() => validateTransition('COLLECTED', 'RECYCLING')).not.toThrow();
+    expect(() => validateTransition('RECYCLING', 'RECYCLED')).not.toThrow();
+  });
+
   it('rejects skipping a step', () => {
     expect(() => validateTransition('PENDING', 'ACCEPTED')).toThrow(ConflictError);
     expect(() => validateTransition('ASSIGNED', 'IN_PROGRESS')).toThrow(ConflictError);
     expect(() => validateTransition('PENDING', 'COLLECTED')).toThrow(ConflictError);
+    expect(() => validateTransition('COLLECTED', 'RECYCLED')).toThrow(ConflictError);
   });
 
   it('rejects moving backwards', () => {
     expect(() => validateTransition('ACCEPTED', 'ASSIGNED')).toThrow(ConflictError);
     expect(() => validateTransition('COLLECTED', 'IN_PROGRESS')).toThrow(ConflictError);
+    expect(() => validateTransition('RECYCLING', 'COLLECTED')).toThrow(ConflictError);
   });
 
   it('rejects any transition out of a terminal status', () => {
-    expect(() => validateTransition('COLLECTED', 'COLLECTED')).toThrow(ConflictError);
+    expect(() => validateTransition('RECYCLED', 'RECYCLING')).toThrow(ConflictError);
     expect(() => validateTransition('REJECTED', 'ASSIGNED')).toThrow(ConflictError);
   });
 });
@@ -495,6 +539,235 @@ describe('createSubmissionService — collector workflow', () => {
       const result = await service.getCollectorDashboard(COLLECTOR);
 
       expect(repo.findCollectorAssignments).toHaveBeenCalledWith('collector-1');
+      expect(result).toHaveLength(1);
+    });
+  });
+});
+
+describe('createSubmissionService — recycler workflow', () => {
+  describe('assignRecycler', () => {
+    it('assigns a recycler to a COLLECTED submission for an admin', async () => {
+      const { service, repo } = buildService(
+        buildRepo({ findById: jest.fn().mockResolvedValue(collectedRecord) }),
+      );
+
+      const result = await service.assignRecycler(ADMIN, 'sub-5', 'recycler-1');
+
+      expect(repo.findRecyclerById).toHaveBeenCalledWith('recycler-1');
+      expect(repo.assignRecycler).toHaveBeenCalledWith('sub-5', 'recycler-1');
+      expect(result.assignedRecyclerId).toBe('recycler-1');
+    });
+
+    it('assigns a recycler for a government actor on a COLLECTED submission', async () => {
+      const { service, repo } = buildService(
+        buildRepo({ findById: jest.fn().mockResolvedValue(collectedRecord) }),
+      );
+
+      await service.assignRecycler(GOVERNMENT, 'sub-5', 'recycler-1');
+
+      expect(repo.assignRecycler).toHaveBeenCalledWith('sub-5', 'recycler-1');
+    });
+
+    it('forbids a recycler from assigning (cannot self-assign)', async () => {
+      const { service, repo } = buildService(
+        buildRepo({ findById: jest.fn().mockResolvedValue(collectedRecord) }),
+      );
+
+      await expect(service.assignRecycler(RECYCLER, 'sub-5', 'recycler-1')).rejects.toBeInstanceOf(
+        ForbiddenError,
+      );
+      expect(repo.assignRecycler).not.toHaveBeenCalled();
+    });
+
+    it('forbids a consumer from assigning a recycler', async () => {
+      const { service } = buildService(
+        buildRepo({ findById: jest.fn().mockResolvedValue(collectedRecord) }),
+      );
+
+      await expect(service.assignRecycler(OWNER, 'sub-5', 'recycler-1')).rejects.toBeInstanceOf(
+        ForbiddenError,
+      );
+    });
+
+    it('throws NotFoundError when the submission does not exist', async () => {
+      const { service } = buildService(buildRepo({ findById: jest.fn().mockResolvedValue(null) }));
+
+      await expect(service.assignRecycler(ADMIN, 'missing', 'recycler-1')).rejects.toBeInstanceOf(
+        NotFoundError,
+      );
+    });
+
+    it('throws NotFoundError when the recycler id is unknown', async () => {
+      const { service, repo } = buildService(
+        buildRepo({
+          findById: jest.fn().mockResolvedValue(collectedRecord),
+          findRecyclerById: jest.fn().mockResolvedValue(null),
+        }),
+      );
+
+      await expect(service.assignRecycler(ADMIN, 'sub-5', 'ghost')).rejects.toBeInstanceOf(
+        NotFoundError,
+      );
+      expect(repo.assignRecycler).not.toHaveBeenCalled();
+    });
+
+    it('throws NotFoundError when the target user is not a recycler', async () => {
+      const { service } = buildService(
+        buildRepo({
+          findById: jest.fn().mockResolvedValue(collectedRecord),
+          findRecyclerById: jest
+            .fn()
+            .mockResolvedValue({ id: 'user-9', role: UserRole.COLLECTOR, isActive: true }),
+        }),
+      );
+
+      await expect(service.assignRecycler(ADMIN, 'sub-5', 'user-9')).rejects.toBeInstanceOf(
+        NotFoundError,
+      );
+    });
+
+    it('rejects an inactive recycler', async () => {
+      const { service } = buildService(
+        buildRepo({
+          findById: jest.fn().mockResolvedValue(collectedRecord),
+          findRecyclerById: jest
+            .fn()
+            .mockResolvedValue({ id: 'recycler-1', role: UserRole.RECYCLER, isActive: false }),
+        }),
+      );
+
+      await expect(service.assignRecycler(ADMIN, 'sub-5', 'recycler-1')).rejects.toBeInstanceOf(
+        NotFoundError,
+      );
+    });
+
+    it('forbids a government actor from assigning before COLLECTED', async () => {
+      const { service, repo } = buildService(
+        buildRepo({ findById: jest.fn().mockResolvedValue(assignedRecord) }),
+      );
+
+      await expect(
+        service.assignRecycler(GOVERNMENT, 'sub-2', 'recycler-1'),
+      ).rejects.toBeInstanceOf(ConflictError);
+      expect(repo.assignRecycler).not.toHaveBeenCalled();
+    });
+
+    it('lets an admin override and assign a recycler before COLLECTED', async () => {
+      const { service, repo } = buildService(
+        buildRepo({ findById: jest.fn().mockResolvedValue(assignedRecord) }),
+      );
+
+      await service.assignRecycler(ADMIN, 'sub-2', 'recycler-1');
+
+      expect(repo.assignRecycler).toHaveBeenCalledWith('sub-2', 'recycler-1');
+    });
+  });
+
+  describe('startRecycling', () => {
+    it('moves COLLECTED → RECYCLING and stamps the processing time', async () => {
+      const clock = new Date('2026-07-22T09:00:00.000Z');
+      const repo = buildRepo({ findById: jest.fn().mockResolvedValue(collectedRecord) });
+      const service = createSubmissionService({
+        submissions: repo,
+        logger: createLogger({ logLevel: 'fatal', nodeEnv: 'test' }),
+        now: () => clock,
+      });
+
+      const result = await service.startRecycling(RECYCLER, 'sub-5');
+
+      expect(repo.updateRecyclerProcessing).toHaveBeenCalledWith('sub-5', clock);
+      expect(result.status).toBe('RECYCLING');
+    });
+
+    it('throws NotFoundError for a recycler who is not the assignee', async () => {
+      const { service, repo } = buildService(
+        buildRepo({ findById: jest.fn().mockResolvedValue(collectedRecord) }),
+      );
+
+      await expect(service.startRecycling(OTHER_RECYCLER, 'sub-5')).rejects.toBeInstanceOf(
+        NotFoundError,
+      );
+      expect(repo.updateRecyclerProcessing).not.toHaveBeenCalled();
+    });
+
+    it('throws ConflictError when the submission is not COLLECTED', async () => {
+      const { service, repo } = buildService(
+        buildRepo({ findById: jest.fn().mockResolvedValue(recyclingRecord) }),
+      );
+
+      await expect(service.startRecycling(RECYCLER, 'sub-6')).rejects.toBeInstanceOf(ConflictError);
+      expect(repo.updateRecyclerProcessing).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('completeRecycling', () => {
+    const completeInput = {
+      recoveredWeight: 12.5,
+      recyclerNotes: 'Separated lithium batteries.',
+      materialRecovery: { plastic: 3.2, metal: 6.1, glass: 3.2 },
+    };
+
+    it('moves RECYCLING → RECYCLED and records the recovery outcome', async () => {
+      const clock = new Date('2026-07-23T09:00:00.000Z');
+      const repo = buildRepo({ findById: jest.fn().mockResolvedValue(recyclingRecord) });
+      const service = createSubmissionService({
+        submissions: repo,
+        logger: createLogger({ logLevel: 'fatal', nodeEnv: 'test' }),
+        now: () => clock,
+      });
+
+      const result = await service.completeRecycling(RECYCLER, 'sub-6', completeInput);
+
+      expect(repo.updateRecyclerCompletion).toHaveBeenCalledWith('sub-6', clock, {
+        recoveredWeight: 12.5,
+        recyclerNotes: 'Separated lithium batteries.',
+        materialRecovery: { plastic: 3.2, metal: 6.1, glass: 3.2 },
+      });
+      expect(result.status).toBe('RECYCLED');
+    });
+
+    it('accepts a completion without notes or material breakdown', async () => {
+      const repo = buildRepo({ findById: jest.fn().mockResolvedValue(recyclingRecord) });
+      const { service } = buildService(repo);
+
+      await service.completeRecycling(RECYCLER, 'sub-6', { recoveredWeight: 5 });
+
+      expect(repo.updateRecyclerCompletion).toHaveBeenCalledWith(
+        'sub-6',
+        expect.any(Date),
+        expect.objectContaining({ recoveredWeight: 5 }),
+      );
+    });
+
+    it('throws NotFoundError for a recycler who is not the assignee', async () => {
+      const { service } = buildService(
+        buildRepo({ findById: jest.fn().mockResolvedValue(recyclingRecord) }),
+      );
+
+      await expect(
+        service.completeRecycling(OTHER_RECYCLER, 'sub-6', completeInput),
+      ).rejects.toBeInstanceOf(NotFoundError);
+    });
+
+    it('throws ConflictError when the submission is not RECYCLING', async () => {
+      const { service, repo } = buildService(
+        buildRepo({ findById: jest.fn().mockResolvedValue(collectedRecord) }),
+      );
+
+      await expect(
+        service.completeRecycling(RECYCLER, 'sub-5', completeInput),
+      ).rejects.toBeInstanceOf(ConflictError);
+      expect(repo.updateRecyclerCompletion).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getRecyclerDashboard', () => {
+    it('returns the active assignments for the authenticated recycler', async () => {
+      const { service, repo } = buildService();
+
+      const result = await service.getRecyclerDashboard(RECYCLER);
+
+      expect(repo.findRecyclerAssignments).toHaveBeenCalledWith('recycler-1');
       expect(result).toHaveLength(1);
     });
   });

@@ -21,6 +21,7 @@ enum SubmissionStatus {
   ACCEPTED
   IN_PROGRESS
   COLLECTED
+  RECYCLING
   RECYCLED
   COMPLETED
   REJECTED
@@ -139,6 +140,19 @@ model Submission {
   pickupScheduledAt DateTime?
 
   completedAt DateTime?
+
+  // Recycler workflow (Phase 7) — populated as a submission is processed by its
+  // assigned recycler. All nullable: unset until recycling begins/completes.
+  processingStartedAt DateTime?
+
+  recycledAt DateTime?
+
+  recyclerNotes String?
+
+  recoveredWeight Float?
+
+  // Per-material recovery breakdown, e.g. { "plastic": 3.2, "metal": 6.1 }.
+  materialRecovery Json?
 
   createdAt DateTime @default(now())
 

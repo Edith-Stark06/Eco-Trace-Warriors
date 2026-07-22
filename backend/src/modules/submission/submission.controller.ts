@@ -2,6 +2,8 @@ import type { Request, Response } from 'express';
 import { getAuthContext } from '@modules/auth';
 import type {
   AssignCollectorInput,
+  AssignRecyclerInput,
+  CompleteRecyclingInput,
   CreateSubmissionInput,
   UpdateSubmissionInput,
 } from './submission.schemas';
@@ -20,6 +22,11 @@ export interface SubmissionController {
   startPickup(req: Request, res: Response): Promise<void>;
   completePickup(req: Request, res: Response): Promise<void>;
   collectorDashboard(req: Request, res: Response): Promise<void>;
+  // Recycler workflow (Phase 7)
+  assignRecycler(req: Request, res: Response): Promise<void>;
+  startRecycling(req: Request, res: Response): Promise<void>;
+  completeRecycling(req: Request, res: Response): Promise<void>;
+  recyclerDashboard(req: Request, res: Response): Promise<void>;
 }
 
 /** Reads the authenticated principal as the submission actor. */
@@ -95,6 +102,38 @@ export function createSubmissionController(service: SubmissionService): Submissi
 
     async collectorDashboard(req: Request, res: Response): Promise<void> {
       const result = await service.getCollectorDashboard(actorOf(req));
+      const body: SubmissionListResponse = { success: true, data: result };
+      res.status(200).json(body);
+    },
+
+    async assignRecycler(req: Request, res: Response): Promise<void> {
+      const { id } = req.params as { id: string };
+      const { recyclerId } = req.body as AssignRecyclerInput;
+      const result = await service.assignRecycler(actorOf(req), id, recyclerId);
+      const body: SubmissionResponse = { success: true, data: result };
+      res.status(200).json(body);
+    },
+
+    async startRecycling(req: Request, res: Response): Promise<void> {
+      const { id } = req.params as { id: string };
+      const result = await service.startRecycling(actorOf(req), id);
+      const body: SubmissionResponse = { success: true, data: result };
+      res.status(200).json(body);
+    },
+
+    async completeRecycling(req: Request, res: Response): Promise<void> {
+      const { id } = req.params as { id: string };
+      const result = await service.completeRecycling(
+        actorOf(req),
+        id,
+        req.body as CompleteRecyclingInput,
+      );
+      const body: SubmissionResponse = { success: true, data: result };
+      res.status(200).json(body);
+    },
+
+    async recyclerDashboard(req: Request, res: Response): Promise<void> {
+      const result = await service.getRecyclerDashboard(actorOf(req));
       const body: SubmissionListResponse = { success: true, data: result };
       res.status(200).json(body);
     },

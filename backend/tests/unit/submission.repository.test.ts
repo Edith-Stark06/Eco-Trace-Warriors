@@ -2,6 +2,7 @@ import { UserRole } from '@prisma/client';
 import type { SubmissionRepository } from '@modules/submission';
 import {
   activeCollector,
+  activeRecycler,
   createSeededSubmissionRepository,
 } from '../helpers/in-memory-submission-repository';
 
@@ -125,6 +126,132 @@ describe('submission repository — collector workflow', () => {
       const repo = buildRepo();
 
       expect(await repo.findCollectorById('ghost')).toBeNull();
+    });
+  });
+});
+
+describe('submission repository — recycler workflow', () => {
+  /** A repo seeded with both a collector and a recycler as assignment targets. */
+  function buildRecyclerRepo(): SubmissionRepository {
+    const seeded = createSeededSubmissionRepository();
+    seeded.addUser(activeCollector('collector-1'));
+    seeded.addUser(activeRecycler('recycler-1'));
+    return seeded.repository;
+  }
+
+  /** Creates a submission and drives it to COLLECTED for recycler-flow tests. */
+  async function createCollected(repo: SubmissionRepository): Promise<string> {
+    const created = await repo.create(baseInput);
+    await repo.assignCollector(created.id, 'collector-1');
+    await repo.updateStatus(created.id, 'ACCEPTED');
+    await repo.updateStatus(created.id, 'IN_PROGRESS');
+    await repo.updateStatus(created.id, 'COLLECTED');
+    return created.id;
+  }
+
+  describe('assignRecycler', () => {
+    it('sets the assigned recycler without changing status', async () => {
+      const repo = buildRecyclerRepo();
+      const id = await createCollected(repo);
+
+      const assigned = await repo.assignRecycler(id, 'recycler-1');
+
+      expect(assigned.assignedRecyclerId).toBe('recycler-1');
+      expect(assigned.status).toBe('COLLECTED');
+    });
+  });
+
+  describe('updateRecyclerProcessing', () => {
+    it('moves the row to RECYCLING and stamps the processing time', async () => {
+      const repo = buildRecyclerRepo();
+      const id = await createCollected(repo);
+      await repo.assignRecycler(id, 'recycler-1');
+      const when = new Date('2026-07-22T09:00:00.000Z');
+
+      const updated = await repo.updateRecyclerProcessing(id, when);
+
+      expect(updated.status).toBe('RECYCLING');
+      expect(updated.processingStartedAt?.toISOString()).toBe('2026-07-22T09:00:00.000Z');
+    });
+  });
+
+  describe('updateRecyclerCompletion', () => {
+    it('moves the row to RECYCLED and records the recovery outcome', async () => {
+      const repo = buildRecyclerRepo();
+      const id = await createCollected(repo);
+      await repo.assignRecycler(id, 'recycler-1');
+      const when = new Date('2026-07-23T09:00:00.000Z');
+
+      const updated = await repo.updateRecyclerCompletion(id, when, {
+        recoveredWeight: 12.5,
+        recyclerNotes: 'Separated lithium batteries.',
+        materialRecovery: { plastic: 3.2, metal: 6.1, glass: 3.2 },
+      });
+
+      expect(updated.status).toBe('RECYCLED');
+      expect(updated.recycledAt?.toISOString()).toBe('2026-07-23T09:00:00.000Z');
+      expect(updated.recoveredWeight).toBe(12.5);
+      expect(updated.recyclerNotes).toBe('Separated lithium batteries.');
+      expect(updated.materialRecovery).toEqual({ plastic: 3.2, metal: 6.1, glass: 3.2 });
+    });
+
+    it('stores null material recovery when none is provided', async () => {
+      const repo = buildRecyclerRepo();
+      const id = await createCollected(repo);
+      await repo.assignRecycler(id, 'recycler-1');
+
+      const updated = await repo.updateRecyclerCompletion(id, new Date(), { recoveredWeight: 5 });
+
+      expect(updated.recoveredWeight).toBe(5);
+      expect(updated.recyclerNotes).toBeNull();
+      expect(updated.materialRecovery).toBeNull();
+    });
+  });
+
+  describe('findRecyclerAssignments', () => {
+    it('returns only COLLECTED/RECYCLING rows for the recycler, newest first', async () => {
+      const repo = buildRecyclerRepo();
+      const collected = await createCollected(repo);
+      const recycling = await createCollected(repo);
+      const done = await createCollected(repo);
+      await repo.assignRecycler(collected, 'recycler-1');
+      await repo.assignRecycler(recycling, 'recycler-1');
+      await repo.updateRecyclerProcessing(recycling, new Date());
+      await repo.assignRecycler(done, 'recycler-1');
+      await repo.updateRecyclerProcessing(done, new Date());
+      await repo.updateRecyclerCompletion(done, new Date(), { recoveredWeight: 5 });
+
+      const rows = await repo.findRecyclerAssignments('recycler-1');
+
+      expect(rows.map((r) => r.id)).toEqual([recycling, collected]);
+    });
+
+    it('excludes submissions assigned to other recyclers', async () => {
+      const repo = buildRecyclerRepo();
+      const mine = await createCollected(repo);
+      const theirs = await createCollected(repo);
+      await repo.assignRecycler(mine, 'recycler-1');
+      await repo.assignRecycler(theirs, 'recycler-2');
+
+      const rows = await repo.findRecyclerAssignments('recycler-1');
+
+      expect(rows.map((r) => r.id)).toEqual([mine]);
+    });
+  });
+
+  describe('findRecyclerById', () => {
+    it('resolves a seeded recycler', async () => {
+      const repo = buildRecyclerRepo();
+
+      const recycler = await repo.findRecyclerById('recycler-1');
+
+      expect(recycler).toEqual({ id: 'recycler-1', role: UserRole.RECYCLER, isActive: true });
+    });
+
+    it('returns null for an unknown id', async () => {
+      const repo = buildRecyclerRepo();
+
+      expect(await repo.findRecyclerById('ghost')).toBeNull();
     });
   });
 });

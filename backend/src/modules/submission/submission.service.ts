@@ -3,17 +3,22 @@ import type { SubmissionStatus } from '@prisma/client';
 import { ConflictError, ForbiddenError, NotFoundError } from '@shared/errors';
 import type { Logger } from '@shared/logging';
 import type { SubmissionRecord, SubmissionRepository } from './submission.repository';
-import type { CreateSubmissionInput, UpdateSubmissionInput } from './submission.schemas';
+import type {
+  CompleteRecyclingInput,
+  CreateSubmissionInput,
+  UpdateSubmissionInput,
+} from './submission.schemas';
 import type { PublicSubmission } from './submission.types';
 
 /**
- * The single source of truth for the collector workflow state machine.
+ * The single source of truth for the submission workflow state machine.
  * Every status change flows through validateTransition() — transition rules
  * are never duplicated or checked inline elsewhere.
  *
- *   PENDING → ASSIGNED → ACCEPTED → IN_PROGRESS → COLLECTED
+ *   PENDING → ASSIGNED → ACCEPTED → IN_PROGRESS → COLLECTED   (collector, Phase 6)
+ *   COLLECTED → RECYCLING → RECYCLED                          (recycler, Phase 7)
  *
- * Statuses beyond COLLECTED belong to later lifecycle phases and expose no
+ * Statuses beyond RECYCLED belong to later lifecycle phases and expose no
  * onward transitions here; any move not listed is rejected.
  */
 export const allowedTransitions: Readonly<Record<SubmissionStatus, readonly SubmissionStatus[]>> = {
@@ -21,7 +26,8 @@ export const allowedTransitions: Readonly<Record<SubmissionStatus, readonly Subm
   ASSIGNED: ['ACCEPTED'],
   ACCEPTED: ['IN_PROGRESS'],
   IN_PROGRESS: ['COLLECTED'],
-  COLLECTED: [],
+  COLLECTED: ['RECYCLING'],
+  RECYCLING: ['RECYCLED'],
   RECYCLED: [],
   COMPLETED: [],
   REJECTED: [],
@@ -73,6 +79,21 @@ export interface SubmissionService {
   completePickup(actor: SubmissionActor, id: string): Promise<PublicSubmission>;
   /** The collector's active queue: ASSIGNED/ACCEPTED/IN_PROGRESS assigned to them, newest first. */
   getCollectorDashboard(actor: SubmissionActor): Promise<PublicSubmission[]>;
+
+  // --- Recycler workflow (Phase 7) ------------------------------------------
+
+  /** Admin/Government assigns a recycler to a collected submission. */
+  assignRecycler(actor: SubmissionActor, id: string, recyclerId: string): Promise<PublicSubmission>;
+  /** Assigned recycler begins processing: COLLECTED → RECYCLING. */
+  startRecycling(actor: SubmissionActor, id: string): Promise<PublicSubmission>;
+  /** Assigned recycler records the recovery outcome: RECYCLING → RECYCLED. */
+  completeRecycling(
+    actor: SubmissionActor,
+    id: string,
+    input: CompleteRecyclingInput,
+  ): Promise<PublicSubmission>;
+  /** The recycler's active queue: COLLECTED/RECYCLING assigned to them, newest first. */
+  getRecyclerDashboard(actor: SubmissionActor): Promise<PublicSubmission[]>;
 }
 
 function isAdmin(actor: SubmissionActor): boolean {
@@ -111,6 +132,11 @@ function toPublicSubmission(record: SubmissionRecord): PublicSubmission {
     assignedRecyclerId: record.assignedRecyclerId,
     pickupScheduledAt: record.pickupScheduledAt?.toISOString() ?? null,
     completedAt: record.completedAt?.toISOString() ?? null,
+    processingStartedAt: record.processingStartedAt?.toISOString() ?? null,
+    recycledAt: record.recycledAt?.toISOString() ?? null,
+    recyclerNotes: record.recyclerNotes,
+    recoveredWeight: record.recoveredWeight,
+    materialRecovery: record.materialRecovery,
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
   };
@@ -169,6 +195,23 @@ export function createSubmissionService(deps: SubmissionServiceDeps): Submission
     const updated = await deps.submissions.updateStatus(id, to);
     deps.logger.info({ submissionId: id, collectorId: actor.userId, actorId: actor.userId }, event);
     return toPublicSubmission(updated);
+  }
+
+  /**
+   * Loads a submission for a recycler workflow action and asserts the actor is
+   * the assigned recycler. As with collectors, an unknown id and someone else's
+   * submission both surface as NotFound so a recycler cannot probe for
+   * submissions that are not theirs (admin override is handled separately).
+   */
+  async function ensureRecyclerOwnsSubmission(
+    actor: SubmissionActor,
+    id: string,
+  ): Promise<SubmissionRecord> {
+    const record = await deps.submissions.findById(id);
+    if (!record || record.assignedRecyclerId !== actor.userId) {
+      throw new NotFoundError('Submission not found.');
+    }
+    return record;
   }
 
   return {
@@ -277,6 +320,76 @@ export function createSubmissionService(deps: SubmissionServiceDeps): Submission
 
     async getCollectorDashboard(actor: SubmissionActor): Promise<PublicSubmission[]> {
       const records = await deps.submissions.findCollectorAssignments(actor.userId);
+      return records.map(toPublicSubmission);
+    },
+
+    async assignRecycler(
+      actor: SubmissionActor,
+      id: string,
+      recyclerId: string,
+    ): Promise<PublicSubmission> {
+      // Only Admin/Government may assign a recycler — same rule as collectors.
+      if (!canAssign(actor)) {
+        throw new ForbiddenError('You are not allowed to assign recyclers.');
+      }
+
+      const record = await deps.submissions.findById(id);
+      if (!record) {
+        throw new NotFoundError('Submission not found.');
+      }
+
+      // The assignee must exist and actually be an active recycler.
+      const recycler = await deps.submissions.findRecyclerById(recyclerId);
+      if (!recycler || recycler.role !== UserRole.RECYCLER || !recycler.isActive) {
+        throw new NotFoundError('Recycler not found.');
+      }
+
+      // A submission may only be handed to a recycler once it has been collected.
+      // Admin may override at any status; Government must follow the strict path.
+      if (!isAdmin(actor) && record.status !== 'COLLECTED') {
+        throw new ConflictError(`Cannot assign a recycler while status is ${record.status}.`);
+      }
+
+      const updated = await deps.submissions.assignRecycler(id, recyclerId);
+      deps.logger.info(
+        { submissionId: id, recyclerId, actorId: actor.userId },
+        'Recycler assigned',
+      );
+      return toPublicSubmission(updated);
+    },
+
+    async startRecycling(actor: SubmissionActor, id: string): Promise<PublicSubmission> {
+      const record = await ensureRecyclerOwnsSubmission(actor, id);
+      validateTransition(record.status, 'RECYCLING');
+      const updated = await deps.submissions.updateRecyclerProcessing(id, now());
+      deps.logger.info(
+        { submissionId: id, recyclerId: actor.userId, actorId: actor.userId },
+        'Recycling started',
+      );
+      return toPublicSubmission(updated);
+    },
+
+    async completeRecycling(
+      actor: SubmissionActor,
+      id: string,
+      input: CompleteRecyclingInput,
+    ): Promise<PublicSubmission> {
+      const record = await ensureRecyclerOwnsSubmission(actor, id);
+      validateTransition(record.status, 'RECYCLED');
+      const updated = await deps.submissions.updateRecyclerCompletion(id, now(), {
+        recoveredWeight: input.recoveredWeight,
+        recyclerNotes: input.recyclerNotes,
+        materialRecovery: input.materialRecovery,
+      });
+      deps.logger.info(
+        { submissionId: id, recyclerId: actor.userId, actorId: actor.userId },
+        'Recycling completed',
+      );
+      return toPublicSubmission(updated);
+    },
+
+    async getRecyclerDashboard(actor: SubmissionActor): Promise<PublicSubmission[]> {
+      const records = await deps.submissions.findRecyclerAssignments(actor.userId);
       return records.map(toPublicSubmission);
     },
   };

@@ -17,6 +17,8 @@ export type {
   SubmissionRepository,
   SubmissionRecord,
   CollectorRecord,
+  RecyclerRecord,
+  RecyclerCompletionInput,
   CreateSubmissionInput as CreateSubmissionRepositoryInput,
   UpdateSubmissionInput as UpdateSubmissionRepositoryInput,
 } from './submission.repository';
@@ -25,12 +27,16 @@ export {
   updateSubmissionSchema,
   submissionIdSchema,
   assignCollectorSchema,
+  assignRecyclerSchema,
+  completeRecyclingSchema,
 } from './submission.schemas';
 export type {
   CreateSubmissionInput,
   UpdateSubmissionInput,
   SubmissionIdParams,
   AssignCollectorInput,
+  AssignRecyclerInput,
+  CompleteRecyclingInput,
 } from './submission.schemas';
 export type {
   PublicSubmission,
