@@ -7,6 +7,7 @@ import { createLogger } from '@shared/logging';
 import { createTokenService } from '@modules/auth';
 import {
   activeCollector,
+  activeRecycler,
   createInMemorySubmissionRepository,
   createSeededSubmissionRepository,
 } from '../helpers/in-memory-submission-repository';
@@ -47,6 +48,19 @@ function buildAppWithCollector(collectorId = COLLECTOR_ID): { app: Express; coll
   return { app, collectorId };
 }
 
+/**
+ * App backed by a repository preloaded with a known collector and recycler, so
+ * both assign endpoints' existence checks succeed. Used by recycler-flow tests.
+ */
+function buildAppWithRecycler(): { app: Express } {
+  const logger = createLogger(config);
+  const seeded = createSeededSubmissionRepository();
+  seeded.addUser(activeCollector(COLLECTOR_ID));
+  seeded.addUser(activeRecycler(RECYCLER_ID));
+  const app = createApp({ config, logger, submissionRepository: seeded.repository });
+  return { app };
+}
+
 const OWNER = tokenFor('user-1', UserRole.CONSUMER);
 const OTHER = tokenFor('user-2', UserRole.CONSUMER);
 const ADMIN = tokenFor('admin-1', UserRole.ADMIN);
@@ -58,6 +72,11 @@ const COLLECTOR_ID = '11111111-1111-4111-8111-111111111111';
 const OTHER_COLLECTOR_ID = '22222222-2222-4222-8222-222222222222';
 const COLLECTOR = tokenFor(COLLECTOR_ID, UserRole.COLLECTOR);
 const OTHER_COLLECTOR = tokenFor(OTHER_COLLECTOR_ID, UserRole.COLLECTOR);
+
+const RECYCLER_ID = '33333333-3333-4333-8333-333333333333';
+const OTHER_RECYCLER_ID = '44444444-4444-4444-8444-444444444444';
+const RECYCLER = tokenFor(RECYCLER_ID, UserRole.RECYCLER);
+const OTHER_RECYCLER = tokenFor(OTHER_RECYCLER_ID, UserRole.RECYCLER);
 
 const validBody = {
   category: 'Laptop',
@@ -538,6 +557,275 @@ describe('Collector workflow', () => {
       const { app } = buildAppWithCollector();
 
       const res = await request(app).get('/api/v1/collector/submissions');
+
+      expect(res.status).toBe(401);
+    });
+  });
+});
+
+describe('Recycler workflow', () => {
+  /** Creates a submission and drives it through to COLLECTED via the collector flow. */
+  async function createCollected(app: Express): Promise<string> {
+    const id = await createSubmission(app, OWNER);
+    await request(app)
+      .patch(`/api/v1/submissions/${id}/assign`)
+      .set('Authorization', auth(ADMIN))
+      .send({ collectorId: COLLECTOR_ID });
+    await request(app)
+      .patch(`/api/v1/submissions/${id}/accept`)
+      .set('Authorization', auth(COLLECTOR));
+    await request(app)
+      .patch(`/api/v1/submissions/${id}/start`)
+      .set('Authorization', auth(COLLECTOR));
+    await request(app)
+      .patch(`/api/v1/submissions/${id}/complete`)
+      .set('Authorization', auth(COLLECTOR));
+    return id;
+  }
+
+  /** Drives a submission to COLLECTED and assigns the recycler, asserting success. */
+  async function createCollectedAndAssignRecycler(app: Express): Promise<string> {
+    const id = await createCollected(app);
+    const res = await request(app)
+      .patch(`/api/v1/submissions/${id}/assign-recycler`)
+      .set('Authorization', auth(ADMIN))
+      .send({ recyclerId: RECYCLER_ID });
+    expect(res.status).toBe(200);
+    return id;
+  }
+
+  describe('PATCH /api/v1/submissions/:id/assign-recycler', () => {
+    it('lets an admin assign a recycler to a COLLECTED submission', async () => {
+      const { app } = buildAppWithRecycler();
+      const id = await createCollected(app);
+
+      const res = await request(app)
+        .patch(`/api/v1/submissions/${id}/assign-recycler`)
+        .set('Authorization', auth(ADMIN))
+        .send({ recyclerId: RECYCLER_ID });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.assignedRecyclerId).toBe(RECYCLER_ID);
+      // Assignment does not itself advance the lifecycle.
+      expect(res.body.data.status).toBe('COLLECTED');
+    });
+
+    it('lets a government actor assign a recycler', async () => {
+      const { app } = buildAppWithRecycler();
+      const id = await createCollected(app);
+
+      const res = await request(app)
+        .patch(`/api/v1/submissions/${id}/assign-recycler`)
+        .set('Authorization', auth(GOVERNMENT))
+        .send({ recyclerId: RECYCLER_ID });
+
+      expect(res.status).toBe(200);
+    });
+
+    it('returns 409 when government assigns before the submission is COLLECTED', async () => {
+      const { app } = buildAppWithRecycler();
+      const id = await createSubmission(app, OWNER);
+
+      const res = await request(app)
+        .patch(`/api/v1/submissions/${id}/assign-recycler`)
+        .set('Authorization', auth(GOVERNMENT))
+        .send({ recyclerId: RECYCLER_ID });
+
+      expect(res.status).toBe(409);
+      expect(res.body.error.code).toBe('CONFLICT');
+    });
+
+    it('lets an admin override and assign a recycler before COLLECTED', async () => {
+      const { app } = buildAppWithRecycler();
+      const id = await createSubmission(app, OWNER);
+
+      const res = await request(app)
+        .patch(`/api/v1/submissions/${id}/assign-recycler`)
+        .set('Authorization', auth(ADMIN))
+        .send({ recyclerId: RECYCLER_ID });
+
+      expect(res.status).toBe(200);
+    });
+
+    it('returns 403 when a recycler tries to assign (no self-assign)', async () => {
+      const { app } = buildAppWithRecycler();
+      const id = await createCollected(app);
+
+      const res = await request(app)
+        .patch(`/api/v1/submissions/${id}/assign-recycler`)
+        .set('Authorization', auth(RECYCLER))
+        .send({ recyclerId: RECYCLER_ID });
+
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe('FORBIDDEN');
+    });
+
+    it('returns 404 when the recycler id is unknown', async () => {
+      const { app } = buildAppWithRecycler();
+      const id = await createCollected(app);
+
+      const res = await request(app)
+        .patch(`/api/v1/submissions/${id}/assign-recycler`)
+        .set('Authorization', auth(ADMIN))
+        .send({ recyclerId: '99999999-9999-4999-8999-999999999999' });
+
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe('NOT_FOUND');
+    });
+
+    it('returns 400 for a non-uuid recyclerId', async () => {
+      const { app } = buildAppWithRecycler();
+      const id = await createCollected(app);
+
+      const res = await request(app)
+        .patch(`/api/v1/submissions/${id}/assign-recycler`)
+        .set('Authorization', auth(ADMIN))
+        .send({ recyclerId: 'not-a-uuid' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    });
+  });
+
+  describe('full lifecycle: start → complete', () => {
+    it('drives a collected submission through recycling to RECYCLED', async () => {
+      const { app } = buildAppWithRecycler();
+      const id = await createCollectedAndAssignRecycler(app);
+
+      const started = await request(app)
+        .patch(`/api/v1/submissions/${id}/recycle/start`)
+        .set('Authorization', auth(RECYCLER));
+      expect(started.status).toBe(200);
+      expect(started.body.data.status).toBe('RECYCLING');
+      expect(started.body.data.processingStartedAt).not.toBeNull();
+
+      const completed = await request(app)
+        .patch(`/api/v1/submissions/${id}/recycle/complete`)
+        .set('Authorization', auth(RECYCLER))
+        .send({
+          recoveredWeight: 12.5,
+          recyclerNotes: 'Separated lithium batteries.',
+          materialRecovery: { plastic: 3.2, metal: 6.1, glass: 3.2 },
+        });
+      expect(completed.status).toBe(200);
+      expect(completed.body.data.status).toBe('RECYCLED');
+      expect(completed.body.data.recoveredWeight).toBe(12.5);
+      expect(completed.body.data.materialRecovery).toEqual({
+        plastic: 3.2,
+        metal: 6.1,
+        glass: 3.2,
+      });
+      expect(completed.body.data.recycledAt).not.toBeNull();
+    });
+  });
+
+  describe('recycle guards', () => {
+    it('returns 404 when a different recycler starts (not the assignee)', async () => {
+      const { app } = buildAppWithRecycler();
+      const id = await createCollectedAndAssignRecycler(app);
+
+      const res = await request(app)
+        .patch(`/api/v1/submissions/${id}/recycle/start`)
+        .set('Authorization', auth(OTHER_RECYCLER));
+
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe('NOT_FOUND');
+    });
+
+    it('returns 409 when completing before starting (wrong status)', async () => {
+      const { app } = buildAppWithRecycler();
+      const id = await createCollectedAndAssignRecycler(app);
+
+      const res = await request(app)
+        .patch(`/api/v1/submissions/${id}/recycle/complete`)
+        .set('Authorization', auth(RECYCLER))
+        .send({ recoveredWeight: 5 });
+
+      expect(res.status).toBe(409);
+      expect(res.body.error.code).toBe('CONFLICT');
+    });
+
+    it('returns 400 when completing with a non-positive recoveredWeight', async () => {
+      const { app } = buildAppWithRecycler();
+      const id = await createCollectedAndAssignRecycler(app);
+      await request(app)
+        .patch(`/api/v1/submissions/${id}/recycle/start`)
+        .set('Authorization', auth(RECYCLER));
+
+      const res = await request(app)
+        .patch(`/api/v1/submissions/${id}/recycle/complete`)
+        .set('Authorization', auth(RECYCLER))
+        .send({ recoveredWeight: 0 });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('returns 403 when a consumer hits a recycler-only transition', async () => {
+      const { app } = buildAppWithRecycler();
+      const id = await createCollectedAndAssignRecycler(app);
+
+      const res = await request(app)
+        .patch(`/api/v1/submissions/${id}/recycle/start`)
+        .set('Authorization', auth(OWNER));
+
+      expect(res.status).toBe(403);
+    });
+  });
+
+  describe('GET /api/v1/recycler/submissions', () => {
+    it('returns COLLECTED and RECYCLING assignments for the recycler, newest first', async () => {
+      const { app } = buildAppWithRecycler();
+      const first = await createCollectedAndAssignRecycler(app);
+      const second = await createCollectedAndAssignRecycler(app);
+      // Advance the second into RECYCLING; both should still appear.
+      await request(app)
+        .patch(`/api/v1/submissions/${second}/recycle/start`)
+        .set('Authorization', auth(RECYCLER));
+
+      const res = await request(app)
+        .get('/api/v1/recycler/submissions')
+        .set('Authorization', auth(RECYCLER));
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveLength(2);
+      expect(res.body.data[0].id).toBe(second);
+      expect(res.body.data[1].id).toBe(first);
+    });
+
+    it('excludes RECYCLED submissions from the dashboard', async () => {
+      const { app } = buildAppWithRecycler();
+      const id = await createCollectedAndAssignRecycler(app);
+      await request(app)
+        .patch(`/api/v1/submissions/${id}/recycle/start`)
+        .set('Authorization', auth(RECYCLER));
+      await request(app)
+        .patch(`/api/v1/submissions/${id}/recycle/complete`)
+        .set('Authorization', auth(RECYCLER))
+        .send({ recoveredWeight: 5 });
+
+      const res = await request(app)
+        .get('/api/v1/recycler/submissions')
+        .set('Authorization', auth(RECYCLER));
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveLength(0);
+    });
+
+    it('returns 403 for a non-recycler', async () => {
+      const { app } = buildAppWithRecycler();
+
+      const res = await request(app)
+        .get('/api/v1/recycler/submissions')
+        .set('Authorization', auth(COLLECTOR));
+
+      expect(res.status).toBe(403);
+    });
+
+    it('returns 401 without a token', async () => {
+      const { app } = buildAppWithRecycler();
+
+      const res = await request(app).get('/api/v1/recycler/submissions');
 
       expect(res.status).toBe(401);
     });

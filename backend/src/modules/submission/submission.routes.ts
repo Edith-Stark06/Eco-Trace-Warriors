@@ -4,6 +4,8 @@ import { UserRole } from '@prisma/client';
 import { validate } from '@shared/middleware';
 import {
   assignCollectorSchema,
+  assignRecyclerSchema,
+  completeRecyclingSchema,
   createSubmissionSchema,
   submissionIdSchema,
   updateSubmissionSchema,
@@ -127,6 +129,53 @@ export function createSubmissionRouter(
     authorize(UserRole.COLLECTOR),
     (req, res, next) => {
       controller.collectorDashboard(req, res).catch(next);
+    },
+  );
+
+  // --- Recycler workflow (Phase 7) ------------------------------------------
+  // Recycling continues the lifecycle after COLLECTED. Route guards enforce the
+  // coarse role; the service enforces recycler ownership + transition legality.
+
+  // Admin / Government assign a recycler to a collected submission.
+  router.patch(
+    '/submissions/:id/assign-recycler',
+    authenticate,
+    authorize(UserRole.ADMIN, UserRole.GOVERNMENT),
+    validate({ params: submissionIdSchema, body: assignRecyclerSchema }),
+    (req, res, next) => {
+      controller.assignRecycler(req, res).catch(next);
+    },
+  );
+
+  // Recycler starts processing: COLLECTED → RECYCLING.
+  router.patch(
+    '/submissions/:id/recycle/start',
+    authenticate,
+    authorize(UserRole.RECYCLER),
+    validate({ params: submissionIdSchema }),
+    (req, res, next) => {
+      controller.startRecycling(req, res).catch(next);
+    },
+  );
+
+  // Recycler completes processing and records recovery: RECYCLING → RECYCLED.
+  router.patch(
+    '/submissions/:id/recycle/complete',
+    authenticate,
+    authorize(UserRole.RECYCLER),
+    validate({ params: submissionIdSchema, body: completeRecyclingSchema }),
+    (req, res, next) => {
+      controller.completeRecycling(req, res).catch(next);
+    },
+  );
+
+  // Recycler dashboard: active assignments for the authenticated recycler.
+  router.get(
+    '/recycler/submissions',
+    authenticate,
+    authorize(UserRole.RECYCLER),
+    (req, res, next) => {
+      controller.recyclerDashboard(req, res).catch(next);
     },
   );
 

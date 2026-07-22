@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import type { PrismaClient, SubmissionStatus, UserRole } from '@prisma/client';
 
 /**
@@ -40,6 +41,24 @@ export interface CollectorRecord {
   readonly isActive: boolean;
 }
 
+/**
+ * Minimal user projection for validating a recycler assignment target. Same
+ * shape as CollectorRecord; kept as a distinct name so the recycler workflow
+ * reads clearly and can diverge later without touching collector code.
+ */
+export type RecyclerRecord = CollectorRecord;
+
+/**
+ * Fields written when a recycler completes processing. recoveredWeight and
+ * notes are validated in the service; materialRecovery is a free-form
+ * per-material breakdown persisted as JSON.
+ */
+export interface RecyclerCompletionInput {
+  readonly recoveredWeight: number;
+  readonly recyclerNotes?: string | undefined;
+  readonly materialRecovery?: Prisma.InputJsonValue | undefined;
+}
+
 /** Submission row as read by the module. */
 export interface SubmissionRecord {
   readonly id: string;
@@ -56,6 +75,11 @@ export interface SubmissionRecord {
   readonly assignedRecyclerId: string | null;
   readonly pickupScheduledAt: Date | null;
   readonly completedAt: Date | null;
+  readonly processingStartedAt: Date | null;
+  readonly recycledAt: Date | null;
+  readonly recyclerNotes: string | null;
+  readonly recoveredWeight: number | null;
+  readonly materialRecovery: Prisma.JsonValue | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -84,6 +108,23 @@ export interface SubmissionRepository {
   findCollectorAssignments(collectorId: string): Promise<SubmissionRecord[]>;
   /** Loads a user by id for assignment validation, or null when absent. */
   findCollectorById(collectorId: string): Promise<CollectorRecord | null>;
+
+  // --- Recycler workflow (Phase 7) ------------------------------------------
+
+  /** Sets the assigned recycler on a submission (status is unchanged). */
+  assignRecycler(id: string, recyclerId: string): Promise<SubmissionRecord>;
+  /** Every submission assigned to a recycler, newest first. */
+  findRecyclerAssignments(recyclerId: string): Promise<SubmissionRecord[]>;
+  /** Loads a user by id for recycler-assignment validation, or null when absent. */
+  findRecyclerById(recyclerId: string): Promise<RecyclerRecord | null>;
+  /** Moves a submission to RECYCLING and stamps when processing began. */
+  updateRecyclerProcessing(id: string, processingStartedAt: Date): Promise<SubmissionRecord>;
+  /** Moves a submission to RECYCLED and records the recovery outcome. */
+  updateRecyclerCompletion(
+    id: string,
+    recycledAt: Date,
+    input: RecyclerCompletionInput,
+  ): Promise<SubmissionRecord>;
 }
 
 /** Statuses shown on the collector dashboard — work in flight, not yet collected. */
@@ -92,6 +133,9 @@ const ACTIVE_COLLECTOR_STATUSES: readonly SubmissionStatus[] = [
   'ACCEPTED',
   'IN_PROGRESS',
 ];
+
+/** Statuses shown on the recycler dashboard — awaiting or undergoing recycling. */
+const ACTIVE_RECYCLER_STATUSES: readonly SubmissionStatus[] = ['COLLECTED', 'RECYCLING'];
 
 const submissionSelect = {
   id: true,
@@ -108,6 +152,11 @@ const submissionSelect = {
   assignedRecyclerId: true,
   pickupScheduledAt: true,
   completedAt: true,
+  processingStartedAt: true,
+  recycledAt: true,
+  recyclerNotes: true,
+  recoveredWeight: true,
+  materialRecovery: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -228,6 +277,63 @@ export function createSubmissionRepository(deps: {
         select: { id: true, isActive: true, role: { select: { name: true } } },
       });
       return user ? { id: user.id, role: user.role.name, isActive: user.isActive } : null;
+    },
+
+    async assignRecycler(id: string, recyclerId: string): Promise<SubmissionRecord> {
+      return prisma.submission.update({
+        where: { id },
+        data: { assignedRecyclerId: recyclerId },
+        select: submissionSelect,
+      });
+    },
+
+    async findRecyclerAssignments(recyclerId: string): Promise<SubmissionRecord[]> {
+      return prisma.submission.findMany({
+        where: {
+          assignedRecyclerId: recyclerId,
+          status: { in: [...ACTIVE_RECYCLER_STATUSES] },
+        },
+        orderBy: { createdAt: 'desc' },
+        select: submissionSelect,
+      });
+    },
+
+    async findRecyclerById(recyclerId: string): Promise<RecyclerRecord | null> {
+      const user = await prisma.user.findUnique({
+        where: { id: recyclerId },
+        select: { id: true, isActive: true, role: { select: { name: true } } },
+      });
+      return user ? { id: user.id, role: user.role.name, isActive: user.isActive } : null;
+    },
+
+    async updateRecyclerProcessing(
+      id: string,
+      processingStartedAt: Date,
+    ): Promise<SubmissionRecord> {
+      return prisma.submission.update({
+        where: { id },
+        data: { status: 'RECYCLING', processingStartedAt },
+        select: submissionSelect,
+      });
+    },
+
+    async updateRecyclerCompletion(
+      id: string,
+      recycledAt: Date,
+      input: RecyclerCompletionInput,
+    ): Promise<SubmissionRecord> {
+      return prisma.submission.update({
+        where: { id },
+        data: {
+          status: 'RECYCLED',
+          recycledAt,
+          recoveredWeight: input.recoveredWeight,
+          recyclerNotes: input.recyclerNotes ?? null,
+          // Prisma requires JsonNull sentinel to write SQL NULL into a Json column.
+          materialRecovery: input.materialRecovery ?? Prisma.JsonNull,
+        },
+        select: submissionSelect,
+      });
     },
   };
 }

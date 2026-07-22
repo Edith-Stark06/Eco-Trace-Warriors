@@ -3,6 +3,8 @@ import { UserRole } from '@prisma/client';
 import type {
   CollectorRecord,
   CreateSubmissionRepositoryInput,
+  RecyclerCompletionInput,
+  RecyclerRecord,
   SubmissionRecord,
   SubmissionRepository,
   UpdateSubmissionRepositoryInput,
@@ -30,6 +32,9 @@ const ACTIVE_COLLECTOR_STATUSES: readonly SubmissionRecord['status'][] = [
   'ACCEPTED',
   'IN_PROGRESS',
 ];
+
+/** Active statuses surfaced on the recycler dashboard — mirrors the Prisma repo. */
+const ACTIVE_RECYCLER_STATUSES: readonly SubmissionRecord['status'][] = ['COLLECTED', 'RECYCLING'];
 
 /**
  * Variant that also exposes a user store so tests can register collectors that
@@ -74,6 +79,11 @@ export function createSeededSubmissionRepository(): SeededSubmissionRepository {
         assignedRecyclerId: null,
         pickupScheduledAt: null,
         completedAt: null,
+        processingStartedAt: null,
+        recycledAt: null,
+        recyclerNotes: null,
+        recoveredWeight: null,
+        materialRecovery: null,
         createdAt: now,
         updatedAt: now,
       };
@@ -167,6 +177,59 @@ export function createSeededSubmissionRepository(): SeededSubmissionRepository {
     findCollectorById(collectorId: string): Promise<CollectorRecord | null> {
       return Promise.resolve(usersById.get(collectorId) ?? null);
     },
+
+    assignRecycler(id: string, recyclerId: string): Promise<SubmissionRecord> {
+      const updated: SubmissionRecord = {
+        ...mustGet(id),
+        assignedRecyclerId: recyclerId,
+        updatedAt: nextDate(),
+      };
+      byId.set(id, updated);
+      return Promise.resolve(updated);
+    },
+
+    findRecyclerAssignments(recyclerId: string): Promise<SubmissionRecord[]> {
+      const rows = [...byId.values()]
+        .filter(
+          (r) => r.assignedRecyclerId === recyclerId && ACTIVE_RECYCLER_STATUSES.includes(r.status),
+        )
+        .sort(byCreatedAtDesc);
+      return Promise.resolve(rows);
+    },
+
+    findRecyclerById(recyclerId: string): Promise<RecyclerRecord | null> {
+      return Promise.resolve(usersById.get(recyclerId) ?? null);
+    },
+
+    updateRecyclerProcessing(id: string, processingStartedAt: Date): Promise<SubmissionRecord> {
+      const updated: SubmissionRecord = {
+        ...mustGet(id),
+        status: 'RECYCLING',
+        processingStartedAt,
+        updatedAt: nextDate(),
+      };
+      byId.set(id, updated);
+      return Promise.resolve(updated);
+    },
+
+    updateRecyclerCompletion(
+      id: string,
+      recycledAt: Date,
+      input: RecyclerCompletionInput,
+    ): Promise<SubmissionRecord> {
+      const updated: SubmissionRecord = {
+        ...mustGet(id),
+        status: 'RECYCLED',
+        recycledAt,
+        recoveredWeight: input.recoveredWeight,
+        recyclerNotes: input.recyclerNotes ?? null,
+        // InputJsonValue (write shape) widens to JsonValue for the stored record.
+        materialRecovery: (input.materialRecovery ?? null) as SubmissionRecord['materialRecovery'],
+        updatedAt: nextDate(),
+      };
+      byId.set(id, updated);
+      return Promise.resolve(updated);
+    },
   };
 
   return {
@@ -180,4 +243,9 @@ export function createSeededSubmissionRepository(): SeededSubmissionRepository {
 /** Convenience: a CollectorRecord for an active COLLECTOR with the given id. */
 export function activeCollector(id: string): CollectorRecord {
   return { id, role: UserRole.COLLECTOR, isActive: true };
+}
+
+/** Convenience: a RecyclerRecord for an active RECYCLER with the given id. */
+export function activeRecycler(id: string): RecyclerRecord {
+  return { id, role: UserRole.RECYCLER, isActive: true };
 }

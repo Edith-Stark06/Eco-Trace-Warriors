@@ -1,4 +1,4 @@
-import type { SubmissionStatus } from '@prisma/client';
+import type { Prisma, SubmissionStatus } from '@prisma/client';
 import type { SuccessResponse } from '../../types';
 
 /**
@@ -20,6 +20,11 @@ export interface PublicSubmission {
   readonly assignedRecyclerId: string | null;
   readonly pickupScheduledAt: string | null;
   readonly completedAt: string | null;
+  readonly processingStartedAt: string | null;
+  readonly recycledAt: string | null;
+  readonly recyclerNotes: string | null;
+  readonly recoveredWeight: number | null;
+  readonly materialRecovery: Prisma.JsonValue | null;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
