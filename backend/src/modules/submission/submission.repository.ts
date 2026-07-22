@@ -1,4 +1,4 @@
-import type { PrismaClient, SubmissionStatus } from '@prisma/client';
+import type { PrismaClient, SubmissionStatus, UserRole } from '@prisma/client';
 
 /**
  * Repositories are the only place Prisma is used for the submission module.
@@ -27,6 +27,17 @@ export interface UpdateSubmissionInput {
   readonly latitude?: number | undefined;
   readonly longitude?: number | undefined;
   readonly imageUrls?: readonly string[] | undefined;
+}
+
+/**
+ * Minimal user projection used to validate an assignment target. The role name
+ * is joined in so the service can confirm the assignee is actually a COLLECTOR
+ * without importing the auth module's repository (modules stay decoupled).
+ */
+export interface CollectorRecord {
+  readonly id: string;
+  readonly role: UserRole;
+  readonly isActive: boolean;
 }
 
 /** Submission row as read by the module. */
@@ -58,7 +69,29 @@ export interface SubmissionRepository {
   findAll(): Promise<SubmissionRecord[]>;
   update(id: string, input: UpdateSubmissionInput): Promise<SubmissionRecord>;
   delete(id: string): Promise<void>;
+
+  // --- Collector workflow (Phase 6) -----------------------------------------
+
+  /** Sets the assigned collector and moves the row to ASSIGNED in one write. */
+  assignCollector(id: string, collectorId: string): Promise<SubmissionRecord>;
+  /** Writes a new lifecycle status. Transition legality is enforced in the service. */
+  updateStatus(id: string, status: SubmissionStatus): Promise<SubmissionRecord>;
+  /** Stamps the scheduled pickup time (set when a collector starts a pickup). */
+  updatePickupSchedule(id: string, pickupScheduledAt: Date): Promise<SubmissionRecord>;
+  /** Every submission assigned to a collector, newest first. */
+  findByCollector(collectorId: string): Promise<SubmissionRecord[]>;
+  /** Active assignments for a collector's dashboard (ASSIGNED/ACCEPTED/IN_PROGRESS), newest first. */
+  findCollectorAssignments(collectorId: string): Promise<SubmissionRecord[]>;
+  /** Loads a user by id for assignment validation, or null when absent. */
+  findCollectorById(collectorId: string): Promise<CollectorRecord | null>;
 }
+
+/** Statuses shown on the collector dashboard — work in flight, not yet collected. */
+const ACTIVE_COLLECTOR_STATUSES: readonly SubmissionStatus[] = [
+  'ASSIGNED',
+  'ACCEPTED',
+  'IN_PROGRESS',
+];
 
 const submissionSelect = {
   id: true,
@@ -144,6 +177,57 @@ export function createSubmissionRepository(deps: {
 
     async delete(id: string): Promise<void> {
       await prisma.submission.delete({ where: { id } });
+    },
+
+    async assignCollector(id: string, collectorId: string): Promise<SubmissionRecord> {
+      return prisma.submission.update({
+        where: { id },
+        data: { assignedCollectorId: collectorId, status: 'ASSIGNED' },
+        select: submissionSelect,
+      });
+    },
+
+    async updateStatus(id: string, status: SubmissionStatus): Promise<SubmissionRecord> {
+      return prisma.submission.update({
+        where: { id },
+        data: { status },
+        select: submissionSelect,
+      });
+    },
+
+    async updatePickupSchedule(id: string, pickupScheduledAt: Date): Promise<SubmissionRecord> {
+      return prisma.submission.update({
+        where: { id },
+        data: { pickupScheduledAt },
+        select: submissionSelect,
+      });
+    },
+
+    async findByCollector(collectorId: string): Promise<SubmissionRecord[]> {
+      return prisma.submission.findMany({
+        where: { assignedCollectorId: collectorId },
+        orderBy: { createdAt: 'desc' },
+        select: submissionSelect,
+      });
+    },
+
+    async findCollectorAssignments(collectorId: string): Promise<SubmissionRecord[]> {
+      return prisma.submission.findMany({
+        where: {
+          assignedCollectorId: collectorId,
+          status: { in: [...ACTIVE_COLLECTOR_STATUSES] },
+        },
+        orderBy: { createdAt: 'desc' },
+        select: submissionSelect,
+      });
+    },
+
+    async findCollectorById(collectorId: string): Promise<CollectorRecord | null> {
+      const user = await prisma.user.findUnique({
+        where: { id: collectorId },
+        select: { id: true, isActive: true, role: { select: { name: true } } },
+      });
+      return user ? { id: user.id, role: user.role.name, isActive: user.isActive } : null;
     },
   };
 }

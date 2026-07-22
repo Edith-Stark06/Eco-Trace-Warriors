@@ -1,6 +1,10 @@
 import type { Request, Response } from 'express';
 import { getAuthContext } from '@modules/auth';
-import type { CreateSubmissionInput, UpdateSubmissionInput } from './submission.schemas';
+import type {
+  AssignCollectorInput,
+  CreateSubmissionInput,
+  UpdateSubmissionInput,
+} from './submission.schemas';
 import type { SubmissionActor, SubmissionService } from './submission.service';
 import type { SubmissionListResponse, SubmissionResponse } from './submission.types';
 
@@ -10,6 +14,12 @@ export interface SubmissionController {
   getById(req: Request, res: Response): Promise<void>;
   update(req: Request, res: Response): Promise<void>;
   delete(req: Request, res: Response): Promise<void>;
+  // Collector workflow (Phase 6)
+  assignCollector(req: Request, res: Response): Promise<void>;
+  acceptAssignment(req: Request, res: Response): Promise<void>;
+  startPickup(req: Request, res: Response): Promise<void>;
+  completePickup(req: Request, res: Response): Promise<void>;
+  collectorDashboard(req: Request, res: Response): Promise<void>;
 }
 
 /** Reads the authenticated principal as the submission actor. */
@@ -52,6 +62,41 @@ export function createSubmissionController(service: SubmissionService): Submissi
       const { id } = req.params as { id: string };
       await service.delete(actorOf(req), id);
       res.status(204).send();
+    },
+
+    async assignCollector(req: Request, res: Response): Promise<void> {
+      const { id } = req.params as { id: string };
+      const { collectorId } = req.body as AssignCollectorInput;
+      const result = await service.assignCollector(actorOf(req), id, collectorId);
+      const body: SubmissionResponse = { success: true, data: result };
+      res.status(200).json(body);
+    },
+
+    async acceptAssignment(req: Request, res: Response): Promise<void> {
+      const { id } = req.params as { id: string };
+      const result = await service.acceptAssignment(actorOf(req), id);
+      const body: SubmissionResponse = { success: true, data: result };
+      res.status(200).json(body);
+    },
+
+    async startPickup(req: Request, res: Response): Promise<void> {
+      const { id } = req.params as { id: string };
+      const result = await service.startPickup(actorOf(req), id);
+      const body: SubmissionResponse = { success: true, data: result };
+      res.status(200).json(body);
+    },
+
+    async completePickup(req: Request, res: Response): Promise<void> {
+      const { id } = req.params as { id: string };
+      const result = await service.completePickup(actorOf(req), id);
+      const body: SubmissionResponse = { success: true, data: result };
+      res.status(200).json(body);
+    },
+
+    async collectorDashboard(req: Request, res: Response): Promise<void> {
+      const result = await service.getCollectorDashboard(actorOf(req));
+      const body: SubmissionListResponse = { success: true, data: result };
+      res.status(200).json(body);
     },
   };
 }

@@ -1,18 +1,28 @@
 /* eslint-disable @typescript-eslint/unbound-method -- jest.fn() mocks carry no `this`; referencing them in expect() is safe */
 import { UserRole } from '@prisma/client';
-import { createSubmissionService } from '@modules/submission';
+import { createSubmissionService, validateTransition } from '@modules/submission';
 import type {
+  CollectorRecord,
   SubmissionActor,
   SubmissionRecord,
   SubmissionRepository,
   SubmissionServiceDeps,
 } from '@modules/submission';
-import { ForbiddenError, NotFoundError } from '@shared/errors';
+import { ConflictError, ForbiddenError, NotFoundError } from '@shared/errors';
 import { createLogger } from '@shared/logging';
 
 const OWNER: SubmissionActor = { userId: 'user-1', role: UserRole.CONSUMER };
 const OTHER: SubmissionActor = { userId: 'user-2', role: UserRole.CONSUMER };
 const ADMIN: SubmissionActor = { userId: 'admin-1', role: UserRole.ADMIN };
+const GOVERNMENT: SubmissionActor = { userId: 'gov-1', role: UserRole.GOVERNMENT };
+const COLLECTOR: SubmissionActor = { userId: 'collector-1', role: UserRole.COLLECTOR };
+const OTHER_COLLECTOR: SubmissionActor = { userId: 'collector-2', role: UserRole.COLLECTOR };
+
+const activeCollectorRecord: CollectorRecord = {
+  id: 'collector-1',
+  role: UserRole.COLLECTOR,
+  isActive: true,
+};
 
 const pendingRecord: SubmissionRecord = {
   id: 'sub-1',
@@ -40,6 +50,20 @@ const assignedRecord: SubmissionRecord = {
   assignedCollectorId: 'collector-1',
 };
 
+const acceptedRecord: SubmissionRecord = {
+  ...pendingRecord,
+  id: 'sub-3',
+  status: 'ACCEPTED',
+  assignedCollectorId: 'collector-1',
+};
+
+const inProgressRecord: SubmissionRecord = {
+  ...pendingRecord,
+  id: 'sub-4',
+  status: 'IN_PROGRESS',
+  assignedCollectorId: 'collector-1',
+};
+
 function buildRepo(
   overrides: Partial<SubmissionRepository> = {},
 ): jest.Mocked<SubmissionRepository> {
@@ -50,6 +74,12 @@ function buildRepo(
     findAll: jest.fn().mockResolvedValue([pendingRecord, assignedRecord]),
     update: jest.fn().mockResolvedValue(pendingRecord),
     delete: jest.fn().mockResolvedValue(undefined),
+    assignCollector: jest.fn().mockResolvedValue(assignedRecord),
+    updateStatus: jest.fn().mockResolvedValue(acceptedRecord),
+    updatePickupSchedule: jest.fn().mockResolvedValue(inProgressRecord),
+    findByCollector: jest.fn().mockResolvedValue([assignedRecord]),
+    findCollectorAssignments: jest.fn().mockResolvedValue([assignedRecord]),
+    findCollectorById: jest.fn().mockResolvedValue(activeCollectorRecord),
     ...overrides,
   } as jest.Mocked<SubmissionRepository>;
 }
@@ -226,6 +256,246 @@ describe('createSubmissionService', () => {
       const { service } = buildService(buildRepo({ findById: jest.fn().mockResolvedValue(null) }));
 
       await expect(service.delete(OWNER, 'missing')).rejects.toBeInstanceOf(NotFoundError);
+    });
+  });
+});
+
+describe('validateTransition', () => {
+  it('permits each legal step of the collector workflow', () => {
+    expect(() => validateTransition('PENDING', 'ASSIGNED')).not.toThrow();
+    expect(() => validateTransition('ASSIGNED', 'ACCEPTED')).not.toThrow();
+    expect(() => validateTransition('ACCEPTED', 'IN_PROGRESS')).not.toThrow();
+    expect(() => validateTransition('IN_PROGRESS', 'COLLECTED')).not.toThrow();
+  });
+
+  it('rejects skipping a step', () => {
+    expect(() => validateTransition('PENDING', 'ACCEPTED')).toThrow(ConflictError);
+    expect(() => validateTransition('ASSIGNED', 'IN_PROGRESS')).toThrow(ConflictError);
+    expect(() => validateTransition('PENDING', 'COLLECTED')).toThrow(ConflictError);
+  });
+
+  it('rejects moving backwards', () => {
+    expect(() => validateTransition('ACCEPTED', 'ASSIGNED')).toThrow(ConflictError);
+    expect(() => validateTransition('COLLECTED', 'IN_PROGRESS')).toThrow(ConflictError);
+  });
+
+  it('rejects any transition out of a terminal status', () => {
+    expect(() => validateTransition('COLLECTED', 'COLLECTED')).toThrow(ConflictError);
+    expect(() => validateTransition('REJECTED', 'ASSIGNED')).toThrow(ConflictError);
+  });
+});
+
+describe('createSubmissionService — collector workflow', () => {
+  describe('assignCollector', () => {
+    it('assigns a collector to a PENDING submission for an admin', async () => {
+      const { service, repo } = buildService();
+
+      const result = await service.assignCollector(ADMIN, 'sub-1', 'collector-1');
+
+      expect(repo.findCollectorById).toHaveBeenCalledWith('collector-1');
+      expect(repo.assignCollector).toHaveBeenCalledWith('sub-1', 'collector-1');
+      expect(result.status).toBe('ASSIGNED');
+    });
+
+    it('assigns a collector for a government actor', async () => {
+      const { service, repo } = buildService();
+
+      await service.assignCollector(GOVERNMENT, 'sub-1', 'collector-1');
+
+      expect(repo.assignCollector).toHaveBeenCalledWith('sub-1', 'collector-1');
+    });
+
+    it('forbids a collector from assigning (cannot self-assign)', async () => {
+      const { service, repo } = buildService();
+
+      await expect(
+        service.assignCollector(COLLECTOR, 'sub-1', 'collector-1'),
+      ).rejects.toBeInstanceOf(ForbiddenError);
+      expect(repo.assignCollector).not.toHaveBeenCalled();
+    });
+
+    it('forbids a consumer from assigning', async () => {
+      const { service } = buildService();
+
+      await expect(service.assignCollector(OWNER, 'sub-1', 'collector-1')).rejects.toBeInstanceOf(
+        ForbiddenError,
+      );
+    });
+
+    it('throws NotFoundError when the submission does not exist', async () => {
+      const { service } = buildService(buildRepo({ findById: jest.fn().mockResolvedValue(null) }));
+
+      await expect(service.assignCollector(ADMIN, 'missing', 'collector-1')).rejects.toBeInstanceOf(
+        NotFoundError,
+      );
+    });
+
+    it('throws NotFoundError when the collector id is unknown', async () => {
+      const { service, repo } = buildService(
+        buildRepo({ findCollectorById: jest.fn().mockResolvedValue(null) }),
+      );
+
+      await expect(service.assignCollector(ADMIN, 'sub-1', 'ghost')).rejects.toBeInstanceOf(
+        NotFoundError,
+      );
+      expect(repo.assignCollector).not.toHaveBeenCalled();
+    });
+
+    it('throws NotFoundError when the target user is not a collector', async () => {
+      const { service } = buildService(
+        buildRepo({
+          findCollectorById: jest
+            .fn()
+            .mockResolvedValue({ id: 'user-9', role: UserRole.RECYCLER, isActive: true }),
+        }),
+      );
+
+      await expect(service.assignCollector(ADMIN, 'sub-1', 'user-9')).rejects.toBeInstanceOf(
+        NotFoundError,
+      );
+    });
+
+    it('rejects an inactive collector', async () => {
+      const { service } = buildService(
+        buildRepo({
+          findCollectorById: jest
+            .fn()
+            .mockResolvedValue({ id: 'collector-1', role: UserRole.COLLECTOR, isActive: false }),
+        }),
+      );
+
+      await expect(service.assignCollector(ADMIN, 'sub-1', 'collector-1')).rejects.toBeInstanceOf(
+        NotFoundError,
+      );
+    });
+
+    it('lets an admin override and re-assign an already ASSIGNED submission', async () => {
+      const { service, repo } = buildService(
+        buildRepo({ findById: jest.fn().mockResolvedValue(assignedRecord) }),
+      );
+
+      await service.assignCollector(ADMIN, 'sub-2', 'collector-1');
+
+      expect(repo.assignCollector).toHaveBeenCalledWith('sub-2', 'collector-1');
+    });
+
+    it('forbids a government actor from re-assigning outside PENDING (no override)', async () => {
+      const { service, repo } = buildService(
+        buildRepo({ findById: jest.fn().mockResolvedValue(assignedRecord) }),
+      );
+
+      await expect(
+        service.assignCollector(GOVERNMENT, 'sub-2', 'collector-1'),
+      ).rejects.toBeInstanceOf(ConflictError);
+      expect(repo.assignCollector).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('acceptAssignment', () => {
+    it('moves ASSIGNED → ACCEPTED for the assigned collector', async () => {
+      const { service, repo } = buildService(
+        buildRepo({ findById: jest.fn().mockResolvedValue(assignedRecord) }),
+      );
+
+      const result = await service.acceptAssignment(COLLECTOR, 'sub-2');
+
+      expect(repo.updateStatus).toHaveBeenCalledWith('sub-2', 'ACCEPTED');
+      expect(result.status).toBe('ACCEPTED');
+    });
+
+    it('throws NotFoundError for a collector who is not the assignee', async () => {
+      const { service, repo } = buildService(
+        buildRepo({ findById: jest.fn().mockResolvedValue(assignedRecord) }),
+      );
+
+      await expect(service.acceptAssignment(OTHER_COLLECTOR, 'sub-2')).rejects.toBeInstanceOf(
+        NotFoundError,
+      );
+      expect(repo.updateStatus).not.toHaveBeenCalled();
+    });
+
+    it('throws ConflictError when the submission is not ASSIGNED', async () => {
+      const { service, repo } = buildService(
+        buildRepo({ findById: jest.fn().mockResolvedValue(acceptedRecord) }),
+      );
+
+      await expect(service.acceptAssignment(COLLECTOR, 'sub-3')).rejects.toBeInstanceOf(
+        ConflictError,
+      );
+      expect(repo.updateStatus).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('startPickup', () => {
+    it('moves ACCEPTED → IN_PROGRESS and stamps the pickup time', async () => {
+      const clock = new Date('2026-07-22T09:00:00.000Z');
+      const repo = buildRepo({ findById: jest.fn().mockResolvedValue(acceptedRecord) });
+      const service = createSubmissionService({
+        submissions: repo,
+        logger: createLogger({ logLevel: 'fatal', nodeEnv: 'test' }),
+        now: () => clock,
+      });
+
+      await service.startPickup(COLLECTOR, 'sub-3');
+
+      expect(repo.updateStatus).toHaveBeenCalledWith('sub-3', 'IN_PROGRESS');
+      expect(repo.updatePickupSchedule).toHaveBeenCalledWith('sub-3', clock);
+    });
+
+    it('throws ConflictError when the submission is not ACCEPTED', async () => {
+      const { service } = buildService(
+        buildRepo({ findById: jest.fn().mockResolvedValue(assignedRecord) }),
+      );
+
+      await expect(service.startPickup(COLLECTOR, 'sub-2')).rejects.toBeInstanceOf(ConflictError);
+    });
+
+    it('throws NotFoundError for a non-assignee collector', async () => {
+      const { service } = buildService(
+        buildRepo({ findById: jest.fn().mockResolvedValue(acceptedRecord) }),
+      );
+
+      await expect(service.startPickup(OTHER_COLLECTOR, 'sub-3')).rejects.toBeInstanceOf(
+        NotFoundError,
+      );
+    });
+  });
+
+  describe('completePickup', () => {
+    it('moves IN_PROGRESS → COLLECTED for the assigned collector', async () => {
+      const collected: SubmissionRecord = { ...inProgressRecord, status: 'COLLECTED' };
+      const { service, repo } = buildService(
+        buildRepo({
+          findById: jest.fn().mockResolvedValue(inProgressRecord),
+          updateStatus: jest.fn().mockResolvedValue(collected),
+        }),
+      );
+
+      const result = await service.completePickup(COLLECTOR, 'sub-4');
+
+      expect(repo.updateStatus).toHaveBeenCalledWith('sub-4', 'COLLECTED');
+      expect(result.status).toBe('COLLECTED');
+    });
+
+    it('throws ConflictError when the submission is not IN_PROGRESS', async () => {
+      const { service } = buildService(
+        buildRepo({ findById: jest.fn().mockResolvedValue(acceptedRecord) }),
+      );
+
+      await expect(service.completePickup(COLLECTOR, 'sub-3')).rejects.toBeInstanceOf(
+        ConflictError,
+      );
+    });
+  });
+
+  describe('getCollectorDashboard', () => {
+    it('returns the active assignments for the authenticated collector', async () => {
+      const { service, repo } = buildService();
+
+      const result = await service.getCollectorDashboard(COLLECTOR);
+
+      expect(repo.findCollectorAssignments).toHaveBeenCalledWith('collector-1');
+      expect(result).toHaveLength(1);
     });
   });
 });
