@@ -15,6 +15,17 @@ enum UserRole {
   CONSUMER
 }
 
+enum SubmissionStatus {
+  PENDING
+  ASSIGNED
+  ACCEPTED
+  IN_PROGRESS
+  COLLECTED
+  RECYCLED
+  COMPLETED
+  REJECTED
+}
+
 model Role {
   id          String   @id @default(uuid())
   name        UserRole @unique
@@ -55,6 +66,14 @@ model User {
 
   refreshTokens RefreshToken[]
 
+  // E-waste submissions the user owns (as a consumer). See Submission.user.
+  submissions Submission[] @relation("SubmissionOwner")
+
+  // Submissions assigned to this user as collector / recycler (future phases).
+  collectedSubmissions Submission[] @relation("SubmissionCollector")
+
+  recycledSubmissions Submission[] @relation("SubmissionRecycler")
+
   createdAt DateTime @default(now())
 
   updatedAt DateTime @updatedAt
@@ -81,4 +100,53 @@ model RefreshToken {
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+model Submission {
+  id String @id @default(uuid())
+
+  userId String
+
+  // Owning consumer. Restrict deletes: submissions are audit records and must
+  // not disappear when a user row is removed.
+  user User @relation("SubmissionOwner", fields: [userId], references: [id], onDelete: Restrict)
+
+  category String
+
+  description String?
+
+  estimatedWeight Float
+
+  address String
+
+  latitude Float
+
+  longitude Float
+
+  imageUrls String[] @default([])
+
+  status SubmissionStatus @default(PENDING)
+
+  // Assignment targets — nullable, populated in later lifecycle phases.
+  assignedCollectorId String?
+
+  assignedCollector User? @relation("SubmissionCollector", fields: [assignedCollectorId], references: [id], onDelete: SetNull)
+
+  assignedRecyclerId String?
+
+  assignedRecycler User? @relation("SubmissionRecycler", fields: [assignedRecyclerId], references: [id], onDelete: SetNull)
+
+  pickupScheduledAt DateTime?
+
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([assignedCollectorId])
+  @@index([assignedRecyclerId])
+  @@map("submissions")
 }
