@@ -9,6 +9,13 @@ function buildTestApp(): ReturnType<typeof createApp> {
   return createApp({ config, logger });
 }
 
+/** App whose database probe deterministically fails, regardless of environment. */
+function buildTestAppWithoutDatabase(): ReturnType<typeof createApp> {
+  const config = loadConfig({ NODE_ENV: 'test', LOG_LEVEL: 'fatal' });
+  const logger = createLogger(config);
+  return createApp({ config, logger, pingDatabase: () => Promise.resolve(false) });
+}
+
 describe('GET /api/v1/health', () => {
   it('returns 200 with the documented health envelope', async () => {
     const res = await request(buildTestApp()).get('/api/v1/health');
@@ -69,9 +76,9 @@ describe('GET /api/v1', () => {
 
 describe('GET /api/v1/ready', () => {
   it('returns 503 with the error envelope when the database is unreachable', async () => {
-    // The test environment has no database running, so the Prisma ping fails
-    // and the service maps it to SERVICE_UNAVAILABLE via the global handler.
-    const res = await request(buildTestApp()).get('/api/v1/ready');
+    // The database probe is injected to fail so the outcome is deterministic
+    // regardless of whether a local Postgres happens to be running.
+    const res = await request(buildTestAppWithoutDatabase()).get('/api/v1/ready');
 
     expect(res.status).toBe(503);
     expect(res.body).toEqual({

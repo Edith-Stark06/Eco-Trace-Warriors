@@ -9,6 +9,11 @@ describe('loadConfig', () => {
     expect(config.apiPrefix).toBe('/api/v1');
     expect(config.logLevel).toBe('info');
     expect(config.databaseUrl).toBeUndefined();
+    expect(config.jwtSecret).toMatch(/^dev-insecure-/);
+    expect(config.jwtRefreshSecret).toMatch(/^dev-insecure-/);
+    expect(config.jwtAccessExpiry).toBe('15m');
+    expect(config.jwtRefreshExpiry).toBe('7d');
+    expect(config.bcryptRounds).toBe(10);
     expect(config.isProduction).toBe(false);
     expect(config.isTest).toBe(false);
   });
@@ -20,6 +25,11 @@ describe('loadConfig', () => {
       API_PREFIX: '/api/v2',
       LOG_LEVEL: 'warn',
       DATABASE_URL: 'postgresql://user:pass@db:5432/ecotrace',
+      JWT_SECRET: 'a-strong-production-access-secret-0123456789',
+      JWT_REFRESH_SECRET: 'a-strong-production-refresh-secret-0123456789',
+      JWT_ACCESS_EXPIRY: '5m',
+      JWT_REFRESH_EXPIRY: '30d',
+      BCRYPT_ROUNDS: '12',
     });
 
     expect(config.nodeEnv).toBe('production');
@@ -27,6 +37,11 @@ describe('loadConfig', () => {
     expect(config.apiPrefix).toBe('/api/v2');
     expect(config.logLevel).toBe('warn');
     expect(config.databaseUrl).toBe('postgresql://user:pass@db:5432/ecotrace');
+    expect(config.jwtSecret).toBe('a-strong-production-access-secret-0123456789');
+    expect(config.jwtRefreshSecret).toBe('a-strong-production-refresh-secret-0123456789');
+    expect(config.jwtAccessExpiry).toBe('5m');
+    expect(config.jwtRefreshExpiry).toBe('30d');
+    expect(config.bcryptRounds).toBe(12);
     expect(config.isProduction).toBe(true);
   });
 
@@ -50,6 +65,30 @@ describe('loadConfig', () => {
     expect(() => loadConfig({ DATABASE_URL: 'not-a-url' })).toThrow(
       /Invalid environment configuration/,
     );
+  });
+
+  it('rejects placeholder JWT secrets in production', () => {
+    expect(() => loadConfig({ NODE_ENV: 'production' })).toThrow(
+      /JWT_SECRET must be set to a strong value in production/,
+    );
+  });
+
+  it('rejects identical access and refresh secrets in production', () => {
+    expect(() =>
+      loadConfig({
+        NODE_ENV: 'production',
+        JWT_SECRET: 'a-strong-production-secret-shared-0123456789',
+        JWT_REFRESH_SECRET: 'a-strong-production-secret-shared-0123456789',
+      }),
+    ).toThrow(/JWT_REFRESH_SECRET must differ from JWT_SECRET/);
+  });
+
+  it('rejects a too-short JWT_SECRET', () => {
+    expect(() => loadConfig({ JWT_SECRET: 'short' })).toThrow(/JWT_SECRET/);
+  });
+
+  it('rejects an out-of-range BCRYPT_ROUNDS', () => {
+    expect(() => loadConfig({ BCRYPT_ROUNDS: '20' })).toThrow(/Invalid environment configuration/);
   });
 
   it('returns a frozen (immutable) config object', () => {

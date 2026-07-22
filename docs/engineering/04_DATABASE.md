@@ -78,6 +78,7 @@ erDiagram
     RECYCLING_RECORDS }o--|| RECYCLING_FACILITIES : "processed at"
     RECYCLING_RECORDS ||--o| CERTIFICATES : produces
     USERS }o--|| ROLES : has
+    USERS ||--o{ REFRESH_TOKENS : "holds sessions"
 
     USERS {
         uuid id PK
@@ -87,6 +88,14 @@ erDiagram
         string phone
         uuid role_id FK
         string region
+        timestamp created_at
+    }
+    REFRESH_TOKENS {
+        uuid id PK
+        string token_hash UK
+        uuid user_id FK
+        timestamp expires_at
+        timestamp revoked_at
         timestamp created_at
     }
     DEVICES {
@@ -154,6 +163,7 @@ This is the **conceptual model**; the Prisma schema is the authoritative physica
 | Entity | Purpose |
 |---|---|
 | `users` / `roles` | Accounts for all personas (consumer, collector, recycler, government, admin) with role-based access |
+| `refresh_tokens` | Revocable auth sessions; stores **SHA-256 hashes** of refresh tokens (never raw tokens) with expiry and revocation timestamps. Rotated on every refresh; cascade-deleted with the user |
 | `devices` | Registered electronic devices; each carries a unique `eco_id` used for QR codes and on-chain identity |
 | `collection_requests` | Pickup lifecycle: requested → scheduled → collected |
 | `lifecycle_events` | Append-only history of device events; stores the Fabric transaction ID linking off-chain to on-chain |

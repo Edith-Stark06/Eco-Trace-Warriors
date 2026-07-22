@@ -70,7 +70,8 @@ sequenceDiagram
 
 - **Scheme:** JWT bearer tokens in the `Authorization` header.
 - Access tokens are short-lived; refresh tokens rotate via `POST /auth/refresh`.
-- The JWT carries `sub` (user ID) and `role` (see `04_DATABASE.md` → `UserRole`).
+- The access JWT carries `sub` (user ID), `email`, and `role` (see `04_DATABASE.md` → `UserRole`). The refresh JWT carries only `sub` and a unique `jti`.
+- Refresh tokens are persisted **only as SHA-256 hashes** (`refresh_tokens` table) and are revocable: rotation on refresh, revocation on logout, family-wide revocation on reuse of a rotated token.
 - **Role enforcement is server-side per endpoint** (see catalog below). Client-side role checks are UX only, never security.
 - Public endpoints: registration, login, health check. Everything else requires authentication.
 
@@ -158,7 +159,65 @@ Role legend: `C` Consumer, `CO` Collector, `R` Recycler, `G` Government, `A` Adm
 | POST | `/auth/register` | pub | Create consumer account |
 | POST | `/auth/login` | pub | Obtain access + refresh tokens |
 | POST | `/auth/refresh` | pub | Rotate tokens |
+| POST | `/auth/logout` | pub | Revoke a refresh token (idempotent) |
 | GET | `/auth/me` | * | Current user profile |
+
+### POST /auth/register — 201
+
+Request:
+
+```json
+{
+  "email": "asha@example.com",
+  "password": "s3cure-password",
+  "confirmPassword": "s3cure-password",
+  "fullName": "Asha Kumar",
+  "phone": "9876543210",
+  "region": "TN"
+}
+```
+
+`phone` and `region` are optional. Passwords: 8–128 chars; `confirmPassword` must match. Duplicate email → `409 CONFLICT`.
+
+Response `data`:
+
+```json
+{
+  "user": {
+    "id": "uuid",
+    "fullName": "Asha Kumar",
+    "email": "asha@example.com",
+    "phone": "9876543210",
+    "region": "TN",
+    "role": "CONSUMER",
+    "emailVerified": false,
+    "createdAt": "2026-07-22T10:30:00.000Z"
+  },
+  "accessToken": "<jwt>",
+  "refreshToken": "<jwt>"
+}
+```
+
+### POST /auth/login — 200
+
+Request: `{ "email": "...", "password": "..." }`. Response `data`: same shape as register.
+Invalid credentials → `401 UNAUTHORIZED` with a generic message (no user enumeration). Deactivated accounts are rejected.
+
+### POST /auth/refresh — 200
+
+Request: `{ "refreshToken": "<jwt>" }`. Response `data`: `{ "accessToken": "<jwt>", "refreshToken": "<jwt>" }`.
+Refresh tokens are **single-use**: each refresh revokes the presented token and issues a new pair. Reusing a rotated token revokes **all** of the user's sessions and returns `401`. Invalid/expired/unknown tokens → `401`.
+
+### POST /auth/logout — 200
+
+Request: `{ "refreshToken": "<jwt>" }`. Response `data`: `{ "loggedOut": true }`.
+Idempotent — unknown or already-revoked tokens still return `200`.
+
+### GET /auth/me — 200
+
+Requires `Authorization: Bearer <accessToken>`. Response `data`: the `user` object shape from register.
+Missing/invalid token → `401`.
+
 
 ## Devices
 
