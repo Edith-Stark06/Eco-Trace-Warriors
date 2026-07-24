@@ -5,6 +5,7 @@ import type { SubmissionRepository } from '../submission/submission.repository';
 import type {
   RewardRepository,
   RewardTransactionResult,
+  RewardTransactionWithSubmission,
   SustainabilityMetricsInput,
 } from './reward.repository';
 
@@ -102,6 +103,15 @@ export interface RewardServiceDeps {
   readonly logger: Logger;
 }
 
+/** Balance snapshot returned by {@link RewardService.getBalance}. */
+export interface RewardBalance {
+  readonly greenCoins: number;
+  readonly totalRewards: number;
+  readonly totalCO2Saved: number;
+  readonly totalEnergySaved: number;
+  readonly totalLandfillDiverted: number;
+}
+
 export interface RewardService {
   /**
    * Issues a reward for a completed, recycled submission.
@@ -110,6 +120,12 @@ export interface RewardService {
    * calculate points → calculate impact → persist atomically → return summary.
    */
   issueReward(submissionId: string): Promise<RewardSummary>;
+
+  /** Returns the reward transaction history for a given user. */
+  getRewardHistory(userId: string): Promise<RewardTransactionWithSubmission[]>;
+
+  /** Returns the current reward balance and cumulative sustainability metrics. */
+  getBalance(userId: string): Promise<RewardBalance>;
 
   /** Calculates reward points for a given device category and weight. */
   calculateRewardPoints(category: string, estimatedWeight: number): number;
@@ -203,9 +219,8 @@ export function createRewardService(deps: RewardServiceDeps): RewardService {
           RewardReason.RECYCLING,
           metrics,
         );
-      } catch {
-        // Prisma errors (connection, constraint violations) propagate as-is.
-        // The caller (controller) maps them to HTTP responses.
+      } catch (err) {
+        deps.logger.error({ submissionId, err }, 'Failed to issue reward');
         throw new ConflictError('Failed to issue reward. Please try again.');
       }
 
@@ -238,6 +253,43 @@ export function createRewardService(deps: RewardServiceDeps): RewardService {
     calculateEnvironmentalImpact(category: string, estimatedWeight: number): SustainabilityResult {
       const impact = lookupImpactConstants(category);
       return toSustainabilityResult(impact, estimatedWeight);
+    },
+
+    async getRewardHistory(userId: string): Promise<RewardTransactionWithSubmission[]> {
+      const history = await deps.rewards.findRewardHistoryByUserId(userId);
+      deps.logger.info({ userId, count: history.length }, 'Reward history requested');
+      return history;
+    },
+
+    async getBalance(userId: string): Promise<RewardBalance> {
+      const [userCoins, history] = await Promise.all([
+        deps.rewards.getUserGreenCoins(userId),
+        deps.rewards.findRewardHistoryByUserId(userId),
+      ]);
+
+      let totalRewards = 0;
+      let totalCO2Saved = 0;
+      let totalEnergySaved = 0;
+      let totalLandfillDiverted = 0;
+
+      for (const tx of history) {
+        totalRewards += tx.points;
+        const weight = tx.submission.estimatedWeight;
+        const impact = lookupImpactConstants(tx.submission.category);
+        totalCO2Saved += weight * impact.co2PerKg;
+        totalEnergySaved += weight * impact.energyPerKg;
+        totalLandfillDiverted += weight * impact.landfillPerKg;
+      }
+
+      deps.logger.info({ userId }, 'Reward balance requested');
+
+      return {
+        greenCoins: userCoins.greenCoins,
+        totalRewards,
+        totalCO2Saved,
+        totalEnergySaved,
+        totalLandfillDiverted,
+      };
     },
   };
 }

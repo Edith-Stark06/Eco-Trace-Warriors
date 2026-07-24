@@ -86,6 +86,7 @@ export interface RewardRepository {
   createRewardTransaction(input: CreateRewardInput): Promise<RewardTransactionRecord>;
   findRewardBySubmissionId(submissionId: string): Promise<RewardTransactionRecord | null>;
   findRewardHistoryByUserId(userId: string): Promise<RewardTransactionWithSubmission[]>;
+  getUserGreenCoins(userId: string): Promise<GreenCoinsRecord>;
   incrementUserGreenCoins(userId: string, points: number): Promise<GreenCoinsRecord>;
   markSubmissionRewardIssued(
     submissionId: string,
@@ -181,6 +182,13 @@ export function createRewardRepository(deps: { readonly prisma: PrismaClient }):
         where: { userId },
         orderBy: { createdAt: 'desc' },
         select: rewardTransactionWithSubmissionSelect,
+      });
+    },
+
+    async getUserGreenCoins(userId: string): Promise<GreenCoinsRecord> {
+      return prisma.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: greenCoinsSelect,
       });
     },
 
