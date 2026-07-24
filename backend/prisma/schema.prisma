@@ -27,6 +27,14 @@ enum SubmissionStatus {
   REJECTED
 }
 
+enum RewardReason {
+  RECYCLING
+  BONUS
+  CAMPAIGN
+  ADJUSTMENT
+  REDEMPTION
+}
+
 model Role {
   id          String   @id @default(uuid())
   name        UserRole @unique
@@ -74,6 +82,10 @@ model User {
   collectedSubmissions Submission[] @relation("SubmissionCollector")
 
   recycledSubmissions Submission[] @relation("SubmissionRecycler")
+
+  greenCoins Int @default(0)
+
+  rewardTransactions RewardTransaction[]
 
   createdAt DateTime @default(now())
 
@@ -154,6 +166,18 @@ model Submission {
   // Per-material recovery breakdown, e.g. { "plastic": 3.2, "metal": 6.1 }.
   materialRecovery Json?
 
+  // Rewards & sustainability (Phase 8) — populated when a reward is issued for a
+  // completed submission. Impact metrics are nullable until computed.
+  rewardIssued Boolean @default(false)
+
+  co2Saved Float?
+
+  landfillDiverted Float?
+
+  energySaved Float?
+
+  rewardTransaction RewardTransaction?
+
   createdAt DateTime @default(now())
 
   updatedAt DateTime @updatedAt
@@ -163,4 +187,28 @@ model Submission {
   @@index([assignedCollectorId])
   @@index([assignedRecyclerId])
   @@map("submissions")
+}
+
+model RewardTransaction {
+  id String @id @default(uuid())
+
+  userId String
+
+  // Point-earning user. Restrict deletes: reward transactions are audit records
+  // and must not disappear when a user row is removed.
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  submissionId String @unique
+
+  // One reward transaction per submission (enforced by the unique constraint).
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+
+  points Int
+
+  reason RewardReason
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("reward_transactions")
 }
