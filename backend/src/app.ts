@@ -127,16 +127,22 @@ export function createApp({
   // Reuses the shared authenticate/authorize middleware — no new auth logic.
   const submissions =
     submissionRepository ?? createSubmissionRepository({ prisma: getPrismaClient() });
-  const submissionService = createSubmissionService({ submissions, logger });
+
+  // Rewards module — repository defaults to Prisma; tests may inject a fake.
+  const rewards = rewardRepository ?? createRewardRepository({ prisma: getPrismaClient() });
+  const rewardService = createRewardService({ rewards, submissions, logger });
+
+  const submissionService = createSubmissionService({
+    submissions,
+    logger,
+    rewards: rewardService,
+  });
   const submissionRouter = createSubmissionRouter(createSubmissionController(submissionService), {
     authenticate: authenticate(tokenService),
     authorize,
   });
   app.use(config.apiPrefix, submissionRouter);
 
-  // Rewards module — repository defaults to Prisma; tests may inject a fake.
-  const rewards = rewardRepository ?? createRewardRepository({ prisma: getPrismaClient() });
-  const rewardService = createRewardService({ rewards, submissions, logger });
   const rewardRouter = createRewardRouter(createRewardController(rewardService), {
     authenticate: authenticate(tokenService),
   });
