@@ -42,4 +42,6 @@ export type {
   PublicSubmission,
   SubmissionResponse,
   SubmissionListResponse,
+  CompleteRecyclingWithRewardData,
+  CompleteRecyclingWithRewardResponse,
 } from './submission.types';
