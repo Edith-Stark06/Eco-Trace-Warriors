@@ -78,6 +78,27 @@ describe('loadConfig', () => {
     );
   });
 
+  it('requires DATABASE_URL in production', () => {
+    expect(() =>
+      loadConfig({
+        NODE_ENV: 'production',
+        JWT_SECRET: 'a-strong-production-access-secret-0123456789',
+        JWT_REFRESH_SECRET: 'a-strong-production-refresh-secret-0123456789',
+      }),
+    ).toThrow(/DATABASE_URL is required in production/);
+  });
+
+  it('accepts a production config that supplies DATABASE_URL', () => {
+    expect(() =>
+      loadConfig({
+        NODE_ENV: 'production',
+        DATABASE_URL: 'postgresql://user:pass@db:5432/ecotrace',
+        JWT_SECRET: 'a-strong-production-access-secret-0123456789',
+        JWT_REFRESH_SECRET: 'a-strong-production-refresh-secret-0123456789',
+      }),
+    ).not.toThrow();
+  });
+
   it('rejects identical access and refresh secrets in production', () => {
     expect(() =>
       loadConfig({

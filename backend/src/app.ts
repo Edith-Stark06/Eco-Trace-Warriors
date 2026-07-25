@@ -151,6 +151,7 @@ export function createApp({
 
   const rewardRouter = createRewardRouter(createRewardController(rewardService), {
     authenticate: authenticate(tokenService),
+    authorize,
   });
   app.use(config.apiPrefix, rewardRouter);
 
