@@ -42,6 +42,14 @@ export const envSchema = z
     JWT_ACCESS_EXPIRY: z.string().min(1).default('15m'),
     JWT_REFRESH_EXPIRY: z.string().min(1).default('7d'),
     BCRYPT_ROUNDS: z.coerce.number().int().min(4).max(15).default(10),
+    // Auth rate limiting — window length and max requests per IP per window.
+    // Applies only to the authentication endpoints (see auth router).
+    AUTH_RATE_LIMIT_WINDOW_MS: z.coerce
+      .number()
+      .int()
+      .min(1000)
+      .default(15 * 60 * 1000),
+    AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(10),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'production') return;

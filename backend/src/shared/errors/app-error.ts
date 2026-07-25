@@ -61,6 +61,12 @@ export class ConflictError extends AppError {
   }
 }
 
+export class TooManyRequestsError extends AppError {
+  constructor(message = 'Too many requests. Please try again later.') {
+    super(ErrorCodes.TOO_MANY_REQUESTS, 429, message);
+  }
+}
+
 export class InternalError extends AppError {
   constructor(message = 'An unexpected error occurred.') {
     super(ErrorCodes.INTERNAL_ERROR, 500, message);

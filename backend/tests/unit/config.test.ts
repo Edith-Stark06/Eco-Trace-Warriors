@@ -15,6 +15,7 @@ describe('loadConfig', () => {
     expect(config.jwtAccessExpiry).toBe('15m');
     expect(config.jwtRefreshExpiry).toBe('7d');
     expect(config.bcryptRounds).toBe(10);
+    expect(config.authRateLimit).toEqual({ windowMs: 15 * 60 * 1000, max: 10 });
     expect(config.isProduction).toBe(false);
     expect(config.isTest).toBe(false);
   });
@@ -31,6 +32,8 @@ describe('loadConfig', () => {
       JWT_ACCESS_EXPIRY: '5m',
       JWT_REFRESH_EXPIRY: '30d',
       BCRYPT_ROUNDS: '12',
+      AUTH_RATE_LIMIT_WINDOW_MS: '60000',
+      AUTH_RATE_LIMIT_MAX: '5',
     });
 
     expect(config.nodeEnv).toBe('production');
@@ -43,6 +46,7 @@ describe('loadConfig', () => {
     expect(config.jwtAccessExpiry).toBe('5m');
     expect(config.jwtRefreshExpiry).toBe('30d');
     expect(config.bcryptRounds).toBe(12);
+    expect(config.authRateLimit).toEqual({ windowMs: 60000, max: 5 });
     expect(config.isProduction).toBe(true);
   });
 
@@ -90,6 +94,18 @@ describe('loadConfig', () => {
 
   it('rejects an out-of-range BCRYPT_ROUNDS', () => {
     expect(() => loadConfig({ BCRYPT_ROUNDS: '20' })).toThrow(/Invalid environment configuration/);
+  });
+
+  it('rejects a non-numeric AUTH_RATE_LIMIT_MAX', () => {
+    expect(() => loadConfig({ AUTH_RATE_LIMIT_MAX: 'lots' })).toThrow(
+      /Invalid environment configuration/,
+    );
+  });
+
+  it('rejects an AUTH_RATE_LIMIT_WINDOW_MS below the minimum', () => {
+    expect(() => loadConfig({ AUTH_RATE_LIMIT_WINDOW_MS: '10' })).toThrow(
+      /Invalid environment configuration/,
+    );
   });
 
   it('returns a frozen (immutable) config object', () => {
