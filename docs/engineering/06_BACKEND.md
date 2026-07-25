@@ -181,6 +181,14 @@ In addition to the cross-cutting rules in `02_PROJECT_RULES.md`:
 
 ---
 
+# Security Headers
+
+- `securityHeaders` (Helmet) is the **first** middleware in the pipeline, so every response — including 404s and error responses — carries HTTP security headers.
+- `Content-Security-Policy` is intentionally **disabled**: this service is a JSON REST API, and a restrictive default CSP would break the future Swagger/UI docs page (`{apiPrefix}/docs`). All other Helmet defaults (HSTS, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, etc.) remain enabled.
+- `x-powered-by` is disabled separately (`app.disable('x-powered-by')`) to remove the Express fingerprint.
+
+---
+
 # External Integrations
 
 ## AI service client (`infrastructure/ai/`)

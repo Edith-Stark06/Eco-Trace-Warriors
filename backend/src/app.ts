@@ -9,6 +9,7 @@ import {
   notFoundHandler,
   requestId,
   requestLogger,
+  securityHeaders,
 } from '@shared/middleware';
 import { getAppName, getAppVersion } from '@shared/utils';
 import { getPrismaClient, pingDatabase } from '@infrastructure/prisma';
@@ -77,6 +78,7 @@ export function createApp({
   const app = express();
 
   app.disable('x-powered-by');
+  app.use(securityHeaders());
   app.use(express.json({ limit: '1mb' }));
   app.use(requestId());
   app.use(requestLogger(logger));
