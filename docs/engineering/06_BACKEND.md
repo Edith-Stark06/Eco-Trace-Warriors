@@ -189,6 +189,17 @@ In addition to the cross-cutting rules in `02_PROJECT_RULES.md`:
 
 ---
 
+# CORS
+
+- `cors` runs immediately after `securityHeaders` and before body parsing, so browser preflight (`OPTIONS`) requests are answered before routing.
+- The allowlist is driven entirely by configuration: the `CORS_ORIGINS` environment variable (comma-separated) is parsed and validated by the Zod `envSchema` into `AppConfig.corsOrigins` (`string[]`). No CORS values are hardcoded, and the middleware receives the allowlist via dependency injection.
+- Policy:
+  - Requests with **no `Origin` header** (curl, Postman, server-to-server) are allowed.
+  - Browser requests whose `Origin` is in the allowlist are allowed (`credentials` enabled).
+  - Any other `Origin` is rejected — no CORS headers are emitted, so the browser blocks the response.
+
+---
+
 # External Integrations
 
 ## AI service client (`infrastructure/ai/`)

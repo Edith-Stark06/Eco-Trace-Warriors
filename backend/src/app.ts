@@ -5,6 +5,7 @@ import type { Logger } from '@shared/logging';
 import {
   authenticate,
   authorize,
+  cors,
   errorHandler,
   notFoundHandler,
   requestId,
@@ -79,6 +80,7 @@ export function createApp({
 
   app.disable('x-powered-by');
   app.use(securityHeaders());
+  app.use(cors(config.corsOrigins));
   app.use(express.json({ limit: '1mb' }));
   app.use(requestId());
   app.use(requestLogger(logger));
