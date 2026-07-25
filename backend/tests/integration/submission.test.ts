@@ -11,6 +11,7 @@ import {
   createInMemorySubmissionRepository,
   createSeededSubmissionRepository,
 } from '../helpers/in-memory-submission-repository';
+import { createInMemoryRewardRepository } from '../helpers/in-memory-reward-repository';
 
 const TEST_ENV = { NODE_ENV: 'test', LOG_LEVEL: 'fatal', BCRYPT_ROUNDS: '4' } as const;
 
@@ -57,7 +58,12 @@ function buildAppWithRecycler(): { app: Express } {
   const seeded = createSeededSubmissionRepository();
   seeded.addUser(activeCollector(COLLECTOR_ID));
   seeded.addUser(activeRecycler(RECYCLER_ID));
-  const app = createApp({ config, logger, submissionRepository: seeded.repository });
+  const app = createApp({
+    config,
+    logger,
+    submissionRepository: seeded.repository,
+    rewardRepository: createInMemoryRewardRepository(),
+  });
   return { app };
 }
 
@@ -708,14 +714,16 @@ describe('Recycler workflow', () => {
           materialRecovery: { plastic: 3.2, metal: 6.1, glass: 3.2 },
         });
       expect(completed.status).toBe(200);
-      expect(completed.body.data.status).toBe('RECYCLED');
-      expect(completed.body.data.recoveredWeight).toBe(12.5);
-      expect(completed.body.data.materialRecovery).toEqual({
+      expect(completed.body.data.submission.status).toBe('RECYCLED');
+      expect(completed.body.data.submission.recoveredWeight).toBe(12.5);
+      expect(completed.body.data.submission.materialRecovery).toEqual({
         plastic: 3.2,
         metal: 6.1,
         glass: 3.2,
       });
-      expect(completed.body.data.recycledAt).not.toBeNull();
+      expect(completed.body.data.submission.recycledAt).not.toBeNull();
+      expect(completed.body.data.reward).toBeDefined();
+      expect(completed.body.data.reward.greenCoinsAwarded).toBeGreaterThan(0);
     });
   });
 

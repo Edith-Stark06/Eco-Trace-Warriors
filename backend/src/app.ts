@@ -36,6 +36,13 @@ import {
   createSubmissionService,
 } from '@modules/submission';
 import type { SubmissionRepository } from '@modules/submission';
+import {
+  createRewardController,
+  createRewardRepository,
+  createRewardRouter,
+  createRewardService,
+} from '@modules/rewards';
+import type { RewardRepository } from '@modules/rewards';
 
 /** Everything the app needs from the outside world, injected explicitly. */
 export interface AppDeps {
@@ -50,6 +57,8 @@ export interface AppDeps {
   };
   /** Test seam: submission repository override so integration tests run without a database. */
   readonly submissionRepository?: SubmissionRepository;
+  /** Test seam: reward repository override so integration tests run without a database. */
+  readonly rewardRepository?: RewardRepository;
 }
 
 /**
@@ -63,6 +72,7 @@ export function createApp({
   pingDatabase: pingDatabaseOverride,
   authRepositories,
   submissionRepository,
+  rewardRepository,
 }: AppDeps): Express {
   const app = express();
 
@@ -117,12 +127,26 @@ export function createApp({
   // Reuses the shared authenticate/authorize middleware — no new auth logic.
   const submissions =
     submissionRepository ?? createSubmissionRepository({ prisma: getPrismaClient() });
-  const submissionService = createSubmissionService({ submissions, logger });
+
+  // Rewards module — repository defaults to Prisma; tests may inject a fake.
+  const rewards = rewardRepository ?? createRewardRepository({ prisma: getPrismaClient() });
+  const rewardService = createRewardService({ rewards, submissions, logger });
+
+  const submissionService = createSubmissionService({
+    submissions,
+    logger,
+    rewards: rewardService,
+  });
   const submissionRouter = createSubmissionRouter(createSubmissionController(submissionService), {
     authenticate: authenticate(tokenService),
     authorize,
   });
   app.use(config.apiPrefix, submissionRouter);
+
+  const rewardRouter = createRewardRouter(createRewardController(rewardService), {
+    authenticate: authenticate(tokenService),
+  });
+  app.use(config.apiPrefix, rewardRouter);
 
   // Terminal handlers — must stay last
   app.use(notFoundHandler());

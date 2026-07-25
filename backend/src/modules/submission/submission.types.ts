@@ -1,5 +1,6 @@
 import type { Prisma, SubmissionStatus } from '@prisma/client';
 import type { SuccessResponse } from '../../types';
+import type { RewardSummary } from '../rewards/reward.service';
 
 /**
  * The submission shape returned to clients. Dates are serialized to ISO
@@ -29,5 +30,12 @@ export interface PublicSubmission {
   readonly updatedAt: string;
 }
 
+/** Combined response for recycler completion with reward issuance. */
+export interface CompleteRecyclingWithRewardData {
+  readonly submission: PublicSubmission;
+  readonly reward: RewardSummary;
+}
+
 export type SubmissionResponse = SuccessResponse<PublicSubmission>;
+export type CompleteRecyclingWithRewardResponse = SuccessResponse<CompleteRecyclingWithRewardData>;
 export type SubmissionListResponse = SuccessResponse<readonly PublicSubmission[]>;

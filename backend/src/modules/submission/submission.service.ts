@@ -8,7 +8,8 @@ import type {
   CreateSubmissionInput,
   UpdateSubmissionInput,
 } from './submission.schemas';
-import type { PublicSubmission } from './submission.types';
+import type { PublicSubmission, CompleteRecyclingWithRewardData } from './submission.types';
+import type { RewardService, RewardSummary } from '../rewards/reward.service';
 
 /**
  * The single source of truth for the submission workflow state machine.
@@ -43,6 +44,7 @@ export interface SubmissionActor {
 export interface SubmissionServiceDeps {
   readonly submissions: SubmissionRepository;
   readonly logger: Logger;
+  readonly rewards: RewardService;
   /** Clock provider — injectable for deterministic tests. Defaults to wall-clock. */
   readonly now?: () => Date;
 }
@@ -91,7 +93,7 @@ export interface SubmissionService {
     actor: SubmissionActor,
     id: string,
     input: CompleteRecyclingInput,
-  ): Promise<PublicSubmission>;
+  ): Promise<CompleteRecyclingWithRewardData>;
   /** The recycler's active queue: COLLECTED/RECYCLING assigned to them, newest first. */
   getRecyclerDashboard(actor: SubmissionActor): Promise<PublicSubmission[]>;
 }
@@ -373,7 +375,7 @@ export function createSubmissionService(deps: SubmissionServiceDeps): Submission
       actor: SubmissionActor,
       id: string,
       input: CompleteRecyclingInput,
-    ): Promise<PublicSubmission> {
+    ): Promise<{ submission: PublicSubmission; reward: RewardSummary }> {
       const record = await ensureRecyclerOwnsSubmission(actor, id);
       validateTransition(record.status, 'RECYCLED');
       const updated = await deps.submissions.updateRecyclerCompletion(id, now(), {
@@ -385,7 +387,16 @@ export function createSubmissionService(deps: SubmissionServiceDeps): Submission
         { submissionId: id, recyclerId: actor.userId, actorId: actor.userId },
         'Recycling completed',
       );
-      return toPublicSubmission(updated);
+
+      // Automatically issue reward for the recycled submission
+      deps.logger.info({ submissionId: id }, 'Reward automatically issued for recycled submission');
+      const reward = await deps.rewards.issueReward(id);
+      deps.logger.info(
+        { submissionId: id, rewardId: reward.rewardTransaction.id },
+        'Reward issued',
+      );
+
+      return { submission: toPublicSubmission(updated), reward };
     },
 
     async getRecyclerDashboard(actor: SubmissionActor): Promise<PublicSubmission[]> {
