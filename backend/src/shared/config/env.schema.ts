@@ -54,6 +54,13 @@ export const envSchema = z
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'production') return;
 
+    if (!env.DATABASE_URL) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['DATABASE_URL'],
+        message: 'DATABASE_URL is required in production',
+      });
+    }
     if (env.JWT_SECRET.startsWith(DEV_SECRET_PREFIX)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

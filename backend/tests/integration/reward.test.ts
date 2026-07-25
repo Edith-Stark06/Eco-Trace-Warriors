@@ -179,6 +179,15 @@ describe('POST /api/v1/rewards/issue/:submissionId', () => {
     expect(res.status).toBe(401);
   });
 
+  it('returns 403 for a non-admin (CONSUMER) caller', async () => {
+    const app = buildApp();
+    const res = await request(app)
+      .post('/api/v1/rewards/issue/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa')
+      .set('Authorization', auth(OWNER));
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('FORBIDDEN');
+  });
+
   it('returns 400 for a non-UUID submissionId', async () => {
     const app = buildApp();
     const res = await request(app)
