@@ -7,6 +7,7 @@ export {
   ForbiddenError,
   NotFoundError,
   ConflictError,
+  TooManyRequestsError,
   InternalError,
   ServiceUnavailableError,
 } from './app-error';

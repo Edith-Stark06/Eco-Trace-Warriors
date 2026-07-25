@@ -14,6 +14,13 @@ export interface AppConfig {
   readonly jwtAccessExpiry: string;
   readonly jwtRefreshExpiry: string;
   readonly bcryptRounds: number;
+  /** Rate limiting for the authentication endpoints. */
+  readonly authRateLimit: {
+    /** Sliding window length in milliseconds. */
+    readonly windowMs: number;
+    /** Max requests permitted per IP within the window. */
+    readonly max: number;
+  };
   readonly isProduction: boolean;
   readonly isTest: boolean;
 }
@@ -46,6 +53,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     jwtAccessExpiry: parsed.JWT_ACCESS_EXPIRY,
     jwtRefreshExpiry: parsed.JWT_REFRESH_EXPIRY,
     bcryptRounds: parsed.BCRYPT_ROUNDS,
+    authRateLimit: {
+      windowMs: parsed.AUTH_RATE_LIMIT_WINDOW_MS,
+      max: parsed.AUTH_RATE_LIMIT_MAX,
+    },
     isProduction: parsed.NODE_ENV === 'production',
     isTest: parsed.NODE_ENV === 'test',
   });

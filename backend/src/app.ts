@@ -5,6 +5,7 @@ import type { Logger } from '@shared/logging';
 import {
   authenticate,
   authorize,
+  authRateLimiter,
   cors,
   errorHandler,
   notFoundHandler,
@@ -124,6 +125,7 @@ export function createApp({
   });
   const authRouter = createAuthRouter(createAuthController(authService), {
     authenticate: authenticate(tokenService),
+    rateLimiter: authRateLimiter(config.authRateLimit),
   });
   app.use(config.apiPrefix, authRouter);
 

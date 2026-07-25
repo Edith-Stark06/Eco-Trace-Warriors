@@ -8,15 +8,23 @@ import type { AuthController } from './auth.controller';
 export interface AuthRouterDeps {
   /** Verifies the Bearer access token — guards /auth/me. */
   readonly authenticate: RequestHandler;
+  /** Brute-force protection applied to all auth endpoints. */
+  readonly rateLimiter: RequestHandler;
 }
 
 /**
  * Mounts the auth module routes. Register/login/refresh/logout are public;
  * /auth/me requires a valid access token. Async handlers forward rejections
- * to the global error middleware.
+ * to the global error middleware. The rate limiter guards every auth endpoint.
  */
 export function createAuthRouter(controller: AuthController, deps: AuthRouterDeps): Router {
   const router = Router();
+
+  // Brute-force protection scoped to the authentication endpoints only.
+  // The path prefix matters: this router is mounted at the API prefix, so an
+  // unpathed router.use() would apply to all traffic under it. Scoping to
+  // '/auth' keeps the limiter off non-auth endpoints.
+  router.use('/auth', deps.rateLimiter);
 
   router.post('/auth/register', validate({ body: registerSchema }), (req, res, next) => {
     controller.register(req, res).catch(next);
