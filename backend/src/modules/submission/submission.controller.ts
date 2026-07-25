@@ -8,7 +8,11 @@ import type {
   UpdateSubmissionInput,
 } from './submission.schemas';
 import type { SubmissionActor, SubmissionService } from './submission.service';
-import type { SubmissionListResponse, SubmissionResponse } from './submission.types';
+import type {
+  CompleteRecyclingWithRewardResponse,
+  SubmissionListResponse,
+  SubmissionResponse,
+} from './submission.types';
 
 export interface SubmissionController {
   create(req: Request, res: Response): Promise<void>;
@@ -128,7 +132,7 @@ export function createSubmissionController(service: SubmissionService): Submissi
         id,
         req.body as CompleteRecyclingInput,
       );
-      const body: SubmissionResponse = { success: true, data: result };
+      const body: CompleteRecyclingWithRewardResponse = { success: true, data: result };
       res.status(200).json(body);
     },
 

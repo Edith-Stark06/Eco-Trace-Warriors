@@ -10,6 +10,7 @@ import type {
 } from '@modules/submission';
 import { ConflictError, ForbiddenError, NotFoundError } from '@shared/errors';
 import { createLogger } from '@shared/logging';
+import type { RewardService } from '@modules/rewards';
 
 const OWNER: SubmissionActor = { userId: 'user-1', role: UserRole.CONSUMER };
 const OTHER: SubmissionActor = { userId: 'user-2', role: UserRole.CONSUMER };
@@ -121,13 +122,59 @@ function buildRepo(
   } as jest.Mocked<SubmissionRepository>;
 }
 
-function buildService(repo: jest.Mocked<SubmissionRepository> = buildRepo()): {
+function buildRewardService(overrides?: Partial<RewardService>): RewardService {
+  return {
+    issueReward: jest.fn().mockResolvedValue({
+      rewardTransaction: {
+        id: 'reward-1',
+        submissionId: 'sub-6',
+        points: 100,
+        reason: 'RECYCLING',
+        createdAt: new Date().toISOString(),
+      },
+      greenCoinsAwarded: 100,
+      updatedBalance: 100,
+      sustainability: {
+        co2Saved: 25,
+        energySaved: 15,
+        landfillDiverted: 1,
+        co2Unit: 'kg',
+        energyUnit: 'kWh',
+        landfillUnit: 'kg',
+      },
+    }),
+    getRewardHistory: jest.fn().mockResolvedValue([]),
+    getBalance: jest.fn().mockResolvedValue({
+      greenCoins: 250,
+      totalRewards: 250,
+      totalCO2Saved: 25,
+      totalEnergySaved: 15,
+      totalLandfillDiverted: 2.5,
+    }),
+    calculateRewardPoints: jest.fn().mockReturnValue(100),
+    calculateEnvironmentalImpact: jest.fn().mockReturnValue({
+      co2Saved: 25,
+      energySaved: 15,
+      landfillDiverted: 2.5,
+      co2Unit: 'kg',
+      energyUnit: 'kWh',
+      landfillUnit: 'kg',
+    }),
+    ...overrides,
+  };
+}
+
+function buildService(
+  repo: jest.Mocked<SubmissionRepository> = buildRepo(),
+  rewards?: Partial<RewardService>,
+): {
   service: ReturnType<typeof createSubmissionService>;
   repo: jest.Mocked<SubmissionRepository>;
 } {
   const deps: SubmissionServiceDeps = {
     submissions: repo,
     logger: createLogger({ logLevel: 'fatal', nodeEnv: 'test' }),
+    rewards: buildRewardService(rewards),
   };
   return { service: createSubmissionService(deps), repo };
 }
@@ -477,6 +524,7 @@ describe('createSubmissionService — collector workflow', () => {
       const service = createSubmissionService({
         submissions: repo,
         logger: createLogger({ logLevel: 'fatal', nodeEnv: 'test' }),
+        rewards: buildRewardService(),
         now: () => clock,
       });
 
@@ -670,6 +718,7 @@ describe('createSubmissionService — recycler workflow', () => {
       const service = createSubmissionService({
         submissions: repo,
         logger: createLogger({ logLevel: 'fatal', nodeEnv: 'test' }),
+        rewards: buildRewardService(),
         now: () => clock,
       });
 
@@ -713,6 +762,7 @@ describe('createSubmissionService — recycler workflow', () => {
       const service = createSubmissionService({
         submissions: repo,
         logger: createLogger({ logLevel: 'fatal', nodeEnv: 'test' }),
+        rewards: buildRewardService(),
         now: () => clock,
       });
 
@@ -723,7 +773,8 @@ describe('createSubmissionService — recycler workflow', () => {
         recyclerNotes: 'Separated lithium batteries.',
         materialRecovery: { plastic: 3.2, metal: 6.1, glass: 3.2 },
       });
-      expect(result.status).toBe('RECYCLED');
+      expect(result.submission.status).toBe('RECYCLED');
+      expect(result.reward.greenCoinsAwarded).toBeGreaterThan(0);
     });
 
     it('accepts a completion without notes or material breakdown', async () => {
