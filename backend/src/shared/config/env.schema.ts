@@ -20,6 +20,17 @@ export const envSchema = z
       .default('/api/v1'),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
     DATABASE_URL: z.string().url().optional(),
+    // Comma-separated allowlist of browser origins permitted by CORS.
+    // Parsed into a trimmed, non-empty string[]; empty/whitespace entries are dropped.
+    CORS_ORIGINS: z
+      .string()
+      .default('http://localhost:5173')
+      .transform((value) =>
+        value
+          .split(',')
+          .map((origin) => origin.trim())
+          .filter((origin) => origin.length > 0),
+      ),
     JWT_SECRET: z
       .string()
       .min(32, 'JWT_SECRET must be at least 32 characters')

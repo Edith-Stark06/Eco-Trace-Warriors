@@ -7,6 +7,8 @@ export interface AppConfig {
   readonly apiPrefix: string;
   readonly logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
   readonly databaseUrl: string | undefined;
+  /** Allowlist of browser origins permitted by CORS. */
+  readonly corsOrigins: readonly string[];
   readonly jwtSecret: string;
   readonly jwtRefreshSecret: string;
   readonly jwtAccessExpiry: string;
@@ -38,6 +40,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     apiPrefix: parsed.API_PREFIX,
     logLevel: parsed.LOG_LEVEL,
     databaseUrl: parsed.DATABASE_URL,
+    corsOrigins: parsed.CORS_ORIGINS,
     jwtSecret: parsed.JWT_SECRET,
     jwtRefreshSecret: parsed.JWT_REFRESH_SECRET,
     jwtAccessExpiry: parsed.JWT_ACCESS_EXPIRY,

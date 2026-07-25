@@ -9,6 +9,7 @@ describe('loadConfig', () => {
     expect(config.apiPrefix).toBe('/api/v1');
     expect(config.logLevel).toBe('info');
     expect(config.databaseUrl).toBeUndefined();
+    expect(config.corsOrigins).toEqual(['http://localhost:5173']);
     expect(config.jwtSecret).toMatch(/^dev-insecure-/);
     expect(config.jwtRefreshSecret).toMatch(/^dev-insecure-/);
     expect(config.jwtAccessExpiry).toBe('15m');
@@ -94,5 +95,13 @@ describe('loadConfig', () => {
   it('returns a frozen (immutable) config object', () => {
     const config = loadConfig({});
     expect(Object.isFrozen(config)).toBe(true);
+  });
+
+  it('parses CORS_ORIGINS into a trimmed, non-empty allowlist', () => {
+    const config = loadConfig({
+      CORS_ORIGINS: 'https://app.ecotrace.in, https://admin.ecotrace.in ,,  ',
+    });
+
+    expect(config.corsOrigins).toEqual(['https://app.ecotrace.in', 'https://admin.ecotrace.in']);
   });
 });
