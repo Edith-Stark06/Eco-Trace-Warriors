@@ -258,6 +258,30 @@ describe('GET /api/v1/rewards/history', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ success: true, data: [] });
   });
+
+  it('accepts valid limit/offset pagination parameters', async () => {
+    const res = await request(buildApp())
+      .get('/api/v1/rewards/history?limit=10&offset=0')
+      .set('Authorization', auth(OWNER));
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ success: true, data: [] });
+  });
+
+  it('returns 400 when limit exceeds the maximum', async () => {
+    const res = await request(buildApp())
+      .get('/api/v1/rewards/history?limit=101')
+      .set('Authorization', auth(OWNER));
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('returns 400 for a negative offset', async () => {
+    const res = await request(buildApp())
+      .get('/api/v1/rewards/history?offset=-1')
+      .set('Authorization', auth(OWNER));
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
 });
 
 describe('GET /api/v1/rewards/balance', () => {

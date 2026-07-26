@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import type { PrismaClient, SubmissionStatus, UserRole } from '@prisma/client';
+import type { Pagination } from '@shared/pagination';
 
 /**
  * Repositories are the only place Prisma is used for the submission module.
@@ -87,10 +88,10 @@ export interface SubmissionRecord {
 export interface SubmissionRepository {
   create(input: CreateSubmissionInput): Promise<SubmissionRecord>;
   findById(id: string): Promise<SubmissionRecord | null>;
-  /** Submissions owned by a user, newest first. */
-  findByUser(userId: string): Promise<SubmissionRecord[]>;
-  /** Every submission, newest first (admin view). */
-  findAll(): Promise<SubmissionRecord[]>;
+  /** Submissions owned by a user, newest first. Paginated when a window is given. */
+  findByUser(userId: string, pagination?: Pagination): Promise<SubmissionRecord[]>;
+  /** Every submission, newest first (admin view). Paginated when a window is given. */
+  findAll(pagination?: Pagination): Promise<SubmissionRecord[]>;
   update(id: string, input: UpdateSubmissionInput): Promise<SubmissionRecord>;
   delete(id: string): Promise<void>;
 
@@ -105,7 +106,10 @@ export interface SubmissionRepository {
   /** Every submission assigned to a collector, newest first. */
   findByCollector(collectorId: string): Promise<SubmissionRecord[]>;
   /** Active assignments for a collector's dashboard (ASSIGNED/ACCEPTED/IN_PROGRESS), newest first. */
-  findCollectorAssignments(collectorId: string): Promise<SubmissionRecord[]>;
+  findCollectorAssignments(
+    collectorId: string,
+    pagination?: Pagination,
+  ): Promise<SubmissionRecord[]>;
   /** Loads a user by id for assignment validation, or null when absent. */
   findCollectorById(collectorId: string): Promise<CollectorRecord | null>;
 
@@ -114,7 +118,7 @@ export interface SubmissionRepository {
   /** Sets the assigned recycler on a submission (status is unchanged). */
   assignRecycler(id: string, recyclerId: string): Promise<SubmissionRecord>;
   /** Every submission assigned to a recycler, newest first. */
-  findRecyclerAssignments(recyclerId: string): Promise<SubmissionRecord[]>;
+  findRecyclerAssignments(recyclerId: string, pagination?: Pagination): Promise<SubmissionRecord[]>;
   /** Loads a user by id for recycler-assignment validation, or null when absent. */
   findRecyclerById(recyclerId: string): Promise<RecyclerRecord | null>;
   /** Moves a submission to RECYCLING and stamps when processing began. */
@@ -161,6 +165,15 @@ const submissionSelect = {
   updatedAt: true,
 } as const;
 
+/**
+ * Translates validated pagination into Prisma `take`/`skip`. Returns an empty
+ * object when no window is supplied, so unpaginated callers are unaffected.
+ */
+function toPage(pagination?: Pagination): { take?: number; skip?: number } {
+  if (!pagination) return {};
+  return { take: pagination.limit, skip: pagination.offset };
+}
+
 /** Strips undefined keys so Prisma only writes fields the caller supplied. */
 function toUpdateData(input: UpdateSubmissionInput): Record<string, unknown> {
   const data: Record<string, unknown> = {};
@@ -201,18 +214,20 @@ export function createSubmissionRepository(deps: {
       return prisma.submission.findUnique({ where: { id }, select: submissionSelect });
     },
 
-    async findByUser(userId: string): Promise<SubmissionRecord[]> {
+    async findByUser(userId: string, pagination?: Pagination): Promise<SubmissionRecord[]> {
       return prisma.submission.findMany({
         where: { userId },
         orderBy: { createdAt: 'desc' },
         select: submissionSelect,
+        ...toPage(pagination),
       });
     },
 
-    async findAll(): Promise<SubmissionRecord[]> {
+    async findAll(pagination?: Pagination): Promise<SubmissionRecord[]> {
       return prisma.submission.findMany({
         orderBy: { createdAt: 'desc' },
         select: submissionSelect,
+        ...toPage(pagination),
       });
     },
 
@@ -260,7 +275,10 @@ export function createSubmissionRepository(deps: {
       });
     },
 
-    async findCollectorAssignments(collectorId: string): Promise<SubmissionRecord[]> {
+    async findCollectorAssignments(
+      collectorId: string,
+      pagination?: Pagination,
+    ): Promise<SubmissionRecord[]> {
       return prisma.submission.findMany({
         where: {
           assignedCollectorId: collectorId,
@@ -268,6 +286,7 @@ export function createSubmissionRepository(deps: {
         },
         orderBy: { createdAt: 'desc' },
         select: submissionSelect,
+        ...toPage(pagination),
       });
     },
 
@@ -287,7 +306,10 @@ export function createSubmissionRepository(deps: {
       });
     },
 
-    async findRecyclerAssignments(recyclerId: string): Promise<SubmissionRecord[]> {
+    async findRecyclerAssignments(
+      recyclerId: string,
+      pagination?: Pagination,
+    ): Promise<SubmissionRecord[]> {
       return prisma.submission.findMany({
         where: {
           assignedRecyclerId: recyclerId,
@@ -295,6 +317,7 @@ export function createSubmissionRepository(deps: {
         },
         orderBy: { createdAt: 'desc' },
         select: submissionSelect,
+        ...toPage(pagination),
       });
     },
 

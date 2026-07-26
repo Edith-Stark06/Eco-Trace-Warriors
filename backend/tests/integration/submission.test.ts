@@ -183,6 +183,44 @@ describe('GET /api/v1/submissions', () => {
     const res = await request(buildApp()).get('/api/v1/submissions');
     expect(res.status).toBe(401);
   });
+
+  it('applies limit/offset pagination for an admin', async () => {
+    const app = buildApp();
+    // Three submissions across two owners; admin sees all three, newest first.
+    await createSubmission(app, OWNER);
+    await createSubmission(app, OTHER);
+    await createSubmission(app, OWNER);
+
+    const all = await request(app).get('/api/v1/submissions').set('Authorization', auth(ADMIN));
+    expect(all.body.data).toHaveLength(3);
+
+    const page = await request(app)
+      .get('/api/v1/submissions?limit=1&offset=1')
+      .set('Authorization', auth(ADMIN));
+
+    expect(page.status).toBe(200);
+    expect(page.body.data).toHaveLength(1);
+    // offset=1 skips the newest; the second-newest row is returned.
+    expect(page.body.data[0].id).toBe(all.body.data[1].id);
+  });
+
+  it('returns 400 when limit exceeds the maximum', async () => {
+    const res = await request(buildApp())
+      .get('/api/v1/submissions?limit=101')
+      .set('Authorization', auth(OWNER));
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('returns 400 for a non-numeric offset', async () => {
+    const res = await request(buildApp())
+      .get('/api/v1/submissions?offset=abc')
+      .set('Authorization', auth(OWNER));
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
 });
 
 describe('GET /api/v1/submissions/:id', () => {
@@ -547,6 +585,32 @@ describe('Collector workflow', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.data).toEqual([]);
+    });
+
+    it('applies limit/offset pagination to the dashboard', async () => {
+      const { app } = buildAppWithCollector();
+      const first = await createAndAssign(app);
+      await createAndAssign(app);
+
+      const res = await request(app)
+        .get('/api/v1/collector/submissions?limit=1&offset=1')
+        .set('Authorization', auth(COLLECTOR));
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveLength(1);
+      // Newest first; offset=1 skips the second-created row, leaving the first.
+      expect(res.body.data[0].id).toBe(first);
+    });
+
+    it('returns 400 for an invalid limit', async () => {
+      const { app } = buildAppWithCollector();
+
+      const res = await request(app)
+        .get('/api/v1/collector/submissions?limit=0')
+        .set('Authorization', auth(COLLECTOR));
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('VALIDATION_ERROR');
     });
 
     it('returns 403 for a non-collector', async () => {

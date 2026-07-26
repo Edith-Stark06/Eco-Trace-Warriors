@@ -52,6 +52,7 @@ function buildReq(overrides: Partial<Request> = {}): Request {
   return {
     params: {},
     body: {},
+    query: {},
     user: { userId: 'user-1', email: 'user-1@example.com', role: 'CONSUMER' },
     ...overrides,
   } as unknown as Request;
@@ -76,12 +77,12 @@ describe('RewardController.getRewardHistory', () => {
   it('returns 200 with the reward history for the authenticated user', async () => {
     const service = buildService();
     const controller = createRewardController(service);
-    const req = buildReq();
+    const req = buildReq({ query: { limit: 50, offset: 0 } as unknown as Request['query'] });
     const res = buildRes();
 
     await controller.getRewardHistory(req, res);
 
-    expect(service.getRewardHistory).toHaveBeenCalledWith('user-1');
+    expect(service.getRewardHistory).toHaveBeenCalledWith('user-1', { limit: 50, offset: 0 });
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ success: true, data: [] });
   });

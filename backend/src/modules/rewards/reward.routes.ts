@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { RequestHandler } from 'express';
 import { UserRole } from '@prisma/client';
 import { validate } from '@shared/middleware';
+import { paginationQuerySchema } from '@shared/pagination';
 import { rewardSubmissionIdSchema } from './reward.schemas';
 import type { RewardController } from './reward.controller';
 
@@ -34,9 +35,14 @@ export function createRewardRouter(controller: RewardController, deps: RewardRou
     },
   );
 
-  router.get('/rewards/history', authenticate, (req, res, next) => {
-    controller.getRewardHistory(req, res).catch(next);
-  });
+  router.get(
+    '/rewards/history',
+    authenticate,
+    validate({ query: paginationQuerySchema }),
+    (req, res, next) => {
+      controller.getRewardHistory(req, res).catch(next);
+    },
+  );
 
   router.get('/rewards/balance', authenticate, (req, res, next) => {
     controller.getBalance(req, res).catch(next);

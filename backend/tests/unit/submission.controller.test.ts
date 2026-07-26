@@ -61,6 +61,7 @@ function buildReq(overrides: Partial<Request> = {}): Request {
     user: { userId: 'user-1', role: UserRole.CONSUMER },
     params: {},
     body: {},
+    query: {},
     ...overrides,
   } as Request;
 }
@@ -88,12 +89,14 @@ describe('createSubmissionController', () => {
     expect(res.json).toHaveBeenCalledWith({ success: true, data: publicSubmission });
   });
 
-  it('list → 200 with an array payload', async () => {
+  it('list → 200 with an array payload and forwards pagination', async () => {
     const service = buildService();
     const res = buildRes();
+    const query = { limit: 25, offset: 10 } as unknown as Request['query'];
 
-    await createSubmissionController(service).list(buildReq(), res);
+    await createSubmissionController(service).list(buildReq({ query }), res);
 
+    expect(service.list).toHaveBeenCalledWith(expect.anything(), { limit: 25, offset: 10 });
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ success: true, data: [publicSubmission] });
   });
@@ -186,13 +189,17 @@ describe('createSubmissionController', () => {
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
-  it('collectorDashboard → 200 with an array payload', async () => {
+  it('collectorDashboard → 200 with an array payload and forwards pagination', async () => {
     const service = buildService();
     const res = buildRes();
+    const query = { limit: 5, offset: 0 } as unknown as Request['query'];
 
-    await createSubmissionController(service).collectorDashboard(buildReq(), res);
+    await createSubmissionController(service).collectorDashboard(buildReq({ query }), res);
 
-    expect(service.getCollectorDashboard).toHaveBeenCalled();
+    expect(service.getCollectorDashboard).toHaveBeenCalledWith(expect.anything(), {
+      limit: 5,
+      offset: 0,
+    });
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ success: true, data: [publicSubmission] });
   });
@@ -238,13 +245,17 @@ describe('createSubmissionController', () => {
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
-  it('recyclerDashboard → 200 with an array payload', async () => {
+  it('recyclerDashboard → 200 with an array payload and forwards pagination', async () => {
     const service = buildService();
     const res = buildRes();
+    const query = { limit: 5, offset: 0 } as unknown as Request['query'];
 
-    await createSubmissionController(service).recyclerDashboard(buildReq(), res);
+    await createSubmissionController(service).recyclerDashboard(buildReq({ query }), res);
 
-    expect(service.getRecyclerDashboard).toHaveBeenCalled();
+    expect(service.getRecyclerDashboard).toHaveBeenCalledWith(expect.anything(), {
+      limit: 5,
+      offset: 0,
+    });
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ success: true, data: [publicSubmission] });
   });
