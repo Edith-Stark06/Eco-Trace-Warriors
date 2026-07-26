@@ -1,18 +1,22 @@
 import { createContext } from 'react';
-import type { AuthSession, AuthState } from '@/types';
+import type { AuthState, LoginCredentials } from '@/types';
 
 /**
  * Auth context contract.
  *
- * Sprint 9.1 exposes the shape and no-op-friendly seams only. Concrete
- * login/logout/refresh wiring lands in a later sprint; the methods below are
- * placeholders that update client session state once implemented.
+ * Exposes reactive auth state plus the async actions that mutate it. All
+ * network work (login, logout, refresh, bootstrap) lives in the provider so
+ * components depend only on this small surface.
  */
 export interface AuthContextValue extends AuthState {
-  /** Persist a session (tokens + user) obtained from the auth API. */
-  setSession: (session: AuthSession) => void;
-  /** Clear the current session and stored tokens. */
-  clearSession: () => void;
+  /** Authenticate with credentials; on success populates the session. */
+  login: (credentials: LoginCredentials) => Promise<void>;
+  /** Revoke the session server-side (best-effort) and clear local state. */
+  logout: () => Promise<void>;
+  /** Force a token refresh; returns true if a valid session remains. */
+  refreshSession: () => Promise<boolean>;
+  /** Resolve the current user from a stored token on app start. */
+  bootstrapSession: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);

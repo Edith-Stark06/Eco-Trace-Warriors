@@ -1,40 +1,41 @@
 /**
- * Auth API module (placeholders).
+ * Auth API module.
  *
- * Typed wrappers around the auth endpoints from docs/engineering/05_API.md.
- * Sprint 9.1 defines the surface only; bodies are intentionally unimplemented.
+ * Typed wrappers around the auth endpoints from docs/engineering/05_API.md,
+ * built on the single shared Axios instance. Each method unwraps the success
+ * envelope (`response.data.data`) and returns the resource directly.
  */
-import { notImplemented } from '@/api/not-implemented';
-import type { AuthSession, AuthTokens, User } from '@/types';
-
-export interface LoginPayload {
-  email: string;
-  password: string;
-}
-
-export interface RegisterPayload {
-  email: string;
-  password: string;
-  confirmPassword: string;
-  fullName: string;
-  phone?: string;
-  region?: string;
-}
+import { apiClient } from '@/api/axios';
+import { unwrap } from '@/api/client';
+import type { ApiSuccess, AuthResult, AuthTokens, LoginCredentials, PublicUser } from '@/types';
 
 export const authApi = {
-  /** POST /auth/login */
-  login: (_payload: LoginPayload): Promise<AuthSession> => notImplemented('authApi.login'),
+  /** POST /auth/login — exchange credentials for a user + token pair. */
+  login: (credentials: LoginCredentials): Promise<AuthResult> =>
+    unwrap<AuthResult>(apiClient.post<ApiSuccess<AuthResult>>('/auth/login', credentials)),
 
-  /** POST /auth/register */
-  register: (_payload: RegisterPayload): Promise<AuthSession> => notImplemented('authApi.register'),
+  /**
+   * POST /auth/refresh — rotate the token pair.
+   *
+   * Flagged with `skipAuthRefresh` so a 401 from the refresh endpoint itself
+   * is not intercepted and retried (which would recurse infinitely).
+   */
+  refresh: (refreshToken: string): Promise<AuthTokens> =>
+    unwrap<AuthTokens>(
+      apiClient.post<ApiSuccess<AuthTokens>>(
+        '/auth/refresh',
+        { refreshToken },
+        { skipAuthRefresh: true },
+      ),
+    ),
 
-  /** POST /auth/refresh */
-  refresh: (_refreshToken: string): Promise<AuthTokens> => notImplemented('authApi.refresh'),
+  /** POST /auth/logout — revoke a refresh token (idempotent server-side). */
+  logout: (refreshToken: string): Promise<{ loggedOut: boolean }> =>
+    unwrap<{ loggedOut: boolean }>(
+      apiClient.post<ApiSuccess<{ loggedOut: boolean }>>('/auth/logout', { refreshToken }),
+    ),
 
-  /** POST /auth/logout */
-  logout: (_refreshToken: string): Promise<{ loggedOut: boolean }> =>
-    notImplemented('authApi.logout'),
-
-  /** GET /auth/me */
-  me: (): Promise<User> => notImplemented('authApi.me'),
+  /** GET /auth/me — the current authenticated user (server is source of truth). */
+  getCurrentUser: (): Promise<PublicUser> =>
+    unwrap<PublicUser>(apiClient.get<ApiSuccess<PublicUser>>('/auth/me')),
 };

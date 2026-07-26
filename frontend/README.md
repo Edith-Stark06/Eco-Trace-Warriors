@@ -2,9 +2,10 @@
 
 React web dashboard for the **EcoTrace India** e-waste lifecycle management platform (IEEE YESIST 2026).
 
-> **Status:** Sprint 9.1 — Frontend Foundation. This is **infrastructure only**:
-> architecture, routing, state management, API layer, theming, and reusable
-> layouts. No business dashboards or features are implemented yet.
+> **Status:** Sprint 9.2 — Authentication & Session Management. The frontend
+> foundation (Sprint 9.1) is complete, and a full login / logout / session
+> lifecycle is now integrated with the backend auth API. Business dashboards
+> remain placeholders.
 
 ---
 
@@ -86,9 +87,9 @@ frontend/
 ├── public/                 # Static assets served as-is (favicon, etc.)
 ├── src/
 │   ├── api/                # Single Axios instance + typed API modules
-│   │   ├── axios.ts        #   instance, request/response interceptors, refresh hook
+│   │   ├── axios.ts        #   instance, request/response interceptors, refresh flow
 │   │   ├── client.ts       #   envelope unwrap + error normalization helpers
-│   │   ├── auth.api.ts     #   auth endpoint wrappers (placeholders)
+│   │   ├── auth.api.ts     #   auth endpoint wrappers (login/refresh/logout/me)
 │   │   ├── submission.api.ts
 │   │   ├── reward.api.ts
 │   │   └── user.api.ts
@@ -138,12 +139,12 @@ import { Button } from '@/components/ui/button';
   token; a response interceptor centralizes error handling and the
   `401 → refresh → retry` flow. The success envelope (`{ success, data, meta }`)
   and error contract mirror `docs/engineering/05_API.md`.
-- **Authentication** — Infrastructure is in place (auth context/provider, token
-  storage abstraction, interceptors, `ProtectedRoute`, `RoleGuard`). The access
-  token is held in memory and the refresh token in `localStorage`. The concrete
-  login/register/refresh calls are intentionally **not** implemented in this
-  sprint. Client-side role checks are **UX only**; real authorization is
-  enforced server-side.
+- **Authentication** — A complete login / logout / session lifecycle wired to
+  the backend auth API (`AuthProvider`, token storage abstraction, Axios
+  interceptors, `ProtectedRoute`, `RoleGuard`). The server is the source of
+  truth: the current user is always resolved via `GET /auth/me` and JWTs are
+  **never** decoded on the client. Client-side role checks are **UX only**; real
+  authorization is enforced server-side. See [Authentication](#authentication).
 - **State management** — Server state via TanStack Query; a query-key factory
   lives in `src/lib/query-keys.ts`. Global client state is intentionally minimal
   (session + theme) — `store/` exists for future needs only.
@@ -159,8 +160,8 @@ import { Button } from '@/components/ui/button';
 | Path          | Access               | Renders                          |
 | ------------- | -------------------- | -------------------------------- |
 | `/`           | —                    | Redirect → `/dashboard`          |
-| `/login`      | Public               | `LoginPage` (placeholder)        |
-| `/dashboard`  | Authenticated        | `DashboardPage` (placeholder)    |
+| `/login`      | Public               | `LoginPage` (login form)         |
+| `/dashboard`  | Authenticated        | Redirect → role home             |
 | `/consumer`   | `CONSUMER`           | Consumer dashboard placeholder   |
 | `/collector`  | `COLLECTOR`          | Collector dashboard placeholder  |
 | `/recycler`   | `RECYCLER`           | Recycler dashboard placeholder   |
@@ -169,7 +170,87 @@ import { Button } from '@/components/ui/button';
 | `*`           | —                    | `NotFoundPage`                   |
 
 All authenticated routes are wrapped by `ProtectedRoute` and the `MainLayout`
-shell; role-specific routes are additionally fenced by `RoleGuard`.
+shell; role-specific routes are additionally fenced by `RoleGuard`. After login,
+`/dashboard` forwards each user to their role home (e.g. `ADMIN → /admin`).
+
+---
+
+## Authentication
+
+The complete auth flow is integrated with the backend contract in
+[`docs/engineering/05_API.md`](../docs/engineering/05_API.md).
+
+### API methods (`src/api/auth.api.ts`)
+
+| Method                   | Endpoint             | Returns                               |
+| ------------------------ | -------------------- | ------------------------------------- |
+| `authApi.login`          | `POST /auth/login`   | `{ user, accessToken, refreshToken }` |
+| `authApi.refresh`        | `POST /auth/refresh` | `{ accessToken, refreshToken }`       |
+| `authApi.logout`         | `POST /auth/logout`  | `{ loggedOut }`                       |
+| `authApi.getCurrentUser` | `GET /auth/me`       | `PublicUser`                          |
+
+All methods use the single shared Axios instance and unwrap the success
+envelope (`response.data.data`).
+
+### Login flow
+
+```
+Submit credentials → POST /auth/login → store access + refresh tokens
+  → GET /auth/me (server confirms identity) → populate AuthContext
+  → redirect to role home (or the originally requested page)
+```
+
+The login form uses React Hook Form + Zod for UX validation; the server
+re-validates and remains the authority.
+
+### Session bootstrap
+
+On app start, `AuthProvider.bootstrapSession()` runs once:
+
+```
+Stored token? ── no ──▶ unauthenticated
+     │ yes
+     ▼
+GET /auth/me ──ok──▶ populate user (authenticated)
+     │ fail
+     ▼
+clear tokens + cache ──▶ unauthenticated (guards redirect to /login)
+```
+
+If only the refresh token survived a reload, the Axios interceptor transparently
+refreshes the access token before `/auth/me` resolves.
+
+### Token refresh (`401 → refresh → retry`)
+
+The Axios response interceptor handles expired access tokens:
+
+1. On `401`, call `POST /auth/refresh` with the stored refresh token.
+2. Refresh tokens **rotate** — both tokens are replaced on success.
+3. Retry the original request once with the new access token.
+4. Concurrent `401`s share a **single in-flight** refresh (no stampede).
+5. The retry flag and the refresh-endpoint skip prevent infinite loops.
+6. If refresh fails, the session is cleared and an `unauthorized` event fires,
+   so route guards redirect to `/login`.
+
+### Logout
+
+```
+POST /auth/logout (best-effort; failures ignored)
+  → clear tokens → clear React Query cache → redirect to /login
+```
+
+### Token storage strategy
+
+`src/services/token.service.ts` is the single seam for token persistence:
+
+| Token         | Location       | Rationale                                        |
+| ------------- | -------------- | ------------------------------------------------ |
+| Access token  | In-memory      | Minimizes XSS exposure; short-lived              |
+| Refresh token | `localStorage` | Survives reloads; enables silent session restore |
+
+The access token is intentionally **not** persisted; a full page reload relies
+on the refresh token + `/auth/me` to restore the session. Swapping the strategy
+(e.g. to secure cookies) touches only this one module.
 
 ---
 
