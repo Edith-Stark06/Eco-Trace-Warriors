@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { Button } from '@/components/ui/button';
+import { ServerError } from '@/components/common/ServerError';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -43,20 +43,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return this.props.fallback;
     }
 
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-6 text-center">
-        <h1 className="text-2xl font-semibold">Something went wrong</h1>
-        <p className="max-w-md text-sm text-muted-foreground">
-          An unexpected error occurred. You can try again, and if the problem persists, reload the
-          page.
-        </p>
-        <div className="flex gap-3">
-          <Button onClick={this.handleReset}>Try again</Button>
-          <Button variant="outline" onClick={() => window.location.reload()}>
-            Reload page
-          </Button>
-        </div>
-      </div>
-    );
+    return <ServerError fullScreen onRetry={this.handleReset} />;
   }
 }

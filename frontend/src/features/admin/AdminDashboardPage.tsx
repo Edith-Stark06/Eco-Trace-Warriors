@@ -1,6 +1,10 @@
-import { Placeholder } from '@/components/common/Placeholder';
+import { RoleDashboardPlaceholder } from '@/features/shared/RoleDashboardPlaceholder';
 
-/** Admin dashboard placeholder (business UI out of scope for Sprint 9.1). */
-export function AdminDashboardPage() {
-  return <Placeholder title="Admin Dashboard" />;
+/**
+ * Admin dashboard (placeholder). Business features are out of scope for the
+ * shared-framework sprint — this renders the standard placeholder body inside
+ * the application shell. Default export for React.lazy code-splitting.
+ */
+export default function AdminDashboardPage() {
+  return <RoleDashboardPlaceholder title="Admin" icon="admin" />;
 }

@@ -1,25 +1,36 @@
+import { Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Footer } from '@/components/layout/Footer';
+import { PageLoader } from '@/components/dashboard/PageLoader';
 
 /**
- * Application shell for authenticated areas.
+ * Reusable application shell for every authenticated role.
  *
- * Composes the navbar, sidebar, main content region, and footer placeholders.
- * Nested routes render into <Outlet />.
+ * Layout hierarchy:
+ *   Navbar (sticky, full width)
+ *   ├─ Sidebar (fixed rail on md+, drawer on mobile via the navbar toggle)
+ *   └─ Main content (scrolls independently) + Footer
+ *
+ * Nested routes render into <Outlet />, wrapped in Suspense so lazy-loaded
+ * pages show the shared PageLoader without collapsing the shell.
  */
 export function MainLayout() {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex h-screen flex-col overflow-hidden">
       <Navbar />
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <main className="flex flex-1 flex-col px-4 py-6">
-          <Outlet />
-        </main>
+        <div className="flex flex-1 flex-col overflow-y-auto">
+          <main className="flex-1 px-4 py-6 sm:px-6">
+            <Suspense fallback={<PageLoader />}>
+              <Outlet />
+            </Suspense>
+          </main>
+          <Footer />
+        </div>
       </div>
-      <Footer />
     </div>
   );
 }

@@ -14,6 +14,7 @@ export const ROUTES = {
   collector: '/collector',
   recycler: '/recycler',
   government: '/government',
+  settings: '/settings',
   notFound: '*',
 } as const;
 

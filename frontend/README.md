@@ -2,10 +2,12 @@
 
 React web dashboard for the **EcoTrace India** e-waste lifecycle management platform (IEEE YESIST 2026).
 
-> **Status:** Sprint 9.2 — Authentication & Session Management. The frontend
-> foundation (Sprint 9.1) is complete, and a full login / logout / session
-> lifecycle is now integrated with the backend auth API. Business dashboards
-> remain placeholders.
+> **Status:** Sprint 9.3 — Shared Dashboard Framework. The frontend foundation
+> (Sprint 9.1) and authentication (Sprint 9.2) are complete. A reusable
+> application shell (navbar + responsive sidebar + footer), a shared dashboard
+> component library, route-level lazy loading, and consistent loading/error
+> states are now in place. Every role dashboard still renders **placeholder
+> content** — business features arrive in later sprints.
 
 ---
 
@@ -55,11 +57,12 @@ cp .env.example .env
 
 ### Environment Variables
 
-| Variable            | Description                     | Default                        |
-| ------------------- | ------------------------------- | ------------------------------ |
-| `VITE_API_BASE_URL` | Base URL of the backend API     | `http://localhost:3000/api/v1` |
-| `VITE_API_TIMEOUT`  | Request timeout in milliseconds | `15000`                        |
-| `VITE_APP_NAME`     | Display name of the application | `EcoTrace India`               |
+| Variable            | Description                       | Default                        |
+| ------------------- | --------------------------------- | ------------------------------ |
+| `VITE_API_BASE_URL` | Base URL of the backend API       | `http://localhost:3000/api/v1` |
+| `VITE_API_TIMEOUT`  | Request timeout in milliseconds   | `15000`                        |
+| `VITE_APP_NAME`     | Display name of the application   | `EcoTrace India`               |
+| `VITE_APP_VERSION`  | Version label shown in the footer | `0.1.0`                        |
 
 Never commit `.env`; only `.env.example` is tracked.
 
@@ -95,15 +98,16 @@ frontend/
 │   │   └── user.api.ts
 │   ├── assets/             # Imported images/fonts
 │   ├── components/
-│   │   ├── common/         # ErrorBoundary, LoadingSpinner, Placeholder, ThemeToggle
+│   │   ├── common/         # ErrorBoundary, LoadingSpinner, ThemeToggle, status/error screens
+│   │   ├── dashboard/      # Reusable dashboard containers (headers, cards, loaders)
 │   │   ├── forms/          # Reusable form controls (later sprints)
-│   │   ├── layout/         # Navbar, Sidebar, Footer
-│   │   └── ui/             # shadcn/ui primitives (Button, ...)
-│   ├── features/           # Feature/role modules (auth, consumer, collector, ...)
+│   │   ├── layout/         # Navbar, Sidebar, MobileSidebar, Breadcrumbs, Footer, UserMenu
+│   │   └── ui/             # shadcn/ui primitives (Button, Card, Dialog, Sheet, ...)
+│   ├── features/           # Feature/role modules (auth, consumer, …, shared placeholder)
 │   ├── hooks/              # Shared hooks (useAuth, useTheme)
 │   ├── layouts/            # MainLayout (app shell), AuthLayout (centered)
-│   ├── lib/                # utils, env, routes, query-keys (framework-agnostic)
-│   ├── pages/              # Top-level routed pages (Login, Dashboard, NotFound)
+│   ├── lib/                # utils, env, routes, query-keys, icons, navigation, breadcrumbs
+│   ├── pages/              # Top-level routed pages (Login, Dashboard, Settings, NotFound)
 │   ├── providers/          # QueryProvider, ThemeProvider, AuthProvider + contexts
 │   ├── routes/             # AppRouter, ProtectedRoute, RoleGuard
 │   ├── services/           # Non-React services (token storage abstraction)
@@ -148,10 +152,14 @@ import { Button } from '@/components/ui/button';
 - **State management** — Server state via TanStack Query; a query-key factory
   lives in `src/lib/query-keys.ts`. Global client state is intentionally minimal
   (session + theme) — `store/` exists for future needs only.
+- **Dashboard shell** — Every authenticated role shares one reusable
+  application shell (navbar + responsive sidebar + footer) and a library of
+  business-logic-free dashboard components. Content pages are lazy-loaded. See
+  [Dashboard Framework](#dashboard-framework).
 - **Theming** — Light / Dark / System with a persisted preference
   (`ThemeProvider`), driven by CSS variables in `src/styles/globals.css`.
-- **Error handling** — A top-level `ErrorBoundary`, a reusable `LoadingSpinner`,
-  and a dedicated `NotFoundPage`.
+- **Error handling** — A top-level `ErrorBoundary` (backed by `ServerError`), a
+  reusable `LoadingSpinner`, and reusable `AccessDenied` / `NotFound` screens.
 
 ---
 
@@ -162,6 +170,7 @@ import { Button } from '@/components/ui/button';
 | `/`           | —                    | Redirect → `/dashboard`          |
 | `/login`      | Public               | `LoginPage` (login form)         |
 | `/dashboard`  | Authenticated        | Redirect → role home             |
+| `/settings`   | Authenticated        | Settings placeholder (all roles) |
 | `/consumer`   | `CONSUMER`           | Consumer dashboard placeholder   |
 | `/collector`  | `COLLECTOR`          | Collector dashboard placeholder  |
 | `/recycler`   | `RECYCLER`           | Recycler dashboard placeholder   |
@@ -171,7 +180,11 @@ import { Button } from '@/components/ui/button';
 
 All authenticated routes are wrapped by `ProtectedRoute` and the `MainLayout`
 shell; role-specific routes are additionally fenced by `RoleGuard`. After login,
-`/dashboard` forwards each user to their role home (e.g. `ADMIN → /admin`).
+`/dashboard` forwards each user to their role home (e.g. `ADMIN → /admin`). A
+user who reaches a route their role may not view sees the reusable
+`AccessDenied` screen **inside** the shell (so navigation stays available)
+rather than a silent redirect. All content pages are lazy-loaded
+(see [Dashboard Framework](#dashboard-framework)).
 
 ---
 
@@ -251,6 +264,97 @@ POST /auth/logout (best-effort; failures ignored)
 The access token is intentionally **not** persisted; a full page reload relies
 on the refresh token + `/auth/me` to restore the session. Swapping the strategy
 (e.g. to secure cookies) touches only this one module.
+
+---
+
+## Dashboard Framework
+
+Every authenticated role shares one reusable application shell and a common set
+of dashboard building blocks. This sprint delivers the framework only — role
+dashboards render placeholder content.
+
+### Layout hierarchy
+
+```
+MainLayout (h-screen, fixed shell)
+├── Navbar (sticky)
+│     ├── MobileSidebar toggle (drawer, < md only)
+│     ├── Brand logo → /dashboard
+│     ├── Breadcrumbs (auto-generated from the path)
+│     └── NotificationButton · ThemeToggle · UserMenu
+├── Sidebar (fixed rail, md+ only — role-filtered nav + logout)
+└── scroll container
+      ├── <main> → <Suspense fallback={<PageLoader/>}> Outlet </Suspense>
+      └── Footer (app name · year · version)
+```
+
+The navbar spans the full width; below it a fixed sidebar and an independently
+scrolling content column sit side by side, with the footer pinned under the
+content. The shell is role-agnostic — the only thing that changes per role is
+which navigation links appear.
+
+### Responsive behavior
+
+| Breakpoint               | Navigation                          | Layout notes                               |
+| ------------------------ | ----------------------------------- | ------------------------------------------ |
+| Mobile (`<md`)           | Hamburger → slide-in drawer (Sheet) | Sidebar hidden; brand text hidden on `<sm` |
+| Tablet / Desktop (`md+`) | Fixed sidebar rail                  | Breadcrumbs and full brand shown           |
+
+Layouts use Tailwind responsive utilities and fluid widths (no fixed pixel
+page widths). Content grids collapse from multi-column to single-column on
+small screens.
+
+### Navigation & breadcrumbs
+
+- **`src/lib/navigation.ts`** is the single source of truth for sidebar links.
+  Each item declares an icon and optional `roles`; `navItemsForRole()` filters
+  the list so **only permitted destinations are ever rendered** (UX-only —
+  the server still enforces authorization). The desktop sidebar and mobile
+  drawer both render the shared `SidebarNav`, so they never drift.
+- **`src/lib/breadcrumbs.ts`** derives the trail from the current pathname
+  (`buildBreadcrumbs`). New routes need no per-page wiring; unknown segments are
+  title-cased automatically.
+
+### Shared components
+
+Reusable, business-logic-free building blocks:
+
+| Group      | Components                                                                              |
+| ---------- | --------------------------------------------------------------------------------------- |
+| Containers | `DashboardHeader`, `PageTitle`, `PageDescription`, `Section`, `ContentCard`, `StatCard` |
+| Empty/data | `EmptyState`                                                                            |
+| Loading    | `PageLoader`, `SectionLoader`, `SkeletonCards`, `SkeletonTable`                         |
+| Errors     | `AccessDenied` (403), `NotFound` (404), `ServerError` (500) via `StatusScreen`          |
+
+These live in `src/components/dashboard/` (containers/loaders) and
+`src/components/common/` (error/status screens). `AccessDenied` backs
+`RoleGuard`, `NotFound` backs `NotFoundPage`, and `ServerError` is the
+top-level `ErrorBoundary` fallback — so the reusable screens are the real
+implementations, not copies.
+
+### UI primitives (shadcn/ui)
+
+The shared design system was expanded with new-york-style primitives in
+`src/components/ui/`: `card`, `badge`, `avatar`, `dropdown-menu`, `separator`,
+`skeleton`, `tabs`, `dialog`, `sheet`, `alert`, `textarea`, `select`, `table`,
+`scroll-area`, and `tooltip` (joining the existing `button`, `input`, `label`).
+Radix packages back the interactive ones; `cva` variant maps are split into
+`*-variants.ts` files so component modules only export components (satisfies
+`react-refresh/only-export-components`).
+
+### Icons
+
+All Lucide icons are re-exported from a central registry,
+**`src/lib/icons.ts`**. Components import `{ icons }` and reference an icon by
+key (`icons.dashboard`) instead of importing from `lucide-react` directly, so
+swapping an icon is a one-line change.
+
+### Route lazy loading
+
+All content pages (the five role dashboards and Settings) are loaded with
+`React.lazy` and split into their own chunks; the `MainLayout` `<Suspense>`
+boundary shows the shared `PageLoader` skeleton while a chunk downloads. The
+login page and the `/dashboard` redirect stay eager as entry points.
 
 ---
 
