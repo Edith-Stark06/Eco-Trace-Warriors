@@ -2,11 +2,12 @@
 
 React web dashboard for the **EcoTrace India** e-waste lifecycle management platform (IEEE YESIST 2026).
 
-> **Status:** Sprint 9.4 — Consumer Module (real backend integration). Building
-> on the foundation (9.1), authentication (9.2), and the shared dashboard
-> framework (9.3), the **Consumer** role is now the first fully functional
-> module: it reads and writes real submission and reward data through the
-> backend REST API. The other role dashboards still render **placeholder
+> **Status:** Sprint 9.5 — Collector Module (pickup workflow). Building on the
+> foundation (9.1), authentication (9.2), the shared dashboard framework (9.3),
+> and the Consumer module (9.4), the **Collector** role is now operational: a
+> collector views their assigned pickups and drives each through the real
+> backend workflow (accept → start → complete). The remaining role dashboards
+> (**Recycler**, **Government**, **Admin**) still render **placeholder
 > content** — their business features arrive in later sprints.
 
 ---
@@ -165,21 +166,22 @@ import { Button } from '@/components/ui/button';
 
 ## Routing
 
-| Path                        | Access               | Renders                          |
-| --------------------------- | -------------------- | -------------------------------- |
-| `/`                         | —                    | Redirect → `/dashboard`          |
-| `/login`                    | Public               | `LoginPage` (login form)         |
-| `/dashboard`                | Authenticated        | Redirect → role home             |
-| `/settings`                 | Authenticated        | Settings placeholder (all roles) |
-| `/consumer`                 | `CONSUMER`           | Consumer dashboard (live data)   |
-| `/consumer/submissions`     | `CONSUMER`           | Submissions list                 |
-| `/consumer/submissions/:id` | `CONSUMER`           | Submission details + timeline    |
-| `/consumer/rewards`         | `CONSUMER`           | Rewards summary + history        |
-| `/collector`                | `COLLECTOR`          | Collector dashboard placeholder  |
-| `/recycler`                 | `RECYCLER`           | Recycler dashboard placeholder   |
-| `/government`               | `GOVERNMENT`,`ADMIN` | Government dashboard placeholder |
-| `/admin`                    | `ADMIN`              | Admin dashboard placeholder      |
-| `*`                         | —                    | `NotFoundPage`                   |
+| Path                         | Access               | Renders                          |
+| ---------------------------- | -------------------- | -------------------------------- |
+| `/`                          | —                    | Redirect → `/dashboard`          |
+| `/login`                     | Public               | `LoginPage` (login form)         |
+| `/dashboard`                 | Authenticated        | Redirect → role home             |
+| `/settings`                  | Authenticated        | Settings placeholder (all roles) |
+| `/consumer`                  | `CONSUMER`           | Consumer dashboard (live data)   |
+| `/consumer/submissions`      | `CONSUMER`           | Submissions list                 |
+| `/consumer/submissions/:id`  | `CONSUMER`           | Submission details + timeline    |
+| `/consumer/rewards`          | `CONSUMER`           | Rewards summary + history        |
+| `/collector`                 | `COLLECTOR`          | Collector dashboard (live data)  |
+| `/collector/submissions/:id` | `COLLECTOR`          | Assignment details + timeline    |
+| `/recycler`                  | `RECYCLER`           | Recycler dashboard placeholder   |
+| `/government`                | `GOVERNMENT`,`ADMIN` | Government dashboard placeholder |
+| `/admin`                     | `ADMIN`              | Admin dashboard placeholder      |
+| `*`                          | —                    | `NotFoundPage`                   |
 
 All authenticated routes are wrapped by `ProtectedRoute` and the `MainLayout`
 shell; role-specific routes are additionally fenced by `RoleGuard`. After login,
@@ -436,6 +438,96 @@ The module adds **no** new empty-state, loader, or error screens. It reuses
 and `ServerError` / `NotFound` / `AccessDenied` from the shared framework, plus
 the shared `Table`, `Badge`, `Dialog`, `Select`, and dashboard container
 components.
+
+---
+
+## Collector Module
+
+The Collector role is the first **operational workflow** — a collector reads the
+pickups assigned to them and advances each through the recycling lifecycle
+against the real backend. Everything lives under `src/features/collector/` and
+reuses the shared API layer, dashboard framework, and UI primitives. Assignment
+itself is an Admin/Government concern and is intentionally not built here.
+
+### Pages
+
+| Page                             | Route                        | Contents                                                          |
+| -------------------------------- | ---------------------------- | ----------------------------------------------------------------- |
+| `CollectorDashboardPage`         | `/collector`                 | Status summary, active assignments, today's work, quick actions   |
+| `CollectorAssignmentDetailsPage` | `/collector/submissions/:id` | Full record, images, coordinates, and a read-only pickup timeline |
+
+### API integration
+
+The module talks only to the endpoints below (see
+[`docs/engineering/05_API.md`](../docs/engineering/05_API.md)). Each wrapper uses
+the single shared Axios instance and unwraps the success envelope
+(`response.data.data`).
+
+| Method                          | Endpoint                          | Purpose                                       |
+| ------------------------------- | --------------------------------- | --------------------------------------------- |
+| `collectorApi.getAssignments`   | `GET /collector/submissions`      | The collector's active assignment queue       |
+| `collectorApi.acceptAssignment` | `PATCH /submissions/:id/accept`   | Accept an assignment (ASSIGNED → ACCEPTED)    |
+| `collectorApi.startPickup`      | `PATCH /submissions/:id/start`    | Start the pickup (ACCEPTED → IN_PROGRESS)     |
+| `collectorApi.completePickup`   | `PATCH /submissions/:id/complete` | Complete the pickup (IN_PROGRESS → COLLECTED) |
+
+Server state is managed with TanStack Query hooks (`useCollectorAssignments`,
+`useAcceptAssignment`, `useStartPickup`, `useCompletePickup`). Mutations never
+refetch manually — they invalidate the shared `collector.*` query keys and let
+Query refresh what is observed.
+
+### Assignment lifecycle
+
+The backend `GET /collector/submissions` returns only the collector's **active**
+queue — submissions in `ASSIGNED`, `ACCEPTED`, or `IN_PROGRESS`. Each status
+maps to exactly one legal action, and the UI shows **only** that action (an
+invalid transition is never offered):
+
+```
+ASSIGNED     → Accept Assignment  → ACCEPTED
+ACCEPTED     → Start Pickup       → IN_PROGRESS
+IN_PROGRESS  → Complete Pickup    → COLLECTED
+COLLECTED    → (read-only) Waiting for recycler
+```
+
+Once a pickup reaches `COLLECTED` it leaves the active queue and is handed to
+the recycler (Sprint 9.6). The **status summary** tiles (Assigned, Accepted, In
+Progress, Collected Today) are computed from the assignment list — no extra API
+call — using `computeStatusSummary`.
+
+### Workflow flow
+
+```
+Accept  (confirm) ─▶ PATCH /submissions/:id/accept   ─▶ invalidate collector.* ─▶ queue refreshes
+Start   (confirm) ─▶ PATCH /submissions/:id/start     ─▶ invalidate collector.*
+Complete(confirm) ─▶ PATCH /submissions/:id/complete  ─▶ invalidate collector.* (item leaves queue)
+```
+
+- Every workflow action requires **confirmation** via the shared `Dialog`
+  ("Accept this pickup assignment?", "Start traveling to pickup location?",
+  "Mark this pickup as completed?") and reports success with a **Sonner** toast.
+- The **pickup timeline** reuses the shared read-only `SubmissionTimeline`,
+  highlighting the collector stages (`ASSIGNED → ACCEPTED → IN_PROGRESS →
+COLLECTED`); consumer stages before `ASSIGNED` read as complete and recycler
+  stages remain upcoming.
+- Because `GET /submissions/:id` is owner/admin-only on the backend, the details
+  page sources its record from the collector's assignment-queue cache rather
+  than a by-id fetch — a pickup that has left the queue (or an unknown id)
+  renders the shared `NotFound` screen.
+
+### Navigation
+
+The Collector sidebar shows **Dashboard** and **Settings** (plus **Logout** in
+the sidebar footer). Consumer routes are never exposed to a collector —
+`navItemsForRole` filters the shared navigation by role.
+
+### Reuse
+
+The module adds **no** new empty-state, loader, or error screens. It reuses
+`EmptyState`, `PageLoader` / `SkeletonCards` / `SkeletonTable`, and
+`ServerError` / `NotFound` from the shared framework; the shared `StatCard`,
+`Table`, `Badge`, `Dialog`, and dashboard containers; and the Consumer module's
+pure submission display helpers (`SubmissionStatusBadge`, `SubmissionTimeline`,
+`formatWeight` / `formatDate`, …) rather than duplicating them.
 
 ---
 

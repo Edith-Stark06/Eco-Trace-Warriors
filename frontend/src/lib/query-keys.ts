@@ -23,6 +23,10 @@ export const queryKeys = {
     balance: ['rewards', 'balance'] as const,
     history: (params?: QueryKeyParams) => ['rewards', 'history', params ?? {}] as const,
   },
+  collector: {
+    all: ['collector'] as const,
+    assignments: (params?: QueryKeyParams) => ['collector', 'assignments', params ?? {}] as const,
+  },
   user: {
     profile: ['user', 'profile'] as const,
   },
