@@ -6,7 +6,8 @@ import axios, {
 } from 'axios';
 import { env } from '@/lib/env';
 import { tokenStorage } from '@/services/token.service';
-import type { ApiErrorBody } from '@/types';
+import { sessionEvents } from '@/services/session-events';
+import type { ApiErrorBody, ApiSuccess, AuthTokens } from '@/types';
 
 /**
  * Single shared Axios instance for the whole app.
@@ -14,14 +15,21 @@ import type { ApiErrorBody } from '@/types';
  * All API modules build on this instance; UI code never calls axios/fetch
  * directly (docs/engineering/07_FRONTEND.md → exactly one API client).
  *
- * Sprint 9.1: request/response interceptors and the 401 refresh hook are
- * wired as INFRASTRUCTURE. The actual `/auth/refresh` call is intentionally
- * not implemented yet — see `refreshAccessToken` below.
+ * A request interceptor attaches the bearer token. The response interceptor
+ * implements the `401 → refresh → retry` flow: on an expired access token it
+ * rotates the token pair via POST /auth/refresh (single-flight, shared across
+ * concurrent 401s), retries the original request once, and — if refresh fails
+ * — clears the session and emits `unauthorized` so the app redirects to login.
  */
 
-/** Config flag so a retried request is only retried once after refresh. */
-interface RetryableConfig extends InternalAxiosRequestConfig {
-  _retry?: boolean;
+/** Extra per-request flags recognized by the interceptors. */
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    /** Skip 401 refresh handling (used by the refresh call itself). */
+    skipAuthRefresh?: boolean;
+    /** Internal: marks a request already retried after a refresh. */
+    _retry?: boolean;
+  }
 }
 
 export const apiClient: AxiosInstance = axios.create({
@@ -46,24 +54,37 @@ apiClient.interceptors.request.use((config) => {
 });
 
 /* -------------------------------------------------------------------------- */
-/* Refresh infrastructure.                                                    */
+/* Refresh flow (single-flight).                                              */
 /*                                                                            */
 /* A single in-flight refresh promise is shared so concurrent 401s trigger    */
-/* only one refresh attempt. The concrete refresh call is a placeholder in    */
-/* this sprint and returns null (treated as "cannot refresh").                */
+/* only one POST /auth/refresh. Refresh tokens rotate: on success BOTH tokens */
+/* are replaced. On failure the session is cleared and `unauthorized` fires.  */
 /* -------------------------------------------------------------------------- */
 let refreshInFlight: Promise<string | null> | null = null;
 
-async function refreshAccessToken(): Promise<string | null> {
-  // TODO (Sprint 9.2): call POST /auth/refresh with the stored refresh token,
-  // persist the rotated pair via tokenStorage, and return the new access token.
-  // Infrastructure only for now.
-  return null;
+async function performRefresh(): Promise<string | null> {
+  const refreshToken = tokenStorage.getRefreshToken();
+  if (!refreshToken) return null;
+
+  try {
+    // `skipAuthRefresh` prevents this call's own 401 from recursing here.
+    const response = await apiClient.post<ApiSuccess<AuthTokens>>(
+      '/auth/refresh',
+      { refreshToken },
+      { skipAuthRefresh: true },
+    );
+    const tokens = response.data.data;
+    tokenStorage.setAccessToken(tokens.accessToken);
+    tokenStorage.setRefreshToken(tokens.refreshToken);
+    return tokens.accessToken;
+  } catch {
+    return null;
+  }
 }
 
 function requestRefresh(): Promise<string | null> {
   if (!refreshInFlight) {
-    refreshInFlight = refreshAccessToken().finally(() => {
+    refreshInFlight = performRefresh().finally(() => {
       refreshInFlight = null;
     });
   }
@@ -71,14 +92,15 @@ function requestRefresh(): Promise<string | null> {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Response interceptor: normalize errors and handle 401 → refresh → retry.   */
+/* Response interceptor: handle 401 → refresh → retry (once).                 */
 /* -------------------------------------------------------------------------- */
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<{ error?: ApiErrorBody }>) => {
-    const original = error.config as RetryableConfig | undefined;
+    const original = error.config as InternalAxiosRequestConfig | undefined;
+    const isAuthError = error.response?.status === 401;
 
-    if (error.response?.status === 401 && original && !original._retry) {
+    if (isAuthError && original && !original.skipAuthRefresh && !original._retry) {
       original._retry = true;
       const newToken = await requestRefresh();
 
@@ -89,8 +111,10 @@ apiClient.interceptors.response.use(
         return apiClient(original);
       }
 
-      // Refresh unavailable/failed → clear session so guards redirect to login.
+      // Refresh unavailable/failed → drop the session and notify the app so
+      // route guards send the user to login.
       tokenStorage.clear();
+      sessionEvents.emit('unauthorized');
     }
 
     return Promise.reject(error);

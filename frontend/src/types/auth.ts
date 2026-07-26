@@ -2,7 +2,7 @@
  * Authentication & user domain types.
  *
  * Mirrors the user shape and role enum from docs/engineering/04_DATABASE.md
- * and 05_API.md. This sprint defines the types only; no auth logic yet.
+ * and 05_API.md.
  */
 
 /** Server-side roles (docs/engineering/04_DATABASE.md → UserRole). */
@@ -10,7 +10,11 @@ export const USER_ROLES = ['CONSUMER', 'COLLECTOR', 'RECYCLER', 'GOVERNMENT', 'A
 
 export type UserRole = (typeof USER_ROLES)[number];
 
-export interface User {
+/**
+ * The public-safe user projection returned by the backend (never includes
+ * secrets such as the password hash). Canonical user type across the app.
+ */
+export interface PublicUser {
   id: string;
   fullName: string;
   email: string;
@@ -21,19 +25,34 @@ export interface User {
   createdAt: string;
 }
 
+/** Backwards-compatible alias; prefer {@link PublicUser}. */
+export type User = PublicUser;
+
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
 }
 
-/** Payload returned by login/register (docs/engineering/05_API.md → Auth). */
-export interface AuthSession extends AuthTokens {
-  user: User;
+/** Payload returned by POST /auth/login (docs/engineering/05_API.md → Auth). */
+export interface AuthResult extends AuthTokens {
+  user: PublicUser;
 }
 
-/** Shape exposed by the auth context to consumers. */
+/** Backwards-compatible alias; prefer {@link AuthResult}. */
+export type AuthSession = AuthResult;
+
+/** Credentials accepted by the login form and POST /auth/login. */
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated';
+
+/** Reactive auth state exposed to the app. */
 export interface AuthState {
-  user: User | null;
-  status: 'idle' | 'loading' | 'authenticated' | 'unauthenticated';
+  user: PublicUser | null;
+  status: AuthStatus;
   isAuthenticated: boolean;
+  isLoading: boolean;
 }
