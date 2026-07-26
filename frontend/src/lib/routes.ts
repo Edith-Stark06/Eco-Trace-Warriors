@@ -11,6 +11,9 @@ export const ROUTES = {
   dashboard: '/dashboard',
   admin: '/admin',
   consumer: '/consumer',
+  consumerSubmissions: '/consumer/submissions',
+  consumerSubmissionDetails: '/consumer/submissions/:id',
+  consumerRewards: '/consumer/rewards',
   collector: '/collector',
   recycler: '/recycler',
   government: '/government',
@@ -35,4 +38,9 @@ export const ROLE_HOME: Record<UserRole, string> = {
 /** Resolve the post-login home path for a role, falling back to the dashboard. */
 export function roleHome(role: UserRole | undefined): string {
   return role ? (ROLE_HOME[role] ?? ROUTES.dashboard) : ROUTES.dashboard;
+}
+
+/** Build the path to a specific consumer submission's detail page. */
+export function consumerSubmissionPath(id: string): string {
+  return `/consumer/submissions/${id}`;
 }

@@ -4,18 +4,24 @@
  * Using a single factory keeps cache keys consistent and makes targeted
  * invalidation straightforward. Extend per feature in future sprints.
  */
+import type { PaginationParams } from '@/types';
+
+/** Loose parameter bag accepted by list-style query keys (e.g. pagination). */
+export type QueryKeyParams = Record<string, unknown> | PaginationParams | undefined;
+
 export const queryKeys = {
   auth: {
     me: ['auth', 'me'] as const,
   },
   submissions: {
     all: ['submissions'] as const,
-    list: (params?: Record<string, unknown>) => ['submissions', 'list', params ?? {}] as const,
+    list: (params?: QueryKeyParams) => ['submissions', 'list', params ?? {}] as const,
     detail: (id: string) => ['submissions', 'detail', id] as const,
   },
   rewards: {
+    all: ['rewards'] as const,
     balance: ['rewards', 'balance'] as const,
-    transactions: ['rewards', 'transactions'] as const,
+    history: (params?: QueryKeyParams) => ['rewards', 'history', params ?? {}] as const,
   },
   user: {
     profile: ['user', 'profile'] as const,

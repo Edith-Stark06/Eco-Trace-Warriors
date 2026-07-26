@@ -2,12 +2,12 @@
 
 React web dashboard for the **EcoTrace India** e-waste lifecycle management platform (IEEE YESIST 2026).
 
-> **Status:** Sprint 9.3 — Shared Dashboard Framework. The frontend foundation
-> (Sprint 9.1) and authentication (Sprint 9.2) are complete. A reusable
-> application shell (navbar + responsive sidebar + footer), a shared dashboard
-> component library, route-level lazy loading, and consistent loading/error
-> states are now in place. Every role dashboard still renders **placeholder
-> content** — business features arrive in later sprints.
+> **Status:** Sprint 9.4 — Consumer Module (real backend integration). Building
+> on the foundation (9.1), authentication (9.2), and the shared dashboard
+> framework (9.3), the **Consumer** role is now the first fully functional
+> module: it reads and writes real submission and reward data through the
+> backend REST API. The other role dashboards still render **placeholder
+> content** — their business features arrive in later sprints.
 
 ---
 
@@ -165,18 +165,21 @@ import { Button } from '@/components/ui/button';
 
 ## Routing
 
-| Path          | Access               | Renders                          |
-| ------------- | -------------------- | -------------------------------- |
-| `/`           | —                    | Redirect → `/dashboard`          |
-| `/login`      | Public               | `LoginPage` (login form)         |
-| `/dashboard`  | Authenticated        | Redirect → role home             |
-| `/settings`   | Authenticated        | Settings placeholder (all roles) |
-| `/consumer`   | `CONSUMER`           | Consumer dashboard placeholder   |
-| `/collector`  | `COLLECTOR`          | Collector dashboard placeholder  |
-| `/recycler`   | `RECYCLER`           | Recycler dashboard placeholder   |
-| `/government` | `GOVERNMENT`,`ADMIN` | Government dashboard placeholder |
-| `/admin`      | `ADMIN`              | Admin dashboard placeholder      |
-| `*`           | —                    | `NotFoundPage`                   |
+| Path                        | Access               | Renders                          |
+| --------------------------- | -------------------- | -------------------------------- |
+| `/`                         | —                    | Redirect → `/dashboard`          |
+| `/login`                    | Public               | `LoginPage` (login form)         |
+| `/dashboard`                | Authenticated        | Redirect → role home             |
+| `/settings`                 | Authenticated        | Settings placeholder (all roles) |
+| `/consumer`                 | `CONSUMER`           | Consumer dashboard (live data)   |
+| `/consumer/submissions`     | `CONSUMER`           | Submissions list                 |
+| `/consumer/submissions/:id` | `CONSUMER`           | Submission details + timeline    |
+| `/consumer/rewards`         | `CONSUMER`           | Rewards summary + history        |
+| `/collector`                | `COLLECTOR`          | Collector dashboard placeholder  |
+| `/recycler`                 | `RECYCLER`           | Recycler dashboard placeholder   |
+| `/government`               | `GOVERNMENT`,`ADMIN` | Government dashboard placeholder |
+| `/admin`                    | `ADMIN`              | Admin dashboard placeholder      |
+| `*`                         | —                    | `NotFoundPage`                   |
 
 All authenticated routes are wrapped by `ProtectedRoute` and the `MainLayout`
 shell; role-specific routes are additionally fenced by `RoleGuard`. After login,
@@ -355,6 +358,84 @@ All content pages (the five role dashboards and Settings) are loaded with
 `React.lazy` and split into their own chunks; the `MainLayout` `<Suspense>`
 boundary shows the shared `PageLoader` skeleton while a chunk downloads. The
 login page and the `/dashboard` redirect stay eager as entry points.
+
+---
+
+## Consumer Module
+
+The Consumer role is the first module wired to **real backend data** — no mocks,
+no fixtures. Everything lives under `src/features/consumer/` and reuses the
+shared API layer, dashboard framework, and UI primitives.
+
+### Pages
+
+| Page                            | Route                       | Contents                                                                 |
+| ------------------------------- | --------------------------- | ------------------------------------------------------------------------ |
+| `ConsumerDashboardPage`         | `/consumer`                 | Welcome header, reward summary, 5 most-recent submissions, quick actions |
+| `ConsumerSubmissionsPage`       | `/consumer/submissions`     | Full list with search, status filter, and pagination                     |
+| `ConsumerSubmissionDetailsPage` | `/consumer/submissions/:id` | Full record, image URLs, and a read-only lifecycle timeline              |
+| `ConsumerRewardsPage`           | `/consumer/rewards`         | Reward summary card + reward-history table                               |
+
+### API integration
+
+The module talks only to the endpoints below (see
+[`docs/engineering/05_API.md`](../docs/engineering/05_API.md)). Each wrapper uses
+the single shared Axios instance and unwraps the success envelope
+(`response.data.data`).
+
+| Method                  | Endpoint                  | Purpose                             |
+| ----------------------- | ------------------------- | ----------------------------------- |
+| `submissionApi.list`    | `GET /submissions`        | The caller's own submissions        |
+| `submissionApi.getById` | `GET /submissions/:id`    | A single submission                 |
+| `submissionApi.create`  | `POST /submissions`       | Create a submission                 |
+| `submissionApi.update`  | `PATCH /submissions/:id`  | Edit a submission (while PENDING)   |
+| `submissionApi.remove`  | `DELETE /submissions/:id` | Delete a submission (while PENDING) |
+| `rewardApi.getBalance`  | `GET /rewards/balance`    | GreenCoins + lifetime impact        |
+| `rewardApi.getHistory`  | `GET /rewards/history`    | Reward transactions                 |
+
+Server state is managed with TanStack Query hooks
+(`useSubmissions`, `useSubmission`, `useRewardBalance`, `useRewardHistory`,
+`useCreateSubmission`, `useUpdateSubmission`, `useDeleteSubmission`). Mutations
+never refetch manually — they invalidate the shared query keys
+(`submissions.*`, `rewards.*`) and let Query refresh what is observed.
+
+### Submission flow
+
+```
+Create (dialog) ─▶ POST /submissions ─▶ invalidate submissions ─▶ lists refresh
+Edit   (dialog) ─▶ PATCH /submissions/:id ─▶ invalidate detail + lists
+Delete (confirm) ─▶ DELETE /submissions/:id ─▶ invalidate lists (navigate away from detail)
+```
+
+- The **submission form** (create + edit) uses React Hook Form + Zod, mirroring
+  the backend `createSubmissionSchema` so the client rejects exactly what the
+  server would.
+- **Images are URLs, not uploads.** The form provides a dynamic _Add / Remove
+  image URL_ list; each URL is validated. There is no multipart upload.
+- **Edit and Delete are offered only while a submission is `PENDING`** — once a
+  collector is assigned the backend rejects modification, so the UI hides those
+  actions and shows _"This submission can no longer be modified."_ The user is
+  never offered an action the server would reject.
+- The **lifecycle timeline** renders the recycling path
+  `PENDING → ASSIGNED → ACCEPTED → IN_PROGRESS → COLLECTED → RECYCLING → RECYCLED`
+  and highlights the current stage. It is read-only; consumers do not drive
+  status transitions.
+
+### Reward flow
+
+Rewards are issued **server-side** when a submission is recycled — the client
+only reads them. `GET /rewards/balance` powers the summary tiles (Green Coins,
+Total Rewards, CO₂ Saved, Energy Saved, Landfill Diverted) and
+`GET /rewards/history` powers the history table (points, reason, submission
+category/status, date).
+
+### Reuse
+
+The module adds **no** new empty-state, loader, or error screens. It reuses
+`EmptyState`, `PageLoader` / `SectionLoader` / `SkeletonCards` / `SkeletonTable`,
+and `ServerError` / `NotFound` / `AccessDenied` from the shared framework, plus
+the shared `Table`, `Badge`, `Dialog`, `Select`, and dashboard container
+components.
 
 ---
 
