@@ -1,3 +1,4 @@
+import { lazy } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { MainLayout } from '@/layouts/MainLayout';
 import { AuthLayout } from '@/layouts/AuthLayout';
@@ -8,18 +9,28 @@ import { ROUTES } from '@/lib/routes';
 import { LoginPage } from '@/pages/LoginPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
-import { ConsumerDashboardPage } from '@/features/consumer/ConsumerDashboardPage';
-import { CollectorDashboardPage } from '@/features/collector/CollectorDashboardPage';
-import { RecyclerDashboardPage } from '@/features/recycler/RecyclerDashboardPage';
-import { GovernmentDashboardPage } from '@/features/government/GovernmentDashboardPage';
-import { AdminDashboardPage } from '@/features/admin/AdminDashboardPage';
+
+/**
+ * Content pages are code-split with React.lazy so each role's dashboard (and
+ * settings) ships in its own chunk, loaded on demand. The MainLayout wraps its
+ * <Outlet /> in a Suspense boundary that shows the shared PageLoader while a
+ * chunk downloads. Login and the dashboard redirect stay eager: they are the
+ * entry points and carry no meaningful bundle weight.
+ */
+const ConsumerDashboardPage = lazy(() => import('@/features/consumer/ConsumerDashboardPage'));
+const CollectorDashboardPage = lazy(() => import('@/features/collector/CollectorDashboardPage'));
+const RecyclerDashboardPage = lazy(() => import('@/features/recycler/RecyclerDashboardPage'));
+const GovernmentDashboardPage = lazy(() => import('@/features/government/GovernmentDashboardPage'));
+const AdminDashboardPage = lazy(() => import('@/features/admin/AdminDashboardPage'));
+const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
 
 /**
  * Central route table.
  *
  * Public routes use AuthLayout; authenticated routes are wrapped by
  * ProtectedRoute + MainLayout. Role-specific dashboards are additionally
- * fenced by RoleGuard (UX-only; real authorization is server-side).
+ * fenced by RoleGuard (UX-only; real authorization is server-side). Settings is
+ * shared by all authenticated roles.
  */
 export function AppRouter() {
   return (
@@ -37,6 +48,7 @@ export function AppRouter() {
         <Route element={<ProtectedRoute />}>
           <Route element={<MainLayout />}>
             <Route path={ROUTES.dashboard} element={<DashboardPage />} />
+            <Route path={ROUTES.settings} element={<SettingsPage />} />
 
             <Route element={<RoleGuard allow={['CONSUMER']} />}>
               <Route path={ROUTES.consumer} element={<ConsumerDashboardPage />} />
