@@ -15,6 +15,7 @@ export const ROUTES = {
   consumerSubmissionDetails: '/consumer/submissions/:id',
   consumerRewards: '/consumer/rewards',
   collector: '/collector',
+  collectorAssignmentDetails: '/collector/submissions/:id',
   recycler: '/recycler',
   government: '/government',
   settings: '/settings',
@@ -43,4 +44,9 @@ export function roleHome(role: UserRole | undefined): string {
 /** Build the path to a specific consumer submission's detail page. */
 export function consumerSubmissionPath(id: string): string {
   return `/consumer/submissions/${id}`;
+}
+
+/** Build the path to a specific collector assignment's detail page. */
+export function collectorAssignmentPath(id: string): string {
+  return `/collector/submissions/${id}`;
 }

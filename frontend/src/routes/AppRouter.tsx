@@ -24,6 +24,9 @@ const ConsumerSubmissionDetailsPage = lazy(
 );
 const ConsumerRewardsPage = lazy(() => import('@/features/consumer/ConsumerRewardsPage'));
 const CollectorDashboardPage = lazy(() => import('@/features/collector/CollectorDashboardPage'));
+const CollectorAssignmentDetailsPage = lazy(
+  () => import('@/features/collector/CollectorAssignmentDetailsPage'),
+);
 const RecyclerDashboardPage = lazy(() => import('@/features/recycler/RecyclerDashboardPage'));
 const GovernmentDashboardPage = lazy(() => import('@/features/government/GovernmentDashboardPage'));
 const AdminDashboardPage = lazy(() => import('@/features/admin/AdminDashboardPage'));
@@ -67,6 +70,10 @@ export function AppRouter() {
 
             <Route element={<RoleGuard allow={['COLLECTOR']} />}>
               <Route path={ROUTES.collector} element={<CollectorDashboardPage />} />
+              <Route
+                path={ROUTES.collectorAssignmentDetails}
+                element={<CollectorAssignmentDetailsPage />}
+              />
             </Route>
 
             <Route element={<RoleGuard allow={['RECYCLER']} />}>

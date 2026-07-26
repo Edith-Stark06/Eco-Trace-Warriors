@@ -27,7 +27,6 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', path: ROUTES.dashboard, icon: 'dashboard' },
   { label: 'Submissions', path: ROUTES.consumerSubmissions, icon: 'package', roles: ['CONSUMER'] },
   { label: 'Rewards', path: ROUTES.consumerRewards, icon: 'coins', roles: ['CONSUMER'] },
-  { label: 'Collector', path: ROUTES.collector, icon: 'collector', roles: ['COLLECTOR'] },
   { label: 'Recycler', path: ROUTES.recycler, icon: 'recycler', roles: ['RECYCLER'] },
   {
     label: 'Government',
