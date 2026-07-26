@@ -20,6 +20,17 @@ export const envSchema = z
       .default('/api/v1'),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
     DATABASE_URL: z.string().url().optional(),
+    // Comma-separated allowlist of browser origins permitted by CORS.
+    // Parsed into a trimmed, non-empty string[]; empty/whitespace entries are dropped.
+    CORS_ORIGINS: z
+      .string()
+      .default('http://localhost:5173')
+      .transform((value) =>
+        value
+          .split(',')
+          .map((origin) => origin.trim())
+          .filter((origin) => origin.length > 0),
+      ),
     JWT_SECRET: z
       .string()
       .min(32, 'JWT_SECRET must be at least 32 characters')
@@ -31,10 +42,25 @@ export const envSchema = z
     JWT_ACCESS_EXPIRY: z.string().min(1).default('15m'),
     JWT_REFRESH_EXPIRY: z.string().min(1).default('7d'),
     BCRYPT_ROUNDS: z.coerce.number().int().min(4).max(15).default(10),
+    // Auth rate limiting — window length and max requests per IP per window.
+    // Applies only to the authentication endpoints (see auth router).
+    AUTH_RATE_LIMIT_WINDOW_MS: z.coerce
+      .number()
+      .int()
+      .min(1000)
+      .default(15 * 60 * 1000),
+    AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(10),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'production') return;
 
+    if (!env.DATABASE_URL) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['DATABASE_URL'],
+        message: 'DATABASE_URL is required in production',
+      });
+    }
     if (env.JWT_SECRET.startsWith(DEV_SECRET_PREFIX)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

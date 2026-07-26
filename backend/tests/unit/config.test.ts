@@ -9,11 +9,13 @@ describe('loadConfig', () => {
     expect(config.apiPrefix).toBe('/api/v1');
     expect(config.logLevel).toBe('info');
     expect(config.databaseUrl).toBeUndefined();
+    expect(config.corsOrigins).toEqual(['http://localhost:5173']);
     expect(config.jwtSecret).toMatch(/^dev-insecure-/);
     expect(config.jwtRefreshSecret).toMatch(/^dev-insecure-/);
     expect(config.jwtAccessExpiry).toBe('15m');
     expect(config.jwtRefreshExpiry).toBe('7d');
     expect(config.bcryptRounds).toBe(10);
+    expect(config.authRateLimit).toEqual({ windowMs: 15 * 60 * 1000, max: 10 });
     expect(config.isProduction).toBe(false);
     expect(config.isTest).toBe(false);
   });
@@ -30,6 +32,8 @@ describe('loadConfig', () => {
       JWT_ACCESS_EXPIRY: '5m',
       JWT_REFRESH_EXPIRY: '30d',
       BCRYPT_ROUNDS: '12',
+      AUTH_RATE_LIMIT_WINDOW_MS: '60000',
+      AUTH_RATE_LIMIT_MAX: '5',
     });
 
     expect(config.nodeEnv).toBe('production');
@@ -42,6 +46,7 @@ describe('loadConfig', () => {
     expect(config.jwtAccessExpiry).toBe('5m');
     expect(config.jwtRefreshExpiry).toBe('30d');
     expect(config.bcryptRounds).toBe(12);
+    expect(config.authRateLimit).toEqual({ windowMs: 60000, max: 5 });
     expect(config.isProduction).toBe(true);
   });
 
@@ -73,6 +78,27 @@ describe('loadConfig', () => {
     );
   });
 
+  it('requires DATABASE_URL in production', () => {
+    expect(() =>
+      loadConfig({
+        NODE_ENV: 'production',
+        JWT_SECRET: 'a-strong-production-access-secret-0123456789',
+        JWT_REFRESH_SECRET: 'a-strong-production-refresh-secret-0123456789',
+      }),
+    ).toThrow(/DATABASE_URL is required in production/);
+  });
+
+  it('accepts a production config that supplies DATABASE_URL', () => {
+    expect(() =>
+      loadConfig({
+        NODE_ENV: 'production',
+        DATABASE_URL: 'postgresql://user:pass@db:5432/ecotrace',
+        JWT_SECRET: 'a-strong-production-access-secret-0123456789',
+        JWT_REFRESH_SECRET: 'a-strong-production-refresh-secret-0123456789',
+      }),
+    ).not.toThrow();
+  });
+
   it('rejects identical access and refresh secrets in production', () => {
     expect(() =>
       loadConfig({
@@ -91,8 +117,28 @@ describe('loadConfig', () => {
     expect(() => loadConfig({ BCRYPT_ROUNDS: '20' })).toThrow(/Invalid environment configuration/);
   });
 
+  it('rejects a non-numeric AUTH_RATE_LIMIT_MAX', () => {
+    expect(() => loadConfig({ AUTH_RATE_LIMIT_MAX: 'lots' })).toThrow(
+      /Invalid environment configuration/,
+    );
+  });
+
+  it('rejects an AUTH_RATE_LIMIT_WINDOW_MS below the minimum', () => {
+    expect(() => loadConfig({ AUTH_RATE_LIMIT_WINDOW_MS: '10' })).toThrow(
+      /Invalid environment configuration/,
+    );
+  });
+
   it('returns a frozen (immutable) config object', () => {
     const config = loadConfig({});
     expect(Object.isFrozen(config)).toBe(true);
+  });
+
+  it('parses CORS_ORIGINS into a trimmed, non-empty allowlist', () => {
+    const config = loadConfig({
+      CORS_ORIGINS: 'https://app.ecotrace.in, https://admin.ecotrace.in ,,  ',
+    });
+
+    expect(config.corsOrigins).toEqual(['https://app.ecotrace.in', 'https://admin.ecotrace.in']);
   });
 });

@@ -178,6 +178,35 @@ In addition to the cross-cutting rules in `02_PROJECT_RULES.md`:
 - `authenticate` — verifies the JWT, attaches `{ userId, role }` to the request context.
 - `authorize(...roles)` — enforces the role table in `05_API.md` → Endpoint Catalog.
 - Both are applied at the route level; no endpoint outside the public list may omit them.
+- Manual reward issuance (`POST /rewards/issue/:submissionId`) is an administrative override — rewards are normally issued automatically when recycling completes — so it is restricted to `ADMIN` via `authorize(UserRole.ADMIN)`. The reward read endpoints (`/rewards/history`, `/rewards/balance`) return the caller's own data and require authentication only.
+
+---
+
+# Security Headers
+
+- `securityHeaders` (Helmet) is the **first** middleware in the pipeline, so every response — including 404s and error responses — carries HTTP security headers.
+- `Content-Security-Policy` is intentionally **disabled**: this service is a JSON REST API, and a restrictive default CSP would break the future Swagger/UI docs page (`{apiPrefix}/docs`). All other Helmet defaults (HSTS, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, etc.) remain enabled.
+- `x-powered-by` is disabled separately (`app.disable('x-powered-by')`) to remove the Express fingerprint.
+
+---
+
+# CORS
+
+- `cors` runs immediately after `securityHeaders` and before body parsing, so browser preflight (`OPTIONS`) requests are answered before routing.
+- The allowlist is driven entirely by configuration: the `CORS_ORIGINS` environment variable (comma-separated) is parsed and validated by the Zod `envSchema` into `AppConfig.corsOrigins` (`string[]`). No CORS values are hardcoded, and the middleware receives the allowlist via dependency injection.
+- Policy:
+  - Requests with **no `Origin` header** (curl, Postman, server-to-server) are allowed.
+  - Browser requests whose `Origin` is in the allowlist are allowed (`credentials` enabled).
+  - Any other `Origin` is rejected — no CORS headers are emitted, so the browser blocks the response.
+
+---
+
+# Auth Rate Limiting
+
+- Brute-force protection is applied **only to the authentication endpoints** (`/auth/*`) — there is no global API rate limiter. The `authRateLimiter` middleware is injected into the auth router (`AuthRouterDeps.rateLimiter`) and attached via `router.use(...)`, so it guards every auth route without touching health, submission, or reward traffic.
+- Route-level (not global) limiting keeps the tight auth threshold from throttling unrelated reads, and lets auth be tuned independently of general traffic.
+- Configuration is driven by the Zod `envSchema`: `AUTH_RATE_LIMIT_WINDOW_MS` (window length, default 15 min) and `AUTH_RATE_LIMIT_MAX` (max requests per IP per window, default 10) are surfaced on `AppConfig.authRateLimit`.
+- On exceeding the limit the middleware delegates to the global error handler with a `TooManyRequestsError`, so the response is **HTTP 429** using the standard error envelope (`05_API.md` — Error Contract, code `TOO_MANY_REQUESTS`). Standard `RateLimit-*` headers are included.
 
 ---
 
@@ -202,6 +231,12 @@ In addition to the cross-cutting rules in `02_PROJECT_RULES.md`:
 - A correlation ID is generated per request and propagated to AI-service calls.
 - Never log: passwords, tokens, JWT contents, personal data, request bodies containing secrets.
 
+## Request logging & observability
+
+- HTTP requests are logged via `requestLogger` (`pino-http`) on completion. Each completion log carries explicit `requestId` (the correlation ID), `status` (HTTP response status), and `durationMs` (request latency, measured by `pino-http` — not recomputed).
+- Log level follows the response: `error` for ≥500 or thrown errors, `warn` for ≥400, `info` otherwise. Liveness `GET /health` requests are ignored to keep the log stream quiet.
+- On startup the server emits one concise structured summary line (`service`, `version`, `env`, `port`, `apiPrefix`, `logLevel`) via the shared logger — no secrets.
+
 ---
 
 # Configuration
@@ -209,6 +244,7 @@ In addition to the cross-cutting rules in `02_PROJECT_RULES.md`:
 - All configuration is read once at startup from environment variables into a **typed, validated config object** (Zod-parsed); the app fails fast on missing/invalid values.
 - No `process.env` access outside `shared/config/`.
 - `.env.example` is kept current with every new variable (`02_PROJECT_RULES.md`).
+- Production-only invariants are enforced by the `envSchema` `superRefine`: JWT secrets must be strong (no `dev-insecure-*` placeholder) and distinct, and `DATABASE_URL` must be present. In non-production environments `DATABASE_URL` remains optional so local development and tests run without a database.
 
 ---
 

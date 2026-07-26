@@ -2,6 +2,7 @@ import { UserRole } from '@prisma/client';
 import type { SubmissionStatus } from '@prisma/client';
 import { ConflictError, ForbiddenError, NotFoundError } from '@shared/errors';
 import type { Logger } from '@shared/logging';
+import type { Pagination } from '@shared/pagination';
 import type { SubmissionRecord, SubmissionRepository } from './submission.repository';
 import type {
   CompleteRecyclingInput,
@@ -53,7 +54,7 @@ export interface SubmissionService {
   /** Creates a submission owned by the actor. Status is always PENDING. */
   create(actor: SubmissionActor, input: CreateSubmissionInput): Promise<PublicSubmission>;
   /** Lists submissions: an admin sees all; anyone else sees only their own. */
-  list(actor: SubmissionActor): Promise<PublicSubmission[]>;
+  list(actor: SubmissionActor, pagination?: Pagination): Promise<PublicSubmission[]>;
   /** Returns one submission if the actor owns it or is an admin. */
   getById(actor: SubmissionActor, id: string): Promise<PublicSubmission>;
   /** Updates a submission. Owner only while PENDING; admin always. */
@@ -80,7 +81,10 @@ export interface SubmissionService {
   /** Assigned collector completes the pickup: IN_PROGRESS → COLLECTED. */
   completePickup(actor: SubmissionActor, id: string): Promise<PublicSubmission>;
   /** The collector's active queue: ASSIGNED/ACCEPTED/IN_PROGRESS assigned to them, newest first. */
-  getCollectorDashboard(actor: SubmissionActor): Promise<PublicSubmission[]>;
+  getCollectorDashboard(
+    actor: SubmissionActor,
+    pagination?: Pagination,
+  ): Promise<PublicSubmission[]>;
 
   // --- Recycler workflow (Phase 7) ------------------------------------------
 
@@ -95,7 +99,10 @@ export interface SubmissionService {
     input: CompleteRecyclingInput,
   ): Promise<CompleteRecyclingWithRewardData>;
   /** The recycler's active queue: COLLECTED/RECYCLING assigned to them, newest first. */
-  getRecyclerDashboard(actor: SubmissionActor): Promise<PublicSubmission[]>;
+  getRecyclerDashboard(
+    actor: SubmissionActor,
+    pagination?: Pagination,
+  ): Promise<PublicSubmission[]>;
 }
 
 function isAdmin(actor: SubmissionActor): boolean {
@@ -223,10 +230,10 @@ export function createSubmissionService(deps: SubmissionServiceDeps): Submission
       return toPublicSubmission(record);
     },
 
-    async list(actor: SubmissionActor): Promise<PublicSubmission[]> {
+    async list(actor: SubmissionActor, pagination?: Pagination): Promise<PublicSubmission[]> {
       const records = isAdmin(actor)
-        ? await deps.submissions.findAll()
-        : await deps.submissions.findByUser(actor.userId);
+        ? await deps.submissions.findAll(pagination)
+        : await deps.submissions.findByUser(actor.userId, pagination);
       return records.map(toPublicSubmission);
     },
 
@@ -320,8 +327,11 @@ export function createSubmissionService(deps: SubmissionServiceDeps): Submission
       return advanceAsCollector(actor, id, 'COLLECTED', 'Pickup completed');
     },
 
-    async getCollectorDashboard(actor: SubmissionActor): Promise<PublicSubmission[]> {
-      const records = await deps.submissions.findCollectorAssignments(actor.userId);
+    async getCollectorDashboard(
+      actor: SubmissionActor,
+      pagination?: Pagination,
+    ): Promise<PublicSubmission[]> {
+      const records = await deps.submissions.findCollectorAssignments(actor.userId, pagination);
       return records.map(toPublicSubmission);
     },
 
@@ -399,8 +409,11 @@ export function createSubmissionService(deps: SubmissionServiceDeps): Submission
       return { submission: toPublicSubmission(updated), reward };
     },
 
-    async getRecyclerDashboard(actor: SubmissionActor): Promise<PublicSubmission[]> {
-      const records = await deps.submissions.findRecyclerAssignments(actor.userId);
+    async getRecyclerDashboard(
+      actor: SubmissionActor,
+      pagination?: Pagination,
+    ): Promise<PublicSubmission[]> {
+      const records = await deps.submissions.findRecyclerAssignments(actor.userId, pagination);
       return records.map(toPublicSubmission);
     },
   };
