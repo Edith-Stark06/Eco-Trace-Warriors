@@ -14,6 +14,9 @@ const TEST_ENV = {
   LOG_LEVEL: 'fatal',
   // Low cost keeps bcrypt fast in tests.
   BCRYPT_ROUNDS: '4',
+  // Generous limit so unrelated auth tests never trip the rate limiter;
+  // the dedicated rate-limit suite below configures its own tight limit.
+  AUTH_RATE_LIMIT_MAX: '1000',
 } as const;
 
 function buildTestApp(): ReturnType<typeof createApp> {
@@ -264,5 +267,44 @@ describe('RBAC — authorize middleware over HTTP', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.ok).toBe(true);
+  });
+});
+
+describe('auth rate limiting', () => {
+  /** App whose auth endpoints allow only two requests per window. */
+  function buildRateLimitedApp(): ReturnType<typeof createApp> {
+    const config = loadConfig({ ...TEST_ENV, AUTH_RATE_LIMIT_MAX: '2' });
+    const logger = createLogger(config);
+    return createApp({ config, logger, authRepositories: createInMemoryAuthRepositories() });
+  }
+
+  it('returns 429 with the standard error envelope once the limit is exceeded', async () => {
+    const app = buildRateLimitedApp();
+    const login = (): request.Test =>
+      request(app).post('/api/v1/auth/login').send({ email: 'x@example.com', password: 'nope123' });
+
+    // Two requests are within the limit (401 — invalid credentials).
+    expect((await login()).status).toBe(401);
+    expect((await login()).status).toBe(401);
+
+    // The third exceeds it.
+    const res = await login();
+    expect(res.status).toBe(429);
+    expect(res.body).toEqual({
+      success: false,
+      error: {
+        code: 'TOO_MANY_REQUESTS',
+        message: expect.any(String),
+      },
+    });
+  });
+
+  it('does not rate limit non-auth endpoints', async () => {
+    const app = buildRateLimitedApp();
+
+    for (let i = 0; i < 5; i += 1) {
+      const res = await request(app).get('/api/v1/health');
+      expect(res.status).toBe(200);
+    }
   });
 });

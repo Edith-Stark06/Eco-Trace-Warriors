@@ -2,6 +2,7 @@ import 'dotenv/config';
 import type { Server } from 'node:http';
 import { getConfig } from '@shared/config';
 import { createLogger } from '@shared/logging';
+import { getAppName, getAppVersion } from '@shared/utils';
 import { disconnectPrisma } from '@infrastructure/prisma';
 import { createApp } from './app';
 
@@ -16,8 +17,17 @@ function main(): void {
   const app = createApp({ config, logger });
 
   const server: Server = app.listen(config.port, () => {
+    // Concise startup summary — one structured line describing where and how
+    // the service is listening. Secrets are never included.
     logger.info(
-      { port: config.port, env: config.nodeEnv, apiPrefix: config.apiPrefix },
+      {
+        service: getAppName(),
+        version: getAppVersion(),
+        env: config.nodeEnv,
+        port: config.port,
+        apiPrefix: config.apiPrefix,
+        logLevel: config.logLevel,
+      },
       'EcoTrace backend started',
     );
   });

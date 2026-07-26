@@ -1,4 +1,5 @@
 import type { PrismaClient, RewardReason } from '@prisma/client';
+import type { Pagination } from '@shared/pagination';
 
 /**
  * Repositories are the only place Prisma is used for the rewards module.
@@ -85,7 +86,10 @@ export interface RewardTransactionResult {
 export interface RewardRepository {
   createRewardTransaction(input: CreateRewardInput): Promise<RewardTransactionRecord>;
   findRewardBySubmissionId(submissionId: string): Promise<RewardTransactionRecord | null>;
-  findRewardHistoryByUserId(userId: string): Promise<RewardTransactionWithSubmission[]>;
+  findRewardHistoryByUserId(
+    userId: string,
+    pagination?: Pagination,
+  ): Promise<RewardTransactionWithSubmission[]>;
   getUserGreenCoins(userId: string): Promise<GreenCoinsRecord>;
   incrementUserGreenCoins(userId: string, points: number): Promise<GreenCoinsRecord>;
   markSubmissionRewardIssued(
@@ -145,6 +149,15 @@ const rewardIssuedSelect = {
   landfillDiverted: true,
 } as const;
 
+/**
+ * Translates validated pagination into Prisma `take`/`skip`. Returns an empty
+ * object when no window is supplied, so unpaginated callers are unaffected.
+ */
+function toPage(pagination?: Pagination): { take?: number; skip?: number } {
+  if (!pagination) return {};
+  return { take: pagination.limit, skip: pagination.offset };
+}
+
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
@@ -177,11 +190,15 @@ export function createRewardRepository(deps: { readonly prisma: PrismaClient }):
       });
     },
 
-    async findRewardHistoryByUserId(userId: string): Promise<RewardTransactionWithSubmission[]> {
+    async findRewardHistoryByUserId(
+      userId: string,
+      pagination?: Pagination,
+    ): Promise<RewardTransactionWithSubmission[]> {
       return prisma.rewardTransaction.findMany({
         where: { userId },
         orderBy: { createdAt: 'desc' },
         select: rewardTransactionWithSubmissionSelect,
+        ...toPage(pagination),
       });
     },
 

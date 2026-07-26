@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { getAuthContext } from '@modules/auth';
+import type { Pagination } from '@shared/pagination';
 import type {
   AssignCollectorInput,
   AssignRecyclerInput,
@@ -39,6 +40,11 @@ function actorOf(req: Request): SubmissionActor {
   return { userId, role };
 }
 
+/** Reads the validated, coerced pagination window from the request query. */
+function paginationOf(req: Request): Pagination {
+  return req.query as unknown as Pagination;
+}
+
 /** Thin controller: delegates to the service and shapes the HTTP response. */
 export function createSubmissionController(service: SubmissionService): SubmissionController {
   return {
@@ -50,7 +56,7 @@ export function createSubmissionController(service: SubmissionService): Submissi
     },
 
     async list(req: Request, res: Response): Promise<void> {
-      const result = await service.list(actorOf(req));
+      const result = await service.list(actorOf(req), paginationOf(req));
       const body: SubmissionListResponse = { success: true, data: result };
       res.status(200).json(body);
     },
@@ -105,7 +111,7 @@ export function createSubmissionController(service: SubmissionService): Submissi
     },
 
     async collectorDashboard(req: Request, res: Response): Promise<void> {
-      const result = await service.getCollectorDashboard(actorOf(req));
+      const result = await service.getCollectorDashboard(actorOf(req), paginationOf(req));
       const body: SubmissionListResponse = { success: true, data: result };
       res.status(200).json(body);
     },
@@ -137,7 +143,7 @@ export function createSubmissionController(service: SubmissionService): Submissi
     },
 
     async recyclerDashboard(req: Request, res: Response): Promise<void> {
-      const result = await service.getRecyclerDashboard(actorOf(req));
+      const result = await service.getRecyclerDashboard(actorOf(req), paginationOf(req));
       const body: SubmissionListResponse = { success: true, data: result };
       res.status(200).json(body);
     },

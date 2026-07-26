@@ -220,7 +220,7 @@ describe('createSubmissionService', () => {
 
       const result = await service.list(OWNER);
 
-      expect(repo.findByUser).toHaveBeenCalledWith('user-1');
+      expect(repo.findByUser).toHaveBeenCalledWith('user-1', undefined);
       expect(repo.findAll).not.toHaveBeenCalled();
       expect(result).toHaveLength(1);
     });
@@ -586,7 +586,7 @@ describe('createSubmissionService — collector workflow', () => {
 
       const result = await service.getCollectorDashboard(COLLECTOR);
 
-      expect(repo.findCollectorAssignments).toHaveBeenCalledWith('collector-1');
+      expect(repo.findCollectorAssignments).toHaveBeenCalledWith('collector-1', undefined);
       expect(result).toHaveLength(1);
     });
   });
@@ -818,7 +818,7 @@ describe('createSubmissionService — recycler workflow', () => {
 
       const result = await service.getRecyclerDashboard(RECYCLER);
 
-      expect(repo.findRecyclerAssignments).toHaveBeenCalledWith('recycler-1');
+      expect(repo.findRecyclerAssignments).toHaveBeenCalledWith('recycler-1', undefined);
       expect(result).toHaveLength(1);
     });
   });

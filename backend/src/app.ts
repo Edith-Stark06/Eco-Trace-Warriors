@@ -5,10 +5,13 @@ import type { Logger } from '@shared/logging';
 import {
   authenticate,
   authorize,
+  authRateLimiter,
+  cors,
   errorHandler,
   notFoundHandler,
   requestId,
   requestLogger,
+  securityHeaders,
 } from '@shared/middleware';
 import { getAppName, getAppVersion } from '@shared/utils';
 import { getPrismaClient, pingDatabase } from '@infrastructure/prisma';
@@ -77,6 +80,8 @@ export function createApp({
   const app = express();
 
   app.disable('x-powered-by');
+  app.use(securityHeaders());
+  app.use(cors(config.corsOrigins));
   app.use(express.json({ limit: '1mb' }));
   app.use(requestId());
   app.use(requestLogger(logger));
@@ -120,6 +125,7 @@ export function createApp({
   });
   const authRouter = createAuthRouter(createAuthController(authService), {
     authenticate: authenticate(tokenService),
+    rateLimiter: authRateLimiter(config.authRateLimit),
   });
   app.use(config.apiPrefix, authRouter);
 
@@ -145,6 +151,7 @@ export function createApp({
 
   const rewardRouter = createRewardRouter(createRewardController(rewardService), {
     authenticate: authenticate(tokenService),
+    authorize,
   });
   app.use(config.apiPrefix, rewardRouter);
 

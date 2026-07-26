@@ -112,6 +112,7 @@ All errors — validation, auth, business, server — use one shape:
 - `code` is a stable, SCREAMING_SNAKE machine-readable identifier.
 - `message` is safe for display; it never leaks internals (stack traces, SQL, file paths).
 - `details` is optional, used mainly for field-level validation errors.
+- Known database (Prisma) errors are translated centrally by the global error handler into semantic responses with safe, generic messages: a unique-constraint violation (`P2002`) → `409 CONFLICT`; a missing required record (`P2025`) → `404 NOT_FOUND`. Any other Prisma error remains a generic `500` (logged server-side; internals never returned).
 
 ---
 
@@ -133,16 +134,29 @@ All errors — validation, auth, business, server — use one shape:
 
 ---
 
-# Pagination, Filtering & Sorting
+# Pagination
 
-Query parameters on list endpoints:
+List endpoints use validated offset-based pagination via query parameters:
 
-| Parameter     | Example                       | Default          |
-| ------------- | ----------------------------- | ---------------- |
-| `page`        | `?page=2`                     | `1`              |
-| `pageSize`    | `?pageSize=50`                | `20` (max `100`) |
-| `sort`        | `?sort=-createdAt`            | endpoint-defined |
-| field filters | `?status=COLLECTED&region=TN` | none             |
+| Parameter | Example      | Default | Constraints            |
+| --------- | ------------ | ------- | ---------------------- |
+| `limit`   | `?limit=25`  | `50`    | integer, `1`–`100`     |
+| `offset`  | `?offset=40` | `0`     | integer, `>= 0`        |
+
+Both parameters are optional and coerced from the query string; a request that
+omits them returns the first 50 rows. Out-of-range or non-numeric values fail
+validation and return `400 VALIDATION_ERROR`. Results keep the standard
+response envelope — `data` is the row array (no wrapper `meta` block); ordering
+is `createdAt` descending (newest first) and is not client-configurable.
+
+Endpoints supporting pagination:
+
+- `GET /submissions`
+- `GET /collector/submissions`
+- `GET /recycler/submissions`
+- `GET /rewards/history`
+
+Sorting and field filtering are not yet implemented.
 
 ---
 
@@ -304,7 +318,7 @@ Response `data`:
 
 ### GET /submissions — 200
 
-Response `data`: an array of submission objects, newest first. A consumer receives only their own submissions; an admin receives all.
+Response `data`: an array of submission objects, newest first. A consumer receives only their own submissions; an admin receives all. Supports `limit`/`offset` pagination (see [Pagination](#pagination)).
 
 ### GET /submissions/{id} — 200
 
@@ -344,7 +358,7 @@ The three transition endpoints carry no request body — only the `:id` path par
 
 ### GET /collector/submissions — 200
 
-Collector only. Response `data`: an array of the authenticated collector's **active** assignments — submissions in `ASSIGNED`, `ACCEPTED`, or `IN_PROGRESS` assigned to them — newest first. `COLLECTED` and later statuses are excluded. Other roles → `403`.
+Collector only. Response `data`: an array of the authenticated collector's **active** assignments — submissions in `ASSIGNED`, `ACCEPTED`, or `IN_PROGRESS` assigned to them — newest first. `COLLECTED` and later statuses are excluded. Supports `limit`/`offset` pagination (see [Pagination](#pagination)). Other roles → `403`.
 
 ### PATCH /submissions/{id}/assign-recycler — 200
 
@@ -380,7 +394,7 @@ Recycler only, assigned recycler only (`404` otherwise). Requires `status == REC
 
 ### GET /recycler/submissions — 200
 
-Recycler only. Response `data`: an array of the authenticated recycler's **active** assignments — submissions in `COLLECTED` or `RECYCLING` assigned to them — newest first. `RECYCLED` and later statuses are excluded. Other roles → `403`.
+Recycler only. Response `data`: an array of the authenticated recycler's **active** assignments — submissions in `COLLECTED` or `RECYCLING` assigned to them — newest first. `RECYCLED` and later statuses are excluded. Supports `limit`/`offset` pagination (see [Pagination](#pagination)). Other roles → `403`.
 
 ## Devices
 
