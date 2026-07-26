@@ -27,6 +27,17 @@ export const queryKeys = {
     all: ['collector'] as const,
     assignments: (params?: QueryKeyParams) => ['collector', 'assignments', params ?? {}] as const,
   },
+  recycler: {
+    all: ['recycler'] as const,
+    assignments: (params?: QueryKeyParams) => ['recycler', 'assignments', params ?? {}] as const,
+  },
+  government: {
+    all: ['government'] as const,
+    overview: ['government', 'overview'] as const,
+    regions: ['government', 'regions'] as const,
+    environmentalImpact: ['government', 'environmental-impact'] as const,
+    forecast: ['government', 'forecast'] as const,
+  },
   user: {
     profile: ['user', 'profile'] as const,
   },

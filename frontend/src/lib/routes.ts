@@ -17,6 +17,7 @@ export const ROUTES = {
   collector: '/collector',
   collectorAssignmentDetails: '/collector/submissions/:id',
   recycler: '/recycler',
+  recyclerAssignmentDetails: '/recycler/submissions/:id',
   government: '/government',
   settings: '/settings',
   notFound: '*',
@@ -49,4 +50,9 @@ export function consumerSubmissionPath(id: string): string {
 /** Build the path to a specific collector assignment's detail page. */
 export function collectorAssignmentPath(id: string): string {
   return `/collector/submissions/${id}`;
+}
+
+/** Build the path to a specific recycler assignment's detail page. */
+export function recyclerAssignmentPath(id: string): string {
+  return `/recycler/submissions/${id}`;
 }
