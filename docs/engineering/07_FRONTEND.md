@@ -94,23 +94,34 @@ mobile/
 
 # React Dashboard
 
+> **Note (Phase 9, Sprint 9.1):** the React web application is implemented in
+> the **`frontend/`** directory (React 19 + Vite + TypeScript). The `dashboard/`
+> path referenced historically below is superseded by `frontend/`. Setup,
+> scripts, and the full folder architecture are documented in
+> [`frontend/README.md`](../../frontend/README.md).
+
 ## Structure
 
+The foundation established in Sprint 9.1 follows a feature-first layout:
+
 ```
-dashboard/
+frontend/
 ├── src/
-│   ├── main.tsx
-│   ├── app/                # router, providers, layout shell
-│   ├── api/                # typed API client & hooks
-│   ├── components/         # shared reusable components
-│   ├── features/
-│   │   ├── analytics/
-│   │   ├── users/
-│   │   ├── devices/
-│   │   ├── collections/
-│   │   └── reports/
-│   └── lib/                # utilities, formatting, constants
-└── tests/
+│   ├── main.tsx           # entry point
+│   ├── App.tsx            # provider composition + router
+│   ├── api/               # single Axios instance + typed API modules
+│   ├── components/        # common / forms / layout / ui (shadcn/ui)
+│   ├── features/          # role/feature modules (auth, consumer, ...)
+│   ├── hooks/             # shared hooks (useAuth, useTheme)
+│   ├── layouts/           # MainLayout (app shell), AuthLayout
+│   ├── lib/               # utils, env, routes, query-keys
+│   ├── pages/             # top-level routed pages
+│   ├── providers/         # Query / Theme / Auth providers + contexts
+│   ├── routes/            # AppRouter, ProtectedRoute, RoleGuard
+│   ├── services/          # non-React services (token storage)
+│   ├── styles/            # globals.css (Tailwind v4 + design tokens)
+│   └── types/             # shared TypeScript types
+└── (config: vite, tsconfig, eslint, prettier, components.json)
 ```
 
 ## Standards
