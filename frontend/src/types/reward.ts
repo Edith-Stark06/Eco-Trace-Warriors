@@ -31,6 +31,45 @@ export interface RewardBalance {
 }
 
 /**
+ * Sustainability metrics attached to a freshly issued reward, mirroring the
+ * backend `SustainabilityResult`. Values are absolute quantities; the unit for
+ * each is carried alongside it so the UI never hardcodes units.
+ */
+export interface RewardSustainability {
+  co2Saved: number;
+  energySaved: number;
+  landfillDiverted: number;
+  co2Unit: 'kg';
+  energyUnit: 'kWh';
+  landfillUnit: 'kg';
+}
+
+/**
+ * The persisted reward transaction record returned inside a {@link RewardSummary}
+ * (backend `RewardSummary.rewardTransaction`). `createdAt` is an ISO string.
+ */
+export interface RewardTransactionSummary {
+  id: string;
+  submissionId: string;
+  points: number;
+  reason: string;
+  createdAt: string;
+}
+
+/**
+ * The reward issued by the backend when a recycler completes a submission
+ * (backend `RewardSummary`, returned by PATCH /submissions/:id/recycle/complete).
+ * These are authoritative backend values — the frontend only displays them and
+ * never recomputes any figure.
+ */
+export interface RewardSummary {
+  rewardTransaction: RewardTransactionSummary;
+  greenCoinsAwarded: number;
+  updatedBalance: number;
+  sustainability: RewardSustainability;
+}
+
+/**
  * A single reward transaction with its related submission context, as returned
  * by GET /rewards/history (`RewardTransactionWithSubmission`). `createdAt`
  * fields are ISO strings.

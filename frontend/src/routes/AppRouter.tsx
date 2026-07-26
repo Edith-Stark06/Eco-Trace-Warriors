@@ -28,6 +28,9 @@ const CollectorAssignmentDetailsPage = lazy(
   () => import('@/features/collector/CollectorAssignmentDetailsPage'),
 );
 const RecyclerDashboardPage = lazy(() => import('@/features/recycler/RecyclerDashboardPage'));
+const RecyclerAssignmentDetailsPage = lazy(
+  () => import('@/features/recycler/RecyclerAssignmentDetailsPage'),
+);
 const GovernmentDashboardPage = lazy(() => import('@/features/government/GovernmentDashboardPage'));
 const AdminDashboardPage = lazy(() => import('@/features/admin/AdminDashboardPage'));
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
@@ -78,6 +81,10 @@ export function AppRouter() {
 
             <Route element={<RoleGuard allow={['RECYCLER']} />}>
               <Route path={ROUTES.recycler} element={<RecyclerDashboardPage />} />
+              <Route
+                path={ROUTES.recyclerAssignmentDetails}
+                element={<RecyclerAssignmentDetailsPage />}
+              />
             </Route>
 
             <Route element={<RoleGuard allow={['GOVERNMENT', 'ADMIN']} />}>

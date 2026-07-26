@@ -2,13 +2,19 @@
 
 React web dashboard for the **EcoTrace India** e-waste lifecycle management platform (IEEE YESIST 2026).
 
-> **Status:** Sprint 9.5 — Collector Module (pickup workflow). Building on the
-> foundation (9.1), authentication (9.2), the shared dashboard framework (9.3),
-> and the Consumer module (9.4), the **Collector** role is now operational: a
-> collector views their assigned pickups and drives each through the real
-> backend workflow (accept → start → complete). The remaining role dashboards
-> (**Recycler**, **Government**, **Admin**) still render **placeholder
-> content** — their business features arrive in later sprints.
+> **Status:** Sprint 9.7 — Government Dashboard (analytics & oversight).
+> Building on the foundation (9.1), authentication (9.2), the shared dashboard
+> framework (9.3), the Consumer module (9.4), the Collector module (9.5), and the
+> Recycler module (9.6), the **Government** role now has a production-ready,
+> read-only oversight dashboard wired to the documented `/analytics/*` contract.
+> Government users are **observers** — they monitor national statistics,
+> environmental impact, regional breakdowns, and AI demand forecasts, and perform
+> **no** write operations. The backend Analytics module is not yet deployed on
+> this instance, so the endpoints currently return 404; the dashboard treats this
+> as an expected "feature unavailable" condition and shows a dedicated
+> informational state, then populates automatically once the module ships. The
+> remaining role dashboard (**Admin**) still renders **placeholder content** — its
+> business features arrive in a later sprint.
 
 ---
 
@@ -178,8 +184,9 @@ import { Button } from '@/components/ui/button';
 | `/consumer/rewards`          | `CONSUMER`           | Rewards summary + history        |
 | `/collector`                 | `COLLECTOR`          | Collector dashboard (live data)  |
 | `/collector/submissions/:id` | `COLLECTOR`          | Assignment details + timeline    |
-| `/recycler`                  | `RECYCLER`           | Recycler dashboard placeholder   |
-| `/government`                | `GOVERNMENT`,`ADMIN` | Government dashboard placeholder |
+| `/recycler`                  | `RECYCLER`           | Recycler dashboard (live data)   |
+| `/recycler/submissions/:id`  | `RECYCLER`           | Recycling details + timeline     |
+| `/government`                | `GOVERNMENT`,`ADMIN` | Government dashboard (read-only) |
 | `/admin`                     | `ADMIN`              | Admin dashboard placeholder      |
 | `*`                          | —                    | `NotFoundPage`                   |
 
@@ -528,6 +535,207 @@ The module adds **no** new empty-state, loader, or error screens. It reuses
 `Table`, `Badge`, `Dialog`, and dashboard containers; and the Consumer module's
 pure submission display helpers (`SubmissionStatusBadge`, `SubmissionTimeline`,
 `formatWeight` / `formatDate`, …) rather than duplicating them.
+
+---
+
+## Recycler Module
+
+The Recycler role is the second **operational workflow** and the first to close
+the reward loop — a recycler reads the submissions handed off by collectors,
+processes each through the recycling lifecycle against the real backend, and
+receives the GreenCoins reward the backend issues on completion. Everything
+lives under `src/features/recycler/` and reuses the shared API layer, dashboard
+framework, and UI primitives. Recycler assignment itself is an Admin/Government
+concern and is intentionally not built here.
+
+### Pages
+
+| Page                            | Route                       | Contents                                                                       |
+| ------------------------------- | --------------------------- | ------------------------------------------------------------------------------ |
+| `RecyclerDashboardPage`         | `/recycler`                 | Status summary, active recycling, today's recycling, quick actions             |
+| `RecyclerAssignmentDetailsPage` | `/recycler/submissions/:id` | Full record incl. recovered weight, notes, material recovery, and the timeline |
+
+### API integration
+
+The module talks only to the endpoints below (see
+[`docs/engineering/05_API.md`](../docs/engineering/05_API.md)). Each wrapper uses
+the single shared Axios instance and unwraps the success envelope
+(`response.data.data`).
+
+| Method                          | Endpoint                                  | Purpose                                           |
+| ------------------------------- | ----------------------------------------- | ------------------------------------------------- |
+| `recyclerApi.getAssignments`    | `GET /recycler/submissions`               | The recycler's active assignment queue            |
+| `recyclerApi.startRecycling`    | `PATCH /submissions/:id/recycle/start`    | Begin processing (COLLECTED → RECYCLING)          |
+| `recyclerApi.completeRecycling` | `PATCH /submissions/:id/recycle/complete` | Record recovery + finalize (RECYCLING → RECYCLED) |
+
+Server state is managed with TanStack Query hooks (`useRecyclerAssignments`,
+`useStartRecycling`, `useCompleteRecycling`). Mutations never refetch manually —
+they invalidate the shared `recycler.*` query keys and let Query refresh what is
+observed.
+
+### Recycling lifecycle
+
+`GET /recycler/submissions` returns only the recycler's **active** queue —
+submissions in `COLLECTED` or `RECYCLING`. Each status maps to exactly one legal
+action, and the UI shows **only** that action (an invalid transition is never
+offered):
+
+```
+COLLECTED   → Start Recycling     → RECYCLING
+RECYCLING   → Complete Recycling  → RECYCLED
+RECYCLED    → (read-only) Completed
+```
+
+Once a job reaches `RECYCLED` it leaves the active queue. The **status summary**
+tiles (Collected, Recycling, Completed Today, Recovered Weight) are computed from
+the assignment list — no extra API call — using `computeRecyclerSummary`.
+
+### Workflow flow
+
+```
+Start    (confirm)  ─▶ PATCH /submissions/:id/recycle/start     ─▶ invalidate recycler.* ─▶ queue refreshes
+Complete (form)     ─▶ PATCH /submissions/:id/recycle/complete  ─▶ { submission, reward } ─▶ reward dialog + invalidate
+```
+
+- **Start Recycling** requires **confirmation** via the shared `Dialog`
+  ("Start the recycling process?") and reports success with a **Sonner** toast.
+- **Complete Recycling** opens `CompleteRecyclingDialog`, a **React Hook Form +
+  Zod** form mirroring the backend `completeRecyclingSchema`:
+  - **Recovered weight** — required, positive.
+  - **Recycler notes** — optional textarea (≤ 2000 chars).
+  - **Material recovery** — a dynamic add/remove list of `{ name, weight }` rows
+    (weights non-negative, no duplicate names). On submit the list is folded into
+    the `materialRecovery` object the backend expects, e.g.
+    `{ Copper: 2.4, Plastic: 3.7, Glass: 1.2 }`.
+- The **recycling timeline** reuses the shared read-only `SubmissionTimeline`,
+  highlighting the recycler stages (`COLLECTED → RECYCLING → RECYCLED`); earlier
+  consumer/collector stages read as complete.
+- Because `GET /submissions/:id` is owner/admin-only on the backend, the details
+  page sources its record from the recycler's assignment-queue cache rather than
+  a by-id fetch — a job that has left the queue (or an unknown id) renders the
+  shared `NotFound` screen.
+
+### Reward integration
+
+Rewards are **never calculated on the frontend**. `PATCH .../recycle/complete`
+returns `{ submission, reward }`, and the reward is displayed exactly as
+returned. On success `RewardSuccessDialog` opens with a "Congratulations!"
+message and shared `StatCard`s for the backend values:
+
+- **GreenCoins Awarded** (`reward.greenCoinsAwarded`)
+- **Updated Balance** (`reward.updatedBalance`)
+- **CO₂ Saved**, **Energy Saved**, **Landfill Diverted**
+  (`reward.sustainability.*`, each with the unit the backend supplies)
+- **Submission Status** (the updated `submission.status`)
+
+A **Continue** button dismisses the dialog. The GreenCoins credit is automatic:
+the recycler triggers it by completing the job, and the consumer's balance is
+updated server-side.
+
+### Navigation
+
+The Recycler sidebar shows **Dashboard** and **Settings** (plus **Logout** in
+the sidebar footer). Consumer/collector routes are never exposed to a recycler —
+`navItemsForRole` filters the shared navigation by role.
+
+### Reuse
+
+The module adds **no** new empty-state, loader, or error screens. It reuses
+`EmptyState`, `PageLoader` / `SkeletonCards` / `SkeletonTable`, and
+`ServerError` / `NotFound` from the shared framework; the shared `StatCard`,
+`Table`, `Badge`, `Dialog`, `Input` / `Textarea` / `Label`, and dashboard
+containers; and the Consumer module's pure display helpers
+(`SubmissionStatusBadge`, `SubmissionTimeline`, `formatWeight` / `formatDate`,
+`formatMetric` / `formatPoints`, …) rather than duplicating them. The
+start/confirm and complete/form dialog patterns mirror the Collector module
+without altering its code.
+
+---
+
+## Government Module
+
+The Government role is a **read-only oversight dashboard**. Government users are
+**observers**: they monitor national e-waste statistics, environmental impact,
+regional breakdowns, and AI demand forecasts. They perform **no** write
+operations — no submission edits, no collector/recycler assignment, no workflow
+transitions, and no reward issuance. Everything lives under
+`src/features/government/` and reuses the shared API layer, dashboard framework,
+and UI primitives.
+
+### Pages
+
+| Page                      | Route         | Contents                                                            |
+| ------------------------- | ------------- | ------------------------------------------------------------------- |
+| `GovernmentDashboardPage` | `/government` | National overview, environmental impact, regional & forecast tables |
+
+Guarded by `RoleGuard allow={['GOVERNMENT', 'ADMIN']}`.
+
+### API integration
+
+The module talks **only** to the four analytics endpoints documented in
+[`docs/engineering/05_API.md`](../docs/engineering/05_API.md) (Government + Admin
+scope). Each wrapper uses the single shared Axios instance and unwraps the
+success envelope (`response.data.data`). All calls are **read-only**.
+
+| Method                                 | Endpoint                              | Purpose                                          |
+| -------------------------------------- | ------------------------------------- | ------------------------------------------------ |
+| `governmentApi.getOverview`            | `GET /analytics/overview`             | National e-waste statistics                      |
+| `governmentApi.getEnvironmentalImpact` | `GET /analytics/environmental-impact` | National impact metrics (CO₂, energy, landfill)  |
+| `governmentApi.getRegions`             | `GET /analytics/regions`              | Regional breakdown (rendered as a table)         |
+| `governmentApi.getForecast`            | `GET /analytics/forecast`             | AI demand forecast (proxied from the AI service) |
+
+Server state is managed with read-only TanStack Query hooks
+(`useGovernmentOverview`, `useGovernmentEnvironmentalImpact`,
+`useGovernmentRegions`, `useGovernmentForecast`) keyed under `government.*`.
+There are no mutations.
+
+### Backend availability & the 404 contract
+
+> **The backend Analytics module is not yet deployed on this instance.** The
+> module directory is an empty stub and no `/analytics` router is mounted, so the
+> endpoints currently respond **404 Not Found**.
+
+Per product decision, a 404 from these endpoints is treated as an **expected
+"feature unavailable" condition**, not a server error:
+
+- `isAnalyticsUnavailable(error)` classifies a 404 specifically.
+- The hooks **do not retry** a 404 (they retry other transient failures), so the
+  UI resolves immediately.
+- When the primary overview endpoint 404s, a single, calm informational state
+  (`AnalyticsUnavailable`) is shown for the whole page instead of a red error
+  screen. Any other section resolves its own state independently, falling back to
+  the shared `ServerError` (with retry) for genuine failures.
+
+The API layer, DTOs, hooks, routing, layout, and components are all
+**production-ready** and become functional automatically once the backend
+Analytics module ships — no frontend change required.
+
+### Provisional DTOs
+
+The documentation lists the four endpoints with one-line descriptions but does
+**not** yet specify field-level response DTOs. The interfaces in
+[`src/types/analytics.ts`](src/types/analytics.ts) (`NationalOverview`,
+`EnvironmentalImpact`, `RegionalBreakdown`, `DemandForecast`) are therefore
+**inferred** from those descriptions and from the existing authoritative backend
+contracts they will aggregate (the rewards module's `RewardBalance` /
+`SustainabilityResult` and the submission lifecycle). They are type declarations
+only — **no fabricated data** — and are clearly flagged in-file for reconciliation
+against the real backend contract when the Analytics module is implemented.
+
+### No mock data, no client-side aggregation
+
+Every figure on the dashboard comes **straight from the backend**. There are no
+hardcoded numbers, no charts fabricated from unavailable data, and no client-side
+metric calculations. Because no chart library is bundled, the regional breakdown
+and forecast are rendered as accessible **tables**; stat rows use the shared
+`StatCard`. Empty backend lists render a shared `EmptyState`.
+
+### Reuse
+
+The module adds **no** new loader or error primitives. It reuses `StatCard`,
+`Section`, `ContentCard`, `Table`, `Badge`, `EmptyState`, `SkeletonCards` /
+`SkeletonTable`, `ServerError`, and the shared `formatPoints` / `formatMetric`
+display helpers rather than duplicating them.
 
 ---
 
