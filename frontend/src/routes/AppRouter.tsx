@@ -18,6 +18,11 @@ import { NotFoundPage } from '@/pages/NotFoundPage';
  * entry points and carry no meaningful bundle weight.
  */
 const ConsumerDashboardPage = lazy(() => import('@/features/consumer/ConsumerDashboardPage'));
+const ConsumerSubmissionsPage = lazy(() => import('@/features/consumer/ConsumerSubmissionsPage'));
+const ConsumerSubmissionDetailsPage = lazy(
+  () => import('@/features/consumer/ConsumerSubmissionDetailsPage'),
+);
+const ConsumerRewardsPage = lazy(() => import('@/features/consumer/ConsumerRewardsPage'));
 const CollectorDashboardPage = lazy(() => import('@/features/collector/CollectorDashboardPage'));
 const RecyclerDashboardPage = lazy(() => import('@/features/recycler/RecyclerDashboardPage'));
 const GovernmentDashboardPage = lazy(() => import('@/features/government/GovernmentDashboardPage'));
@@ -52,6 +57,12 @@ export function AppRouter() {
 
             <Route element={<RoleGuard allow={['CONSUMER']} />}>
               <Route path={ROUTES.consumer} element={<ConsumerDashboardPage />} />
+              <Route path={ROUTES.consumerSubmissions} element={<ConsumerSubmissionsPage />} />
+              <Route
+                path={ROUTES.consumerSubmissionDetails}
+                element={<ConsumerSubmissionDetailsPage />}
+              />
+              <Route path={ROUTES.consumerRewards} element={<ConsumerRewardsPage />} />
             </Route>
 
             <Route element={<RoleGuard allow={['COLLECTOR']} />}>
