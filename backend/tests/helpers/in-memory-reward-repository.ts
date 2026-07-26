@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { RewardReason } from '@prisma/client';
+import type { Pagination } from '@shared/pagination';
 import type {
   GreenCoinsRecord,
   RewardIssuedRecord,
@@ -39,7 +40,10 @@ export function createInMemoryRewardRepository(): RewardRepository {
       return Promise.resolve(rewardsBySubmission.get(submissionId) ?? null);
     },
 
-    findRewardHistoryByUserId(_userId: string): Promise<RewardTransactionWithSubmission[]> {
+    findRewardHistoryByUserId(
+      _userId: string,
+      _pagination?: Pagination,
+    ): Promise<RewardTransactionWithSubmission[]> {
       return Promise.resolve([]);
     },
 

@@ -295,7 +295,7 @@ describe('RewardService.getRewardHistory', () => {
 
     const result = await service.getRewardHistory('user-1');
 
-    expect(rewards.findRewardHistoryByUserId).toHaveBeenCalledWith('user-1');
+    expect(rewards.findRewardHistoryByUserId).toHaveBeenCalledWith('user-1', undefined);
     expect(result).toEqual(history);
   });
 });

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { UserRole } from '@prisma/client';
+import type { Pagination } from '@shared/pagination';
 import type {
   CollectorRecord,
   CreateSubmissionRepositoryInput,
@@ -52,6 +53,10 @@ export function createSeededSubmissionRepository(): SeededSubmissionRepository {
   const byCreatedAtDesc = (a: SubmissionRecord, b: SubmissionRecord): number =>
     b.createdAt.getTime() - a.createdAt.getTime();
 
+  // Mirrors the Prisma repo's take/skip: no window → return all rows.
+  const paginate = (rows: SubmissionRecord[], pagination?: Pagination): SubmissionRecord[] =>
+    pagination ? rows.slice(pagination.offset, pagination.offset + pagination.limit) : rows;
+
   const mustGet = (id: string): SubmissionRecord => {
     const existing = byId.get(id);
     if (!existing) {
@@ -95,13 +100,13 @@ export function createSeededSubmissionRepository(): SeededSubmissionRepository {
       return Promise.resolve(byId.get(id) ?? null);
     },
 
-    findByUser(userId: string): Promise<SubmissionRecord[]> {
+    findByUser(userId: string, pagination?: Pagination): Promise<SubmissionRecord[]> {
       const rows = [...byId.values()].filter((r) => r.userId === userId).sort(byCreatedAtDesc);
-      return Promise.resolve(rows);
+      return Promise.resolve(paginate(rows, pagination));
     },
 
-    findAll(): Promise<SubmissionRecord[]> {
-      return Promise.resolve([...byId.values()].sort(byCreatedAtDesc));
+    findAll(pagination?: Pagination): Promise<SubmissionRecord[]> {
+      return Promise.resolve(paginate([...byId.values()].sort(byCreatedAtDesc), pagination));
     },
 
     update(id: string, input: UpdateSubmissionRepositoryInput): Promise<SubmissionRecord> {
@@ -164,14 +169,17 @@ export function createSeededSubmissionRepository(): SeededSubmissionRepository {
       return Promise.resolve(rows);
     },
 
-    findCollectorAssignments(collectorId: string): Promise<SubmissionRecord[]> {
+    findCollectorAssignments(
+      collectorId: string,
+      pagination?: Pagination,
+    ): Promise<SubmissionRecord[]> {
       const rows = [...byId.values()]
         .filter(
           (r) =>
             r.assignedCollectorId === collectorId && ACTIVE_COLLECTOR_STATUSES.includes(r.status),
         )
         .sort(byCreatedAtDesc);
-      return Promise.resolve(rows);
+      return Promise.resolve(paginate(rows, pagination));
     },
 
     findCollectorById(collectorId: string): Promise<CollectorRecord | null> {
@@ -188,13 +196,16 @@ export function createSeededSubmissionRepository(): SeededSubmissionRepository {
       return Promise.resolve(updated);
     },
 
-    findRecyclerAssignments(recyclerId: string): Promise<SubmissionRecord[]> {
+    findRecyclerAssignments(
+      recyclerId: string,
+      pagination?: Pagination,
+    ): Promise<SubmissionRecord[]> {
       const rows = [...byId.values()]
         .filter(
           (r) => r.assignedRecyclerId === recyclerId && ACTIVE_RECYCLER_STATUSES.includes(r.status),
         )
         .sort(byCreatedAtDesc);
-      return Promise.resolve(rows);
+      return Promise.resolve(paginate(rows, pagination));
     },
 
     findRecyclerById(recyclerId: string): Promise<RecyclerRecord | null> {

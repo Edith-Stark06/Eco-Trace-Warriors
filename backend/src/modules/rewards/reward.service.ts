@@ -1,6 +1,7 @@
 import { RewardReason } from '@prisma/client';
 import { ConflictError, NotFoundError } from '@shared/errors';
 import type { Logger } from '@shared/logging';
+import type { Pagination } from '@shared/pagination';
 import type { SubmissionRepository } from '../submission/submission.repository';
 import type {
   RewardRepository,
@@ -122,7 +123,10 @@ export interface RewardService {
   issueReward(submissionId: string): Promise<RewardSummary>;
 
   /** Returns the reward transaction history for a given user. */
-  getRewardHistory(userId: string): Promise<RewardTransactionWithSubmission[]>;
+  getRewardHistory(
+    userId: string,
+    pagination?: Pagination,
+  ): Promise<RewardTransactionWithSubmission[]>;
 
   /** Returns the current reward balance and cumulative sustainability metrics. */
   getBalance(userId: string): Promise<RewardBalance>;
@@ -255,8 +259,11 @@ export function createRewardService(deps: RewardServiceDeps): RewardService {
       return toSustainabilityResult(impact, estimatedWeight);
     },
 
-    async getRewardHistory(userId: string): Promise<RewardTransactionWithSubmission[]> {
-      const history = await deps.rewards.findRewardHistoryByUserId(userId);
+    async getRewardHistory(
+      userId: string,
+      pagination?: Pagination,
+    ): Promise<RewardTransactionWithSubmission[]> {
+      const history = await deps.rewards.findRewardHistoryByUserId(userId, pagination);
       deps.logger.info({ userId, count: history.length }, 'Reward history requested');
       return history;
     },

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { RequestHandler } from 'express';
 import { UserRole } from '@prisma/client';
 import { validate } from '@shared/middleware';
+import { paginationQuerySchema } from '@shared/pagination';
 import {
   assignCollectorSchema,
   assignRecyclerSchema,
@@ -43,9 +44,14 @@ export function createSubmissionRouter(
     },
   );
 
-  router.get('/submissions', authenticate, (req, res, next) => {
-    controller.list(req, res).catch(next);
-  });
+  router.get(
+    '/submissions',
+    authenticate,
+    validate({ query: paginationQuerySchema }),
+    (req, res, next) => {
+      controller.list(req, res).catch(next);
+    },
+  );
 
   router.get(
     '/submissions/:id',
@@ -127,6 +133,7 @@ export function createSubmissionRouter(
     '/collector/submissions',
     authenticate,
     authorize(UserRole.COLLECTOR),
+    validate({ query: paginationQuerySchema }),
     (req, res, next) => {
       controller.collectorDashboard(req, res).catch(next);
     },
@@ -174,6 +181,7 @@ export function createSubmissionRouter(
     '/recycler/submissions',
     authenticate,
     authorize(UserRole.RECYCLER),
+    validate({ query: paginationQuerySchema }),
     (req, res, next) => {
       controller.recyclerDashboard(req, res).catch(next);
     },
