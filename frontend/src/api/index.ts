@@ -6,4 +6,5 @@ export { rewardApi } from '@/api/reward.api';
 export { collectorApi } from '@/api/collector.api';
 export { recyclerApi } from '@/api/recycler.api';
 export { governmentApi } from '@/api/government.api';
+export { adminApi } from '@/api/admin.api';
 export { userApi } from '@/api/user.api';

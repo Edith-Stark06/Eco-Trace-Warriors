@@ -38,6 +38,10 @@ export const queryKeys = {
     environmentalImpact: ['government', 'environmental-impact'] as const,
     forecast: ['government', 'forecast'] as const,
   },
+  admin: {
+    all: ['admin'] as const,
+    submissions: (params?: QueryKeyParams) => ['admin', 'submissions', params ?? {}] as const,
+  },
   user: {
     profile: ['user', 'profile'] as const,
   },
