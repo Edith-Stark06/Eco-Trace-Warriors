@@ -2,19 +2,16 @@
 
 React web dashboard for the **EcoTrace India** e-waste lifecycle management platform (IEEE YESIST 2026).
 
-> **Status:** Sprint 9.7 — Government Dashboard (analytics & oversight).
+> **Status:** Sprint 9.8 — Admin Dashboard (system administration).
 > Building on the foundation (9.1), authentication (9.2), the shared dashboard
-> framework (9.3), the Consumer module (9.4), the Collector module (9.5), and the
-> Recycler module (9.6), the **Government** role now has a production-ready,
-> read-only oversight dashboard wired to the documented `/analytics/*` contract.
-> Government users are **observers** — they monitor national statistics,
-> environmental impact, regional breakdowns, and AI demand forecasts, and perform
-> **no** write operations. The backend Analytics module is not yet deployed on
-> this instance, so the endpoints currently return 404; the dashboard treats this
-> as an expected "feature unavailable" condition and shows a dedicated
-> informational state, then populates automatically once the module ships. The
-> remaining role dashboard (**Admin**) still renders **placeholder content** — its
-> business features arrive in a later sprint.
+> framework (9.3), the Consumer module (9.4), the Collector module (9.5), the
+> Recycler module (9.6), and the Government module (9.7), the **Admin** role now
+> has a production-ready system administration dashboard. The Admin module is
+> backed exclusively by verified backend APIs — no mock data, no fabricated
+> metrics. Sections without a backend API (user management, assignment management,
+> analytics, system activity) render calm informational unavailable states and
+> will populate automatically once the relevant backend modules ship. All six role
+> dashboards are now live.
 
 ---
 
