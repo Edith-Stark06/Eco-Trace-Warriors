@@ -19,6 +19,22 @@ export function useAdminSubmissions(params?: PaginationParams) {
   });
 }
 
+/** Active collectors eligible for assignment (GET /users?role=COLLECTOR). */
+export function useCollectors() {
+  return useQuery({
+    queryKey: queryKeys.admin.collectors,
+    queryFn: () => adminApi.listUsersByRole('COLLECTOR'),
+  });
+}
+
+/** Active recyclers eligible for assignment (GET /users?role=RECYCLER). */
+export function useRecyclers() {
+  return useQuery({
+    queryKey: queryKeys.admin.recyclers,
+    queryFn: () => adminApi.listUsersByRole('RECYCLER'),
+  });
+}
+
 /**
  * Manually issue a reward for a RECYCLED submission (POST /rewards/issue/:id).
  * On success, invalidates the admin submissions list so the table reflects any
@@ -28,6 +44,30 @@ export function useIssueReward() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (submissionId: string) => adminApi.issueReward(submissionId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.admin.all });
+    },
+  });
+}
+
+/** Assign a collector to a PENDING submission (PATCH /submissions/:id/assign). */
+export function useAssignCollector() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ submissionId, collectorId }: { submissionId: string; collectorId: string }) =>
+      adminApi.assignCollector(submissionId, collectorId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.admin.all });
+    },
+  });
+}
+
+/** Assign a recycler to a COLLECTED submission (PATCH /submissions/:id/assign-recycler). */
+export function useAssignRecycler() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ submissionId, recyclerId }: { submissionId: string; recyclerId: string }) =>
+      adminApi.assignRecycler(submissionId, recyclerId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.admin.all });
     },

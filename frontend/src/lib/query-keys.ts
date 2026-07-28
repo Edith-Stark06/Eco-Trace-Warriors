@@ -41,6 +41,8 @@ export const queryKeys = {
   admin: {
     all: ['admin'] as const,
     submissions: (params?: QueryKeyParams) => ['admin', 'submissions', params ?? {}] as const,
+    collectors: ['admin', 'collectors'] as const,
+    recyclers: ['admin', 'recyclers'] as const,
   },
   user: {
     profile: ['user', 'profile'] as const,

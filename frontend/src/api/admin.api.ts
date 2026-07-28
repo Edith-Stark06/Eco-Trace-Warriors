@@ -8,13 +8,13 @@
  * Implemented backend surface (verified from backend/src/modules):
  *   GET  /submissions          — admin sees ALL submissions (service: isAdmin → findAll)
  *   POST /rewards/issue/:id    — manual reward issuance (ADMIN only; status must be RECYCLED)
- *
- * No user-listing, no collector/recycler lookup, and no analytics endpoints exist
- * on this backend instance. Those sections render informational unavailable states.
+ *   GET  /users?role=          — active users by role (COLLECTOR or RECYCLER); ADMIN+GOVERNMENT
+ *   PATCH /submissions/:id/assign          — assign collector (ADMIN+GOVERNMENT)
+ *   PATCH /submissions/:id/assign-recycler — assign recycler (ADMIN+GOVERNMENT)
  */
 import { apiClient } from '@/api/axios';
 import { unwrap } from '@/api/client';
-import type { ApiSuccess, PaginationParams, RewardSummary, Submission } from '@/types';
+import type { ApiSuccess, PaginationParams, PublicUser, RewardSummary, Submission } from '@/types';
 
 export const adminApi = {
   /**
@@ -33,5 +33,34 @@ export const adminApi = {
   issueReward: (submissionId: string): Promise<RewardSummary> =>
     unwrap<RewardSummary>(
       apiClient.post<ApiSuccess<RewardSummary>>(`/rewards/issue/${submissionId}`),
+    ),
+
+  /**
+   * GET /users?role=COLLECTOR|RECYCLER — active users eligible for assignment.
+   * Protected by ADMIN and GOVERNMENT roles on the backend.
+   */
+  listUsersByRole: (role: 'COLLECTOR' | 'RECYCLER'): Promise<PublicUser[]> =>
+    unwrap<PublicUser[]>(apiClient.get<ApiSuccess<PublicUser[]>>('/users', { params: { role } })),
+
+  /**
+   * PATCH /submissions/:id/assign — assign a collector to a PENDING submission.
+   * Moves status to ASSIGNED. ADMIN+GOVERNMENT only.
+   */
+  assignCollector: (submissionId: string, collectorId: string): Promise<Submission> =>
+    unwrap<Submission>(
+      apiClient.patch<ApiSuccess<Submission>>(`/submissions/${submissionId}/assign`, {
+        collectorId,
+      }),
+    ),
+
+  /**
+   * PATCH /submissions/:id/assign-recycler — assign a recycler to a COLLECTED submission.
+   * ADMIN+GOVERNMENT only.
+   */
+  assignRecycler: (submissionId: string, recyclerId: string): Promise<Submission> =>
+    unwrap<Submission>(
+      apiClient.patch<ApiSuccess<Submission>>(`/submissions/${submissionId}/assign-recycler`, {
+        recyclerId,
+      }),
     ),
 };
