@@ -10,7 +10,13 @@ import type { Submission } from '@/types';
 import { SubmissionStatusBadge } from '@/features/consumer/components/SubmissionStatusBadge';
 import { formatDate, formatWeight, shortAddress } from '@/features/consumer/lib/submission-display';
 import { IssueRewardDialog } from '@/features/admin/components/IssueRewardDialog';
-import { isRewardIssuable } from '@/features/admin/lib/admin-display';
+import { AssignCollectorDialog } from '@/features/admin/components/AssignCollectorDialog';
+import { AssignRecyclerDialog } from '@/features/admin/components/AssignRecyclerDialog';
+import {
+  isCollectorAssignable,
+  isRecyclerAssignable,
+  isRewardIssuable,
+} from '@/features/admin/lib/admin-display';
 
 interface AdminSubmissionsTableProps {
   submissions: readonly Submission[];
@@ -49,6 +55,12 @@ export function AdminSubmissionsTable({ submissions }: AdminSubmissionsTableProp
             <TableCell className="whitespace-nowrap">{formatDate(submission.createdAt)}</TableCell>
             <TableCell>
               <div className="flex items-center justify-end gap-2">
+                {isCollectorAssignable(submission.status) && (
+                  <AssignCollectorDialog submission={submission} />
+                )}
+                {isRecyclerAssignable(submission.status) && (
+                  <AssignRecyclerDialog submission={submission} />
+                )}
                 {isRewardIssuable(submission.status) && (
                   <IssueRewardDialog submission={submission} />
                 )}

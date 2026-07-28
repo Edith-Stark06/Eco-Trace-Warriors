@@ -37,6 +37,8 @@ export interface UserRepository {
   updateLastLogin(id: string, when: Date): Promise<void>;
   /** Resolves a role's primary key by its enum name (roles are seeded). */
   findRoleId(name: UserRole): Promise<string | null>;
+  /** Returns all active users with the given role, ordered by fullName. */
+  findByRole(role: UserRole): Promise<UserRecord[]>;
 }
 
 const userSelect = {
@@ -86,6 +88,17 @@ export function createUserRepository(deps: { readonly prisma: PrismaClient }): U
     async findRoleId(name: UserRole): Promise<string | null> {
       const role = await prisma.role.findUnique({ where: { name }, select: { id: true } });
       return role?.id ?? null;
+    },
+
+    async findByRole(role: UserRole): Promise<UserRecord[]> {
+      // Only active users are eligible assignment targets; the submission
+      // service rejects inactive assignees, so filtering here keeps the
+      // lookup list aligned with what assignment will actually accept.
+      return prisma.user.findMany({
+        where: { isActive: true, role: { name: role } },
+        orderBy: { fullName: 'asc' },
+        select: userSelect,
+      });
     },
   };
 }

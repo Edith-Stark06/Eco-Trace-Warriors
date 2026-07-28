@@ -32,12 +32,13 @@ const ALL_STATUSES = 'ALL';
  *
  * Sections backed by real APIs:
  *   - Submission Administration: GET /submissions (admin sees ALL via isAdmin→findAll)
+ *   - Assignment: inline via Assign Collector/Recycler dialogs
+ *       (GET /users?role=, PATCH /submissions/:id/assign, /assign-recycler)
  *   - Reward Administration: inline via IssueRewardDialog (POST /rewards/issue/:id)
  *
  * Sections with no backend API (informational unavailable state):
  *   - System Overview / Analytics: no /analytics router mounted
  *   - User Management: no user-listing endpoint exists
- *   - Assignment Management: no collector/recycler list API exists
  *   - System Activity: no audit/activity feed endpoint exists
  *
  * Default export for React.lazy code-splitting.
@@ -85,9 +86,9 @@ export default function AdminDashboardPage() {
         </ContentCard>
       </Section>
 
-      {/* User Management — no user-listing API */}
+      {/* User Management — role-scoped lookup exists, but no full user directory */}
       <Section title="User management" description="Platform user accounts and roles.">
-        <AdminUnavailable description="User management is not yet available. No user-listing endpoint exists on this backend instance." />
+        <AdminUnavailable description="Full user management is not yet available. The backend exposes only a role-scoped lookup (collectors and recyclers) used by the assignment workflow below — no complete user directory or account-editing endpoint exists." />
       </Section>
 
       {/* Submission Administration — GET /submissions (admin sees all) */}
@@ -182,12 +183,19 @@ export default function AdminDashboardPage() {
         )}
       </Section>
 
-      {/* Assignment Management — no collector/recycler list API */}
+      {/* Assignment Management — inline in the submissions table */}
       <Section
         title="Assignment management"
         description="Assign collectors and recyclers to submissions."
       >
-        <AdminUnavailable description="Assignment management requires a collector and recycler lookup API that is not yet available on this backend instance. Assignments can be made directly via the submission detail once the lookup endpoint ships." />
+        <ContentCard>
+          <p className="text-sm text-muted-foreground">
+            Assignments are made inline in the Submission Administration table above. Use{' '}
+            <strong>Assign Collector</strong> on a <strong>Pending</strong> submission, and{' '}
+            <strong>Assign Recycler</strong> once it is <strong>Collected</strong>. Eligible
+            partners are loaded from the backend directory; the assignment is validated server-side.
+          </p>
+        </ContentCard>
       </Section>
 
       {/* Reward Administration — note: IssueRewardDialog is inline in the submissions table */}

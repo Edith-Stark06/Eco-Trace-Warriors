@@ -7,6 +7,108 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Role {
+  id          String   @id @default(uuid())
+  name        UserRole @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  users       User[]
+
+  @@map("roles")
+}
+
+model User {
+  id                   String              @id @default(uuid())
+  fullName             String
+  email                String              @unique
+  passwordHash         String
+  phone                String?
+  address              String?
+  region               String?
+  emailVerified        Boolean             @default(false)
+  isActive             Boolean             @default(true)
+  lastLogin            DateTime?
+  roleId               String
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  greenCoins           Int                 @default(0)
+  refreshTokens        RefreshToken[]
+  rewardTransactions   RewardTransaction[]
+  collectedSubmissions Submission[]        @relation("SubmissionCollector")
+  recycledSubmissions  Submission[]        @relation("SubmissionRecycler")
+  submissions          Submission[]        @relation("SubmissionOwner")
+  role                 Role                @relation(fields: [roleId], references: [id])
+
+  @@index([roleId])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  userId    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Submission {
+  id                  String             @id @default(uuid())
+  userId              String
+  category            String
+  description         String?
+  estimatedWeight     Float
+  address             String
+  latitude            Float
+  longitude           Float
+  imageUrls           String[]           @default([])
+  status              SubmissionStatus   @default(PENDING)
+  assignedCollectorId String?
+  assignedRecyclerId  String?
+  pickupScheduledAt   DateTime?
+  completedAt         DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  materialRecovery    Json?
+  processingStartedAt DateTime?
+  recoveredWeight     Float?
+  recycledAt          DateTime?
+  recyclerNotes       String?
+  co2Saved            Float?
+  energySaved         Float?
+  landfillDiverted    Float?
+  rewardIssued        Boolean            @default(false)
+  rewardTransaction   RewardTransaction?
+  assignedCollector   User?              @relation("SubmissionCollector", fields: [assignedCollectorId], references: [id])
+  assignedRecycler    User?              @relation("SubmissionRecycler", fields: [assignedRecyclerId], references: [id])
+  user                User               @relation("SubmissionOwner", fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([assignedCollectorId])
+  @@index([assignedRecyclerId])
+  @@map("submissions")
+}
+
+model RewardTransaction {
+  id           String       @id @default(uuid())
+  userId       String
+  submissionId String       @unique
+  points       Int
+  reason       RewardReason
+  createdAt    DateTime     @default(now())
+  submission   Submission   @relation(fields: [submissionId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("reward_transactions")
+}
+
 enum UserRole {
   ADMIN
   GOVERNMENT
@@ -33,182 +135,4 @@ enum RewardReason {
   CAMPAIGN
   ADJUSTMENT
   REDEMPTION
-}
-
-model Role {
-  id          String   @id @default(uuid())
-  name        UserRole @unique
-  description String?
-
-  users User[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("roles")
-}
-
-model User {
-  id String @id @default(uuid())
-
-  fullName String
-
-  email String @unique
-
-  passwordHash String
-
-  phone String?
-
-  address String?
-
-  region String?
-
-  emailVerified Boolean @default(false)
-
-  isActive Boolean @default(true)
-
-  lastLogin DateTime?
-
-  roleId String
-
-  role Role @relation(fields: [roleId], references: [id], onDelete: Restrict)
-
-  refreshTokens RefreshToken[]
-
-  // E-waste submissions the user owns (as a consumer). See Submission.user.
-  submissions Submission[] @relation("SubmissionOwner")
-
-  // Submissions assigned to this user as collector / recycler (future phases).
-  collectedSubmissions Submission[] @relation("SubmissionCollector")
-
-  recycledSubmissions Submission[] @relation("SubmissionRecycler")
-
-  greenCoins Int @default(0)
-
-  rewardTransactions RewardTransaction[]
-
-  createdAt DateTime @default(now())
-
-  updatedAt DateTime @updatedAt
-
-  @@index([roleId])
-  @@map("users")
-}
-
-model RefreshToken {
-  id String @id @default(uuid())
-
-  // SHA-256 hex digest of the refresh token — the raw token is never stored.
-  tokenHash String @unique
-
-  userId String
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  expiresAt DateTime
-
-  revokedAt DateTime?
-
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@map("refresh_tokens")
-}
-
-model Submission {
-  id String @id @default(uuid())
-
-  userId String
-
-  // Owning consumer. Restrict deletes: submissions are audit records and must
-  // not disappear when a user row is removed.
-  user User @relation("SubmissionOwner", fields: [userId], references: [id], onDelete: Restrict)
-
-  category String
-
-  description String?
-
-  estimatedWeight Float
-
-  address String
-
-  latitude Float
-
-  longitude Float
-
-  imageUrls String[] @default([])
-
-  status SubmissionStatus @default(PENDING)
-
-  // Assignment targets — nullable, populated in later lifecycle phases.
-  assignedCollectorId String?
-
-  assignedCollector User? @relation("SubmissionCollector", fields: [assignedCollectorId], references: [id], onDelete: SetNull)
-
-  assignedRecyclerId String?
-
-  assignedRecycler User? @relation("SubmissionRecycler", fields: [assignedRecyclerId], references: [id], onDelete: SetNull)
-
-  pickupScheduledAt DateTime?
-
-  completedAt DateTime?
-
-  // Recycler workflow (Phase 7) — populated as a submission is processed by its
-  // assigned recycler. All nullable: unset until recycling begins/completes.
-  processingStartedAt DateTime?
-
-  recycledAt DateTime?
-
-  recyclerNotes String?
-
-  recoveredWeight Float?
-
-  // Per-material recovery breakdown, e.g. { "plastic": 3.2, "metal": 6.1 }.
-  materialRecovery Json?
-
-  // Rewards & sustainability (Phase 8) — populated when a reward is issued for a
-  // completed submission. Impact metrics are nullable until computed.
-  rewardIssued Boolean @default(false)
-
-  co2Saved Float?
-
-  landfillDiverted Float?
-
-  energySaved Float?
-
-  rewardTransaction RewardTransaction?
-
-  createdAt DateTime @default(now())
-
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-  @@index([status])
-  @@index([assignedCollectorId])
-  @@index([assignedRecyclerId])
-  @@map("submissions")
-}
-
-model RewardTransaction {
-  id String @id @default(uuid())
-
-  userId String
-
-  // Point-earning user. Restrict deletes: reward transactions are audit records
-  // and must not disappear when a user row is removed.
-  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
-
-  submissionId String @unique
-
-  // One reward transaction per submission (enforced by the unique constraint).
-  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
-
-  points Int
-
-  reason RewardReason
-
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@map("reward_transactions")
 }

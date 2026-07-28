@@ -32,6 +32,7 @@ import {
   createUserRepository,
 } from '@modules/auth';
 import type { RefreshTokenRepository, UserRepository } from '@modules/auth';
+import { createUsersController, createUsersRouter, createUsersService } from '@modules/users';
 import {
   createSubmissionController,
   createSubmissionRepository,
@@ -128,6 +129,16 @@ export function createApp({
     rateLimiter: authRateLimiter(config.authRateLimit),
   });
   app.use(config.apiPrefix, authRouter);
+
+  // Users module — directory lookup for assignment workflows. Reuses the auth
+  // module's user repository (single owner of the user table) so no second
+  // Prisma access point is introduced.
+  const usersService = createUsersService({ users });
+  const usersRouter = createUsersRouter(createUsersController(usersService), {
+    authenticate: authenticate(tokenService),
+    authorize,
+  });
+  app.use(config.apiPrefix, usersRouter);
 
   // Submission module — repository defaults to Prisma; tests may inject a fake.
   // Reuses the shared authenticate/authorize middleware — no new auth logic.

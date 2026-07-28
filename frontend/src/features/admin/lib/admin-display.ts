@@ -11,6 +11,16 @@ export function isRewardIssuable(status: string, rewardIssued?: boolean): boolea
   return status === 'RECYCLED' && !rewardIssued;
 }
 
+/** True when a collector can be assigned — backend allows assign only while PENDING. */
+export function isCollectorAssignable(status: string): boolean {
+  return status === 'PENDING';
+}
+
+/** True when a recycler can be assigned — backend requires the item be COLLECTED. */
+export function isRecyclerAssignable(status: string): boolean {
+  return status === 'COLLECTED';
+}
+
 /** Short label for the reward issue button. */
 export const ISSUE_REWARD_LABEL = 'Issue Reward';
 

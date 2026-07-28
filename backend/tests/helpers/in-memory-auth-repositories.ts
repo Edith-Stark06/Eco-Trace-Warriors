@@ -62,6 +62,13 @@ export function createInMemoryAuthRepositories(): InMemoryAuthRepositories {
     findRoleId(name: UserRole): Promise<string | null> {
       return Promise.resolve(roleIds.get(name) ?? null);
     },
+
+    findByRole(role: UserRole): Promise<UserRecord[]> {
+      const matches = [...usersById.values()]
+        .filter((u) => u.isActive && u.role.name === role)
+        .sort((a, b) => a.fullName.localeCompare(b.fullName));
+      return Promise.resolve(matches);
+    },
   };
 
   const refreshTokens: RefreshTokenRepository = {
