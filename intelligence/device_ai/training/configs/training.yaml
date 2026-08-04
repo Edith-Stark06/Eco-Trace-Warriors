@@ -1,0 +1,33 @@
+# Core training-loop hyper-parameters (composed by default.yaml under the
+# `training` key). Every field maps to `training.config.TrainingConfig`.
+
+# Images per optimisation step.
+batch_size: 16
+
+# Number of full passes over the training set.
+epochs: 100
+
+# Target device: "auto" resolves to CUDA when available, else CPU, at run time.
+device: auto
+
+# Request automatic mixed precision (honoured only by torch-backed trainers).
+mixed_precision: false
+
+# Data-loader worker processes.
+workers: 4
+
+# RNG seed for deterministic, reproducible runs.
+seed: 42
+
+# Square input resolution in pixels.
+image_size: 640
+
+# Dataset snapshot label to train against; "latest" resolves to the newest
+# registered dataset version (see dataset/versioning.py) at run time.
+dataset_version: latest
+
+# Semantic version tag stamped onto produced artifacts.
+model_version: 1.0.0
+
+# Epochs without validation improvement before stopping (0 disables).
+early_stopping_patience: 0

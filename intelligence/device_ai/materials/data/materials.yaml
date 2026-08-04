@@ -1,0 +1,842 @@
+# Material profile catalogue for the Material Intelligence Engine (M1.10).
+#
+# This file is DATA, not code: it holds the versioned, per-device-type material
+# knowledge the engine estimates recoverable materials from. It can be reviewed,
+# extended or corrected without touching the engine. A strict loader
+# (materials/profiles.py) validates every entry on load and rejects anything
+# malformed, so a bad catalogue never silently degrades the engine.
+#
+# Top-level keys
+#   version   Semantic version string, stamped onto every produced report.
+#   aliases   Synonym -> canonical device-type map. Keys and values are
+#             normalized on load (internal whitespace -> "_", casefolded).
+#   unknown   Conservative fallback profile for unrecognized device types.
+#             Its materials should be generic and unconditional (structural).
+#   profiles  Canonical device-type -> profile. Each profile has an optional
+#             'notes' string and a 'materials' list (>= 1 entry).
+#
+# Material entry fields
+#   name              Human-readable material name (required, non-empty).
+#   category          One of the MaterialCategory wire values (required):
+#                     ferrous_metal, non_ferrous_metal, precious_metal,
+#                     critical_material, rare_earth, plastic, glass, ceramic,
+#                     battery_material, hazardous, other.
+#   mass_g            Nominal mass in grams (required, >= 0). Never scaled by
+#                     confidence; confidence is a separate, independent axis.
+#   recoverable       Whether the material carries recovery value (default true).
+#   hazardous         Whether the material needs hazardous handling (default
+#                     false).
+#   source_components Component-category wire values (from the M1.9 component
+#                     report) whose presence conditions this material and drives
+#                     its confidence. Allowed: battery, circuit_board, processor,
+#                     memory, storage, display, connectivity, input, camera,
+#                     sensor, power, audio, optics, optical_media, cabling,
+#                     housing, other. Omit / leave empty for an unconditional
+#                     structural material (always present at full source weight).
+#   notes             Optional short rationale (provenance; not used in scoring).
+
+version: "1.0.0"
+
+aliases:
+  laptop_computer: laptop
+  notebook: laptop
+  notebook_computer: laptop
+  ultrabook: laptop
+  cell_phone: smartphone
+  cellphone: smartphone
+  mobile: smartphone
+  mobile_phone: smartphone
+  phone: smartphone
+  smart_phone: smartphone
+  pc: desktop
+  desktop_computer: desktop
+  workstation: desktop
+  tower: desktop
+  rack_server: server
+  blade_server: server
+  lcd_monitor: monitor
+  led_monitor: monitor
+  crt: crt_monitor
+  cathode_ray_tube: crt_monitor
+  tv: television
+  smart_tv: television
+  led_tv: television
+  inkjet_printer: printer
+  laser_printer: printer
+  scanner: printer
+  keypad: keyboard
+  mice: mouse
+  trackball: mouse
+  wifi_router: router
+  modem: router
+  access_point: router
+  psu: power_supply
+  power_adapter: power_supply
+  charger: power_supply
+  adapter: power_supply
+  usb_cable: cable
+  power_cable: cable
+  wire: cable
+  webcam: camera
+  digital_camera: camera
+  console: game_console
+  gaming_console: game_console
+  smart_watch: smartwatch
+  wearable: smartwatch
+  earphones: headphones
+  earbuds: headphones
+  headset: headphones
+  battery_pack: battery
+  cell: battery
+
+unknown:
+  notes: >-
+    Unrecognized device type. Only generic materials common to most electronics
+    are estimated, unconditionally and at conservative mass; a human should
+    confirm the device before acting on this breakdown.
+  materials:
+    - name: Mixed plastics (enclosure)
+      category: plastic
+      mass_g: 150.0
+      hazardous: false
+      recoverable: true
+      notes: Almost every device has a plastic or metal enclosure.
+    - name: Mixed ferrous metal
+      category: ferrous_metal
+      mass_g: 80.0
+      hazardous: false
+      recoverable: true
+      notes: Generic steel fasteners, shielding and brackets.
+    - name: Mixed circuit-board material
+      category: other
+      mass_g: 40.0
+      hazardous: false
+      recoverable: true
+      notes: Generic populated board assumption for an unknown powered device.
+
+profiles:
+  laptop:
+    notes: Aluminium/magnesium chassis, Li-ion pack, populated boards and a panel.
+    materials:
+      - name: Aluminium / magnesium chassis
+        category: non_ferrous_metal
+        mass_g: 500.0
+        recoverable: true
+        hazardous: false
+        notes: Structural enclosure, always present.
+      - name: Steel fasteners & brackets
+        category: ferrous_metal
+        mass_g: 120.0
+        recoverable: true
+        hazardous: false
+      - name: Lithium (battery cells)
+        category: battery_material
+        mass_g: 45.0
+        recoverable: true
+        hazardous: true
+        source_components: [battery]
+      - name: Cobalt (cathode)
+        category: critical_material
+        mass_g: 30.0
+        recoverable: true
+        hazardous: true
+        source_components: [battery]
+      - name: Copper (traces, windings, wiring)
+        category: non_ferrous_metal
+        mass_g: 90.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board, connectivity]
+      - name: Gold (connector & board plating)
+        category: precious_metal
+        mass_g: 0.2
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board, processor]
+      - name: Silver (board contacts)
+        category: precious_metal
+        mass_g: 0.5
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board]
+      - name: FR-4 board substrate & plastics
+        category: plastic
+        mass_g: 160.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board]
+      - name: Display glass
+        category: glass
+        mass_g: 120.0
+        recoverable: true
+        hazardous: false
+        source_components: [display]
+      - name: Silicon dies (CPU/memory/storage)
+        category: other
+        mass_g: 6.0
+        recoverable: true
+        hazardous: false
+        source_components: [processor, memory, storage]
+
+  smartphone:
+    notes: Sealed handset; glass front, embedded pack and dense precious metals.
+    materials:
+      - name: Aluminium frame
+        category: non_ferrous_metal
+        mass_g: 30.0
+        recoverable: true
+        hazardous: false
+      - name: Lithium (battery)
+        category: battery_material
+        mass_g: 12.0
+        recoverable: true
+        hazardous: true
+        source_components: [battery]
+      - name: Cobalt (cathode)
+        category: critical_material
+        mass_g: 8.0
+        recoverable: true
+        hazardous: true
+        source_components: [battery]
+      - name: Copper (board & wiring)
+        category: non_ferrous_metal
+        mass_g: 15.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board, connectivity]
+      - name: Gold (board & connector plating)
+        category: precious_metal
+        mass_g: 0.03
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board, processor]
+      - name: Cover / display glass
+        category: glass
+        mass_g: 25.0
+        recoverable: true
+        hazardous: false
+        source_components: [display]
+      - name: Indium (touch panel)
+        category: critical_material
+        mass_g: 0.05
+        recoverable: false
+        hazardous: false
+        source_components: [display]
+      - name: Tantalum (capacitors)
+        category: critical_material
+        mass_g: 0.4
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board]
+      - name: Rare-earth magnets (speaker/vibration)
+        category: rare_earth
+        mass_g: 1.0
+        recoverable: false
+        hazardous: false
+        source_components: [sensor]
+      - name: Enclosure plastics
+        category: plastic
+        mass_g: 20.0
+        recoverable: true
+        hazardous: false
+
+  tablet:
+    notes: Large glass slate; bigger pack and panel than a phone.
+    materials:
+      - name: Aluminium chassis
+        category: non_ferrous_metal
+        mass_g: 120.0
+        recoverable: true
+        hazardous: false
+      - name: Lithium (battery)
+        category: battery_material
+        mass_g: 30.0
+        recoverable: true
+        hazardous: true
+        source_components: [battery]
+      - name: Cobalt (cathode)
+        category: critical_material
+        mass_g: 20.0
+        recoverable: true
+        hazardous: true
+        source_components: [battery]
+      - name: Copper (board & wiring)
+        category: non_ferrous_metal
+        mass_g: 25.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board, connectivity]
+      - name: Gold (board plating)
+        category: precious_metal
+        mass_g: 0.05
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board, processor]
+      - name: Cover / display glass
+        category: glass
+        mass_g: 180.0
+        recoverable: true
+        hazardous: false
+        source_components: [display]
+      - name: FR-4 board substrate & plastics
+        category: plastic
+        mass_g: 60.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board]
+
+  desktop:
+    notes: Steel-rich tower; abundant copper, boards and a metal PSU.
+    materials:
+      - name: Steel chassis & panels
+        category: ferrous_metal
+        mass_g: 4500.0
+        recoverable: true
+        hazardous: false
+      - name: Copper (PSU windings, wiring, traces)
+        category: non_ferrous_metal
+        mass_g: 600.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board, power]
+      - name: Aluminium (heatsinks)
+        category: non_ferrous_metal
+        mass_g: 400.0
+        recoverable: true
+        hazardous: false
+        source_components: [processor, power]
+      - name: Gold (board & connector plating)
+        category: precious_metal
+        mass_g: 0.3
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board, processor]
+      - name: FR-4 board substrate & plastics
+        category: plastic
+        mass_g: 500.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board]
+      - name: Lithium (CMOS coin cell)
+        category: battery_material
+        mass_g: 2.0
+        recoverable: false
+        hazardous: true
+        source_components: [battery]
+      - name: Silicon dies (CPU/memory/storage)
+        category: other
+        mass_g: 15.0
+        recoverable: true
+        hazardous: false
+        source_components: [processor, memory, storage]
+
+  server:
+    notes: Dense enterprise chassis; heavy on steel, copper and boards.
+    materials:
+      - name: Steel chassis & rails
+        category: ferrous_metal
+        mass_g: 12000.0
+        recoverable: true
+        hazardous: false
+      - name: Copper (supplies, wiring, traces)
+        category: non_ferrous_metal
+        mass_g: 1500.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board, power]
+      - name: Aluminium (heatsinks & drive caddies)
+        category: non_ferrous_metal
+        mass_g: 900.0
+        recoverable: true
+        hazardous: false
+        source_components: [processor, storage, power]
+      - name: Gold (board & connector plating)
+        category: precious_metal
+        mass_g: 1.2
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board, processor]
+      - name: FR-4 board substrate & plastics
+        category: plastic
+        mass_g: 1200.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board]
+      - name: Silicon dies (CPUs/memory)
+        category: other
+        mass_g: 40.0
+        recoverable: true
+        hazardous: false
+        source_components: [processor, memory]
+
+  monitor:
+    notes: Flat panel; glass, a driver board and a metal stand/frame.
+    materials:
+      - name: Steel stand & frame
+        category: ferrous_metal
+        mass_g: 1800.0
+        recoverable: true
+        hazardous: false
+      - name: Panel glass
+        category: glass
+        mass_g: 900.0
+        recoverable: true
+        hazardous: false
+        source_components: [display]
+      - name: Copper (board & power wiring)
+        category: non_ferrous_metal
+        mass_g: 120.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board, power]
+      - name: Gold (board plating)
+        category: precious_metal
+        mass_g: 0.08
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board]
+      - name: Enclosure plastics
+        category: plastic
+        mass_g: 700.0
+        recoverable: true
+        hazardous: false
+      - name: FR-4 board substrate
+        category: plastic
+        mass_g: 90.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board]
+
+  crt_monitor:
+    notes: Cathode-ray tube; leaded glass and phosphor are hazardous.
+    materials:
+      - name: Leaded funnel glass
+        category: hazardous
+        mass_g: 6000.0
+        recoverable: false
+        hazardous: true
+        source_components: [display]
+      - name: Phosphor coating
+        category: hazardous
+        mass_g: 15.0
+        recoverable: false
+        hazardous: true
+        source_components: [other]
+      - name: Panel (barium) glass
+        category: glass
+        mass_g: 4000.0
+        recoverable: false
+        hazardous: true
+        source_components: [display]
+      - name: Copper (deflection yoke & wiring)
+        category: non_ferrous_metal
+        mass_g: 500.0
+        recoverable: true
+        hazardous: false
+        source_components: [other, circuit_board]
+      - name: Steel shadow mask & frame
+        category: ferrous_metal
+        mass_g: 2500.0
+        recoverable: true
+        hazardous: false
+      - name: Enclosure plastics
+        category: plastic
+        mass_g: 2000.0
+        recoverable: true
+        hazardous: false
+
+  television:
+    notes: Large flat panel; hazard from the backlight varies by vintage.
+    materials:
+      - name: Steel & aluminium frame
+        category: ferrous_metal
+        mass_g: 3000.0
+        recoverable: true
+        hazardous: false
+      - name: Panel glass
+        category: glass
+        mass_g: 2500.0
+        recoverable: true
+        hazardous: false
+        source_components: [display]
+      - name: Mercury backlight lamps (legacy CCFL)
+        category: hazardous
+        mass_g: 5.0
+        recoverable: false
+        hazardous: true
+        source_components: [display]
+      - name: Copper (board & power wiring)
+        category: non_ferrous_metal
+        mass_g: 250.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board, power]
+      - name: Gold (board plating)
+        category: precious_metal
+        mass_g: 0.15
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board]
+      - name: Enclosure plastics
+        category: plastic
+        mass_g: 2000.0
+        recoverable: true
+        hazardous: false
+      - name: Speaker magnets & copper
+        category: non_ferrous_metal
+        mass_g: 60.0
+        recoverable: true
+        hazardous: false
+        source_components: [audio]
+
+  printer:
+    notes: Toner/ink residue and a fuser complicate handling.
+    materials:
+      - name: Steel & metal frame
+        category: ferrous_metal
+        mass_g: 2000.0
+        recoverable: true
+        hazardous: false
+      - name: Enclosure plastics
+        category: plastic
+        mass_g: 2500.0
+        recoverable: true
+        hazardous: false
+      - name: Copper (motors, board, wiring)
+        category: non_ferrous_metal
+        mass_g: 200.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board, power, other]
+      - name: Toner / ink residue
+        category: hazardous
+        mass_g: 60.0
+        recoverable: false
+        hazardous: true
+        source_components: [other]
+      - name: Gold (board plating)
+        category: precious_metal
+        mass_g: 0.05
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board]
+
+  keyboard:
+    notes: Largely plastic with a small board and a steel backplate.
+    materials:
+      - name: Enclosure & keycap plastics
+        category: plastic
+        mass_g: 600.0
+        recoverable: true
+        hazardous: false
+        source_components: [input]
+      - name: Steel backplate
+        category: ferrous_metal
+        mass_g: 300.0
+        recoverable: true
+        hazardous: false
+      - name: Copper (board & cable)
+        category: non_ferrous_metal
+        mass_g: 30.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board, cabling]
+      - name: FR-4 controller board
+        category: plastic
+        mass_g: 20.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board]
+
+  mouse:
+    notes: Small peripheral; mostly plastic with a tiny board and sensor.
+    materials:
+      - name: Enclosure plastics
+        category: plastic
+        mass_g: 80.0
+        recoverable: true
+        hazardous: false
+      - name: Copper (board & cable)
+        category: non_ferrous_metal
+        mass_g: 10.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board]
+      - name: FR-4 controller board
+        category: plastic
+        mass_g: 8.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board]
+      - name: Silicon sensor die
+        category: other
+        mass_g: 0.5
+        recoverable: false
+        hazardous: false
+        source_components: [sensor]
+
+  router:
+    notes: Networking board with radios; plastic-heavy with copper.
+    materials:
+      - name: Enclosure plastics
+        category: plastic
+        mass_g: 250.0
+        recoverable: true
+        hazardous: false
+      - name: Copper (board, radios, wiring)
+        category: non_ferrous_metal
+        mass_g: 60.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board, connectivity]
+      - name: Gold (board plating)
+        category: precious_metal
+        mass_g: 0.04
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board]
+      - name: FR-4 mainboard
+        category: plastic
+        mass_g: 70.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board]
+      - name: Silicon dies (SoC/flash/RAM)
+        category: other
+        mass_g: 3.0
+        recoverable: true
+        hazardous: false
+        source_components: [memory]
+
+  power_supply:
+    notes: Metal-rich AC/DC converter; capacitors hold residual charge.
+    materials:
+      - name: Steel casing
+        category: ferrous_metal
+        mass_g: 900.0
+        recoverable: true
+        hazardous: false
+      - name: Copper (transformer & windings)
+        category: non_ferrous_metal
+        mass_g: 400.0
+        recoverable: true
+        hazardous: false
+        source_components: [power, circuit_board]
+      - name: Aluminium (heatsinks & housing)
+        category: non_ferrous_metal
+        mass_g: 150.0
+        recoverable: true
+        hazardous: false
+        source_components: [power]
+      - name: Electrolytic capacitors
+        category: hazardous
+        mass_g: 40.0
+        recoverable: true
+        hazardous: true
+        source_components: [power]
+      - name: FR-4 switching board
+        category: plastic
+        mass_g: 60.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board]
+
+  cable:
+    notes: Copper-rich; excellent material recovery, no active parts.
+    materials:
+      - name: Copper conductor core
+        category: non_ferrous_metal
+        mass_g: 120.0
+        recoverable: true
+        hazardous: false
+        source_components: [cabling]
+      - name: PVC / polymer insulation
+        category: plastic
+        mass_g: 180.0
+        recoverable: true
+        hazardous: false
+        source_components: [housing, cabling]
+      - name: Connector shell metals
+        category: non_ferrous_metal
+        mass_g: 25.0
+        recoverable: true
+        hazardous: false
+        source_components: [cabling]
+
+  camera:
+    notes: Optics and a small board; most standalone units carry a battery.
+    materials:
+      - name: Aluminium / magnesium body
+        category: non_ferrous_metal
+        mass_g: 180.0
+        recoverable: true
+        hazardous: false
+      - name: Lithium (battery)
+        category: battery_material
+        mass_g: 10.0
+        recoverable: true
+        hazardous: true
+        source_components: [battery]
+      - name: Optical glass (lens elements)
+        category: glass
+        mass_g: 90.0
+        recoverable: true
+        hazardous: false
+        source_components: [optics]
+      - name: Copper (board & wiring)
+        category: non_ferrous_metal
+        mass_g: 20.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board]
+      - name: Silicon image sensor
+        category: other
+        mass_g: 2.0
+        recoverable: true
+        hazardous: false
+        source_components: [sensor]
+      - name: FR-4 controller board
+        category: plastic
+        mass_g: 25.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board]
+
+  game_console:
+    notes: Serviceable, high-resale unit; SoC, storage and a metal shield.
+    materials:
+      - name: Steel shielding & frame
+        category: ferrous_metal
+        mass_g: 900.0
+        recoverable: true
+        hazardous: false
+      - name: Enclosure plastics
+        category: plastic
+        mass_g: 700.0
+        recoverable: true
+        hazardous: false
+      - name: Copper (board, PSU, wiring)
+        category: non_ferrous_metal
+        mass_g: 150.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board, power]
+      - name: Aluminium / copper heatsink
+        category: non_ferrous_metal
+        mass_g: 200.0
+        recoverable: true
+        hazardous: false
+        source_components: [processor]
+      - name: Gold (board plating)
+        category: precious_metal
+        mass_g: 0.2
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board, processor]
+      - name: Silicon dies (APU/storage)
+        category: other
+        mass_g: 8.0
+        recoverable: true
+        hazardous: false
+        source_components: [processor, storage]
+
+  smartwatch:
+    notes: Tiny sealed wearable; small pack, dense board and glass face.
+    materials:
+      - name: Aluminium / steel case
+        category: non_ferrous_metal
+        mass_g: 20.0
+        recoverable: true
+        hazardous: false
+      - name: Lithium (battery)
+        category: battery_material
+        mass_g: 2.0
+        recoverable: true
+        hazardous: true
+        source_components: [battery]
+      - name: Cover glass
+        category: glass
+        mass_g: 5.0
+        recoverable: true
+        hazardous: false
+        source_components: [display]
+      - name: Copper (board & wiring)
+        category: non_ferrous_metal
+        mass_g: 3.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board, connectivity]
+      - name: Gold (board plating)
+        category: precious_metal
+        mass_g: 0.01
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board]
+
+  headphones:
+    notes: Wireless units embed a small battery and speaker magnets.
+    materials:
+      - name: Enclosure plastics
+        category: plastic
+        mass_g: 120.0
+        recoverable: true
+        hazardous: false
+      - name: Lithium (battery)
+        category: battery_material
+        mass_g: 3.0
+        recoverable: true
+        hazardous: true
+        source_components: [battery]
+      - name: Rare-earth speaker magnets
+        category: rare_earth
+        mass_g: 8.0
+        recoverable: false
+        hazardous: false
+        source_components: [audio]
+      - name: Copper (voice coils, board, cable)
+        category: non_ferrous_metal
+        mass_g: 15.0
+        recoverable: true
+        hazardous: false
+        source_components: [audio, circuit_board, cabling]
+
+  battery:
+    notes: Standalone cell/pack; hazardous, recycle via a dedicated stream.
+    materials:
+      - name: Lithium (cells)
+        category: battery_material
+        mass_g: 40.0
+        recoverable: true
+        hazardous: true
+        source_components: [battery]
+      - name: Cobalt / nickel (cathode)
+        category: critical_material
+        mass_g: 60.0
+        recoverable: true
+        hazardous: true
+        source_components: [battery]
+      - name: Copper (foils & terminals)
+        category: non_ferrous_metal
+        mass_g: 50.0
+        recoverable: true
+        hazardous: false
+        source_components: [battery]
+      - name: Electrolyte
+        category: hazardous
+        mass_g: 20.0
+        recoverable: false
+        hazardous: true
+        source_components: [battery]
+      - name: Steel / aluminium casing
+        category: ferrous_metal
+        mass_g: 80.0
+        recoverable: true
+        hazardous: false
+        source_components: [housing]
+      - name: Protection board (BMS)
+        category: plastic
+        mass_g: 10.0
+        recoverable: true
+        hazardous: false
+        source_components: [circuit_board]
+

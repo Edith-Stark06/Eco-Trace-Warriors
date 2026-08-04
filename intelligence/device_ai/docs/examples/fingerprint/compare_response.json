@@ -1,0 +1,10 @@
+{
+  "decision": "no_match",
+  "distance": 0.984329,
+  "is_match": false,
+  "left_eco_id": "ET-2026-00000001",
+  "metric": "cosine",
+  "right_eco_id": "ET-2026-00000002",
+  "similarity": 0.507836,
+  "threshold": 0.85
+}

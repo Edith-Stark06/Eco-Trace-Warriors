@@ -1,0 +1,269 @@
+[
+  {
+    "input": {
+      "barcodes": [],
+      "spans": [
+        {
+          "bounding_box": null,
+          "confidence": 0.98,
+          "text": "Dell Inc."
+        },
+        {
+          "bounding_box": null,
+          "confidence": 0.95,
+          "text": "Model: XPS 15"
+        },
+        {
+          "bounding_box": null,
+          "confidence": 0.93,
+          "text": "S/N: ABC12345"
+        }
+      ]
+    },
+    "name": "clean_label",
+    "output": {
+      "barcodes": [],
+      "created_at": null,
+      "engine_name": "ocr",
+      "engine_version": "",
+      "fields": [
+        {
+          "confidence": 0.9309999999999999,
+          "field_type": "manufacturer",
+          "raw_text": "Dell Inc.",
+          "source": "text",
+          "value": "Dell"
+        },
+        {
+          "confidence": 0.8075,
+          "field_type": "model",
+          "raw_text": "XPS 15",
+          "source": "text",
+          "value": "XPS 15"
+        },
+        {
+          "confidence": 0.8370000000000001,
+          "field_type": "serial_number",
+          "raw_text": "ABC12345",
+          "source": "text",
+          "value": "ABC12345"
+        }
+      ],
+      "identity": {
+        "imei": "",
+        "mac_address": "",
+        "manufacturer": "Dell",
+        "model": "XPS 15",
+        "serial_number": "ABC12345"
+      },
+      "source_hashes": [],
+      "spans": [
+        {
+          "bounding_box": null,
+          "confidence": 0.98,
+          "text": "Dell Inc."
+        },
+        {
+          "bounding_box": null,
+          "confidence": 0.95,
+          "text": "Model: XPS 15"
+        },
+        {
+          "bounding_box": null,
+          "confidence": 0.93,
+          "text": "S/N: ABC12345"
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "barcodes": [],
+      "spans": [
+        {
+          "bounding_box": null,
+          "confidence": 0.9,
+          "text": "IMEI: 490154203237518"
+        },
+        {
+          "bounding_box": null,
+          "confidence": 0.88,
+          "text": "MAC 00-1A-2B-3C-4D-5E"
+        }
+      ]
+    },
+    "name": "imei_and_mac",
+    "output": {
+      "barcodes": [],
+      "created_at": null,
+      "engine_name": "ocr",
+      "engine_version": "",
+      "fields": [
+        {
+          "confidence": 0.616,
+          "field_type": "serial_number",
+          "raw_text": "MAC 00-1A-2B-3C-4D-5E",
+          "source": "text",
+          "value": "00-1A-2B-3C-4D-5E"
+        },
+        {
+          "confidence": 0.9261,
+          "field_type": "imei",
+          "raw_text": "IMEI: 490154203237518",
+          "source": "text",
+          "value": "490154203237518"
+        },
+        {
+          "confidence": 0.8536,
+          "field_type": "mac_address",
+          "raw_text": "MAC 00-1A-2B-3C-4D-5E",
+          "source": "text",
+          "value": "00:1A:2B:3C:4D:5E"
+        }
+      ],
+      "identity": {
+        "imei": "490154203237518",
+        "mac_address": "00:1A:2B:3C:4D:5E",
+        "manufacturer": "",
+        "model": "",
+        "serial_number": "00-1A-2B-3C-4D-5E"
+      },
+      "source_hashes": [],
+      "spans": [
+        {
+          "bounding_box": null,
+          "confidence": 0.9,
+          "text": "IMEI: 490154203237518"
+        },
+        {
+          "bounding_box": null,
+          "confidence": 0.88,
+          "text": "MAC 00-1A-2B-3C-4D-5E"
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "barcodes": [
+        {
+          "confidence": 1.0,
+          "kind": "qr",
+          "payload": "SNXY98765",
+          "symbology": "QRCODE"
+        }
+      ],
+      "spans": [
+        {
+          "bounding_box": null,
+          "confidence": 0.92,
+          "text": "Lenovo"
+        }
+      ]
+    },
+    "name": "barcode_mined_serial",
+    "output": {
+      "barcodes": [
+        {
+          "confidence": 1.0,
+          "kind": "qr",
+          "payload": "SNXY98765",
+          "symbology": "QRCODE"
+        }
+      ],
+      "created_at": null,
+      "engine_name": "ocr",
+      "engine_version": "",
+      "fields": [
+        {
+          "confidence": 0.874,
+          "field_type": "manufacturer",
+          "raw_text": "Lenovo",
+          "source": "text",
+          "value": "Lenovo"
+        },
+        {
+          "confidence": 0.7,
+          "field_type": "serial_number",
+          "raw_text": "SNXY98765",
+          "source": "qr",
+          "value": "SNXY98765"
+        },
+        {
+          "confidence": 1.0,
+          "field_type": "qr_code",
+          "raw_text": "SNXY98765",
+          "source": "qr",
+          "value": "SNXY98765"
+        }
+      ],
+      "identity": {
+        "imei": "",
+        "mac_address": "",
+        "manufacturer": "Lenovo",
+        "model": "",
+        "serial_number": "SNXY98765"
+      },
+      "source_hashes": [],
+      "spans": [
+        {
+          "bounding_box": null,
+          "confidence": 0.92,
+          "text": "Lenovo"
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "barcodes": [
+        {
+          "confidence": 1.0,
+          "kind": "barcode",
+          "payload": "490154203237518",
+          "symbology": "CODE128"
+        }
+      ],
+      "spans": []
+    },
+    "name": "barcode_mined_imei",
+    "output": {
+      "barcodes": [
+        {
+          "confidence": 1.0,
+          "kind": "barcode",
+          "payload": "490154203237518",
+          "symbology": "CODE128"
+        }
+      ],
+      "created_at": null,
+      "engine_name": "ocr",
+      "engine_version": "",
+      "fields": [
+        {
+          "confidence": 0.98,
+          "field_type": "imei",
+          "raw_text": "490154203237518",
+          "source": "barcode",
+          "value": "490154203237518"
+        },
+        {
+          "confidence": 1.0,
+          "field_type": "barcode",
+          "raw_text": "490154203237518",
+          "source": "barcode",
+          "value": "490154203237518"
+        }
+      ],
+      "identity": {
+        "imei": "490154203237518",
+        "mac_address": "",
+        "manufacturer": "",
+        "model": "",
+        "serial_number": ""
+      },
+      "source_hashes": [],
+      "spans": []
+    }
+  }
+]

@@ -1,0 +1,664 @@
+# =============================================================================
+# Component Intelligence Engine — external component-profile library (M1.9)
+# =============================================================================
+#
+# This file is the single, versioned source of truth for the component
+# knowledge the engine infers from. It is deliberately stored *outside* the
+# Python code (unlike the M1.8 recoverability profile table) so the component
+# catalogue can be reviewed, extended or corrected without a code change or a
+# redeploy of the engine logic — the loader validates it on read.
+#
+# Schema
+# ------
+# version:   Semantic version of this catalogue (stamped onto every report as
+#            profile provenance).
+# aliases:   Map of synonym -> canonical device type, so heterogeneous module
+#            labels ("cell phone", "PC", "CRT") resolve to one profile. Keys and
+#            values are normalized (whitespace -> "_", casefolded) on load.
+# unknown:   The conservative fallback profile used for any device type not in
+#            `profiles` (generic, low-likelihood components + a review warning).
+# profiles:  Map of canonical device type -> profile. Each profile has optional
+#            `notes` and a list of `components`.
+#
+# Component fields
+# ----------------
+# name:            Human-readable component name (shown in the report).
+# category:        One of the ComponentCategory wire values (see models.py).
+# base_likelihood: Prior probability in [0, 1] that a device of this class
+#                  contains this component, before any evidence is applied.
+# hazardous:       Whether the component needs hazardous handling (batteries,
+#                  CRT leaded glass, backlight lamps).
+# recoverable:     Whether the component carries meaningful reuse/material value.
+# implied_by:      Optional list of identity signals whose presence in the fused
+#                  context corroborates this component and boosts its presence
+#                  confidence. Allowed: model, serial_number, imei, mac_address.
+# notes:           Optional short rationale (provenance; not used in scoring).
+# =============================================================================
+
+version: "1.0.0"
+
+aliases:
+  laptop_computer: laptop
+  notebook: laptop
+  notebook_computer: laptop
+  ultrabook: laptop
+  cell_phone: smartphone
+  cellphone: smartphone
+  mobile_phone: smartphone
+  mobile: smartphone
+  phone: smartphone
+  smart_phone: smartphone
+  handset: smartphone
+  desktop_computer: desktop
+  personal_computer: desktop
+  pc: desktop
+  workstation: desktop
+  tower: desktop
+  crt: crt_monitor
+  cathode_ray_tube: crt_monitor
+  lcd_monitor: monitor
+  led_monitor: monitor
+  display: monitor
+  screen: monitor
+  tv: television
+  smart_tv: television
+  wifi_router: router
+  wireless_router: router
+  modem: router
+  gateway: router
+  power_adapter: power_supply
+  power_brick: power_supply
+  charger: power_supply
+  psu: power_supply
+  adapter: power_supply
+  gaming_console: game_console
+  console: game_console
+  digital_camera: camera
+  webcam: camera
+  wearable: smartwatch
+  smart_watch: smartwatch
+  earbuds: headphones
+  earphones: headphones
+  headset: headphones
+  battery_pack: battery
+  cell: battery
+  usb_cable: cable
+  power_cable: cable
+  wire: cable
+
+unknown:
+  notes: >-
+    Unrecognized device type. Only generic components common to most electronics
+    are inferred, at low likelihood; a human should confirm the device before
+    acting on this component list.
+  components:
+    - name: Outer enclosure / housing
+      category: housing
+      base_likelihood: 0.80
+      hazardous: false
+      recoverable: true
+      notes: Almost every device has a plastic or metal enclosure.
+    - name: Printed circuit board
+      category: circuit_board
+      base_likelihood: 0.70
+      hazardous: false
+      recoverable: true
+      notes: Generic board assumption for an unknown powered device.
+    - name: Internal wiring / connectors
+      category: cabling
+      base_likelihood: 0.55
+      hazardous: false
+      recoverable: true
+
+profiles:
+  laptop:
+    notes: Modular portable computer; battery, mainboard, display and storage.
+    components:
+      - name: Lithium-ion battery pack
+        category: battery
+        base_likelihood: 0.97
+        hazardous: true
+        recoverable: true
+      - name: Mainboard (motherboard)
+        category: circuit_board
+        base_likelihood: 0.99
+        hazardous: false
+        recoverable: true
+        implied_by: [serial_number]
+      - name: CPU / processor
+        category: processor
+        base_likelihood: 0.99
+        hazardous: false
+        recoverable: true
+      - name: RAM module
+        category: memory
+        base_likelihood: 0.95
+        hazardous: false
+        recoverable: true
+      - name: SSD / hard-disk storage
+        category: storage
+        base_likelihood: 0.95
+        hazardous: false
+        recoverable: true
+        implied_by: [serial_number]
+      - name: LCD/LED display panel
+        category: display
+        base_likelihood: 0.97
+        hazardous: false
+        recoverable: true
+      - name: Wi-Fi / Bluetooth module
+        category: connectivity
+        base_likelihood: 0.90
+        hazardous: false
+        recoverable: true
+        implied_by: [mac_address]
+      - name: Keyboard & trackpad assembly
+        category: input
+        base_likelihood: 0.93
+        hazardous: false
+        recoverable: true
+
+  smartphone:
+    notes: Sealed handset; embedded battery, SoC, display and cellular modem.
+    components:
+      - name: Lithium-ion battery
+        category: battery
+        base_likelihood: 0.98
+        hazardous: true
+        recoverable: true
+      - name: Logic board (SoC)
+        category: circuit_board
+        base_likelihood: 0.99
+        hazardous: false
+        recoverable: true
+      - name: Application processor (SoC)
+        category: processor
+        base_likelihood: 0.98
+        hazardous: false
+        recoverable: true
+      - name: Flash storage (eMMC/UFS)
+        category: storage
+        base_likelihood: 0.97
+        hazardous: false
+        recoverable: true
+      - name: OLED/LCD touchscreen
+        category: display
+        base_likelihood: 0.98
+        hazardous: false
+        recoverable: true
+      - name: Cellular baseband modem
+        category: connectivity
+        base_likelihood: 0.95
+        hazardous: false
+        recoverable: true
+        implied_by: [imei]
+      - name: Rear/front camera module
+        category: camera
+        base_likelihood: 0.94
+        hazardous: false
+        recoverable: true
+      - name: MEMS sensor cluster
+        category: sensor
+        base_likelihood: 0.85
+        hazardous: false
+        recoverable: false
+
+  tablet:
+    notes: Glued slate; embedded battery, SoC and large touchscreen.
+    components:
+      - name: Lithium-ion battery
+        category: battery
+        base_likelihood: 0.98
+        hazardous: true
+        recoverable: true
+      - name: Logic board (SoC)
+        category: circuit_board
+        base_likelihood: 0.99
+        hazardous: false
+        recoverable: true
+      - name: Application processor (SoC)
+        category: processor
+        base_likelihood: 0.97
+        hazardous: false
+        recoverable: true
+      - name: Flash storage
+        category: storage
+        base_likelihood: 0.96
+        hazardous: false
+        recoverable: true
+      - name: LCD/OLED touchscreen
+        category: display
+        base_likelihood: 0.98
+        hazardous: false
+        recoverable: true
+      - name: Wi-Fi / Bluetooth module
+        category: connectivity
+        base_likelihood: 0.90
+        hazardous: false
+        recoverable: true
+        implied_by: [mac_address]
+      - name: Camera module
+        category: camera
+        base_likelihood: 0.85
+        hazardous: false
+        recoverable: true
+
+  desktop:
+    notes: Highly modular tower; no battery beyond a small coin cell.
+    components:
+      - name: Motherboard
+        category: circuit_board
+        base_likelihood: 0.99
+        hazardous: false
+        recoverable: true
+        implied_by: [serial_number]
+      - name: CPU / processor
+        category: processor
+        base_likelihood: 0.99
+        hazardous: false
+        recoverable: true
+      - name: RAM modules
+        category: memory
+        base_likelihood: 0.97
+        hazardous: false
+        recoverable: true
+      - name: SSD / hard-disk storage
+        category: storage
+        base_likelihood: 0.96
+        hazardous: false
+        recoverable: true
+      - name: Internal power supply unit
+        category: power
+        base_likelihood: 0.98
+        hazardous: false
+        recoverable: true
+      - name: CMOS coin-cell battery
+        category: battery
+        base_likelihood: 0.90
+        hazardous: true
+        recoverable: false
+      - name: Graphics card (GPU)
+        category: circuit_board
+        base_likelihood: 0.55
+        hazardous: false
+        recoverable: true
+
+  server:
+    notes: Enterprise chassis; redundant supplies, many drives and DIMMs.
+    components:
+      - name: Server mainboard
+        category: circuit_board
+        base_likelihood: 0.99
+        hazardous: false
+        recoverable: true
+        implied_by: [serial_number]
+      - name: CPU(s) / processors
+        category: processor
+        base_likelihood: 0.99
+        hazardous: false
+        recoverable: true
+      - name: ECC memory modules
+        category: memory
+        base_likelihood: 0.98
+        hazardous: false
+        recoverable: true
+      - name: Storage drive array
+        category: storage
+        base_likelihood: 0.95
+        hazardous: false
+        recoverable: true
+      - name: Redundant power supplies
+        category: power
+        base_likelihood: 0.97
+        hazardous: false
+        recoverable: true
+      - name: RAID / management controller
+        category: circuit_board
+        base_likelihood: 0.80
+        hazardous: false
+        recoverable: true
+
+  monitor:
+    notes: Flat-panel display; driver board and backlight.
+    components:
+      - name: LCD/LED display panel
+        category: display
+        base_likelihood: 0.99
+        hazardous: false
+        recoverable: true
+      - name: Driver / scaler board
+        category: circuit_board
+        base_likelihood: 0.97
+        hazardous: false
+        recoverable: true
+      - name: LED backlight assembly
+        category: display
+        base_likelihood: 0.90
+        hazardous: false
+        recoverable: true
+      - name: Internal power board
+        category: power
+        base_likelihood: 0.95
+        hazardous: false
+        recoverable: true
+
+  crt_monitor:
+    notes: Cathode-ray tube; leaded glass and phosphor coating are hazardous.
+    components:
+      - name: Cathode-ray tube (leaded glass)
+        category: display
+        base_likelihood: 0.99
+        hazardous: true
+        recoverable: false
+      - name: Phosphor coating
+        category: other
+        base_likelihood: 0.98
+        hazardous: true
+        recoverable: false
+      - name: Flyback transformer / HV board
+        category: circuit_board
+        base_likelihood: 0.95
+        hazardous: true
+        recoverable: true
+      - name: Deflection yoke (copper)
+        category: other
+        base_likelihood: 0.90
+        hazardous: false
+        recoverable: true
+
+  television:
+    notes: Large panel/board assembly; hazard varies by vintage.
+    components:
+      - name: Display panel
+        category: display
+        base_likelihood: 0.98
+        hazardous: false
+        recoverable: true
+      - name: Mainboard
+        category: circuit_board
+        base_likelihood: 0.97
+        hazardous: false
+        recoverable: true
+      - name: Backlight assembly
+        category: display
+        base_likelihood: 0.88
+        hazardous: true
+        recoverable: false
+      - name: Internal power board
+        category: power
+        base_likelihood: 0.95
+        hazardous: false
+        recoverable: true
+      - name: Speaker assembly
+        category: audio
+        base_likelihood: 0.85
+        hazardous: false
+        recoverable: true
+
+  printer:
+    notes: Toner/ink residue and rollers complicate handling.
+    components:
+      - name: Controller board
+        category: circuit_board
+        base_likelihood: 0.97
+        hazardous: false
+        recoverable: true
+      - name: Print head / fuser assembly
+        category: other
+        base_likelihood: 0.92
+        hazardous: true
+        recoverable: false
+      - name: Toner / ink cartridge
+        category: other
+        base_likelihood: 0.85
+        hazardous: true
+        recoverable: false
+      - name: Stepper motors & rollers
+        category: other
+        base_likelihood: 0.90
+        hazardous: false
+        recoverable: true
+      - name: Internal power board
+        category: power
+        base_likelihood: 0.93
+        hazardous: false
+        recoverable: true
+
+  keyboard:
+    notes: Simple, largely plastic/metal peripheral.
+    components:
+      - name: Key matrix membrane / switches
+        category: input
+        base_likelihood: 0.98
+        hazardous: false
+        recoverable: true
+      - name: Microcontroller board
+        category: circuit_board
+        base_likelihood: 0.95
+        hazardous: false
+        recoverable: true
+      - name: USB / connection cable
+        category: cabling
+        base_likelihood: 0.80
+        hazardous: false
+        recoverable: true
+
+  mouse:
+    notes: Small peripheral; optical sensor and small board.
+    components:
+      - name: Optical / laser sensor
+        category: sensor
+        base_likelihood: 0.95
+        hazardous: false
+        recoverable: false
+      - name: Microcontroller board
+        category: circuit_board
+        base_likelihood: 0.95
+        hazardous: false
+        recoverable: true
+      - name: Micro-switch buttons
+        category: input
+        base_likelihood: 0.93
+        hazardous: false
+        recoverable: true
+
+  router:
+    notes: Networking board with radios and Ethernet ports.
+    components:
+      - name: Networking mainboard
+        category: circuit_board
+        base_likelihood: 0.98
+        hazardous: false
+        recoverable: true
+        implied_by: [mac_address]
+      - name: Wi-Fi radio module
+        category: connectivity
+        base_likelihood: 0.92
+        hazardous: false
+        recoverable: true
+        implied_by: [mac_address]
+      - name: Flash / RAM chips
+        category: memory
+        base_likelihood: 0.90
+        hazardous: false
+        recoverable: true
+      - name: External antennas
+        category: connectivity
+        base_likelihood: 0.70
+        hazardous: false
+        recoverable: true
+
+  power_supply:
+    notes: Metal-rich AC/DC converter; capacitors hold residual charge.
+    components:
+      - name: Transformer
+        category: power
+        base_likelihood: 0.97
+        hazardous: false
+        recoverable: true
+      - name: Filter capacitors
+        category: power
+        base_likelihood: 0.95
+        hazardous: true
+        recoverable: true
+      - name: Rectifier / switching board
+        category: circuit_board
+        base_likelihood: 0.96
+        hazardous: false
+        recoverable: true
+      - name: Output cable & connector
+        category: cabling
+        base_likelihood: 0.85
+        hazardous: false
+        recoverable: true
+
+  cable:
+    notes: Copper-rich; excellent material recovery, no active parts.
+    components:
+      - name: Copper conductor core
+        category: cabling
+        base_likelihood: 0.99
+        hazardous: false
+        recoverable: true
+      - name: Polymer insulation / jacket
+        category: housing
+        base_likelihood: 0.98
+        hazardous: false
+        recoverable: true
+      - name: Metal connector shells
+        category: cabling
+        base_likelihood: 0.90
+        hazardous: false
+        recoverable: true
+
+  camera:
+    notes: Optics and board; battery present in most standalone units.
+    components:
+      - name: Lithium-ion battery
+        category: battery
+        base_likelihood: 0.85
+        hazardous: true
+        recoverable: true
+      - name: Image sensor (CCD/CMOS)
+        category: sensor
+        base_likelihood: 0.97
+        hazardous: false
+        recoverable: true
+      - name: Lens assembly
+        category: optics
+        base_likelihood: 0.95
+        hazardous: false
+        recoverable: true
+      - name: Controller board
+        category: circuit_board
+        base_likelihood: 0.96
+        hazardous: false
+        recoverable: true
+
+  game_console:
+    notes: Serviceable, high-resale unit; SoC, storage and optical drive.
+    components:
+      - name: Mainboard (SoC/APU)
+        category: circuit_board
+        base_likelihood: 0.99
+        hazardous: false
+        recoverable: true
+        implied_by: [serial_number]
+      - name: Processor / GPU (APU)
+        category: processor
+        base_likelihood: 0.98
+        hazardous: false
+        recoverable: true
+      - name: Internal storage drive
+        category: storage
+        base_likelihood: 0.92
+        hazardous: false
+        recoverable: true
+      - name: Optical disc drive
+        category: optical_media
+        base_likelihood: 0.60
+        hazardous: false
+        recoverable: true
+      - name: Internal power supply
+        category: power
+        base_likelihood: 0.95
+        hazardous: false
+        recoverable: true
+      - name: Wi-Fi / Bluetooth module
+        category: connectivity
+        base_likelihood: 0.88
+        hazardous: false
+        recoverable: true
+        implied_by: [mac_address]
+
+  smartwatch:
+    notes: Sealed wearable; small battery, SoC and sensor stack.
+    components:
+      - name: Lithium-polymer battery
+        category: battery
+        base_likelihood: 0.97
+        hazardous: true
+        recoverable: true
+      - name: Logic board (SoC)
+        category: circuit_board
+        base_likelihood: 0.98
+        hazardous: false
+        recoverable: true
+      - name: OLED/LCD touchscreen
+        category: display
+        base_likelihood: 0.96
+        hazardous: false
+        recoverable: true
+      - name: Health sensor array
+        category: sensor
+        base_likelihood: 0.90
+        hazardous: false
+        recoverable: false
+      - name: Bluetooth radio
+        category: connectivity
+        base_likelihood: 0.90
+        hazardous: false
+        recoverable: false
+
+  headphones:
+    notes: Wireless units embed a small battery and Bluetooth radio.
+    components:
+      - name: Lithium-polymer battery
+        category: battery
+        base_likelihood: 0.80
+        hazardous: true
+        recoverable: true
+      - name: Speaker drivers
+        category: audio
+        base_likelihood: 0.98
+        hazardous: false
+        recoverable: true
+      - name: Bluetooth control board
+        category: circuit_board
+        base_likelihood: 0.80
+        hazardous: false
+        recoverable: true
+      - name: Connection cable
+        category: cabling
+        base_likelihood: 0.40
+        hazardous: false
+        recoverable: true
+
+  battery:
+    notes: Standalone cell/pack; hazardous, recycle via a dedicated stream.
+    components:
+      - name: Electrochemical cell(s)
+        category: battery
+        base_likelihood: 0.99
+        hazardous: true
+        recoverable: true
+      - name: Battery management / protection board
+        category: circuit_board
+        base_likelihood: 0.75
+        hazardous: false
+        recoverable: true
+      - name: Terminal contacts & casing
+        category: housing
+        base_likelihood: 0.95
+        hazardous: false
+        recoverable: true

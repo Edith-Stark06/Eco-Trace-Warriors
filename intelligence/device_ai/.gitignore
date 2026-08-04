@@ -1,0 +1,49 @@
+# Device Intelligence Engine — ignored artifacts
+#
+# Model binaries, datasets and transient uploads are never committed
+# (docs/engineering/08_AI.md → Model Management). Directory placeholders
+# (.gitkeep) are kept so the structure is preserved.
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Environment
+.env
+
+# Model artifacts (keep folder structure only)
+models/**
+!models/
+!models/*/
+!models/**/.gitkeep
+!models/README.md
+
+# Datasets (keep folder structure only)
+datasets/**
+!datasets/
+!datasets/*/
+!datasets/**/.gitkeep
+
+# Training artifacts — checkpoints, exports, reports, model registry
+# (keep folder structure only; milestone M1.3)
+artifacts/**
+!artifacts/
+!artifacts/*/
+!artifacts/**/.gitkeep
+
+# Experiment-tracking runs (keep folder structure only; milestone M1.3)
+mlruns/**
+!mlruns/
+!mlruns/*/
+!mlruns/**/.gitkeep
+
+# Transient uploads
+uploads/

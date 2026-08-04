@@ -1,0 +1,30 @@
+# Keep the Docker build context small and reproducible.
+
+# Python caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local env & virtualenvs
+.env
+.venv/
+venv/
+
+# Large / non-shippable assets
+models/**
+!models/**/.gitkeep
+datasets/**
+!datasets/**/.gitkeep
+notebooks/
+uploads/
+
+# Docs & dev files not needed at runtime
+README.md
+requirements-dev.txt
+requirements-models.txt
+tests/
