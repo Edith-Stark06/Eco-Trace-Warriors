@@ -1,0 +1,45 @@
+# Device-detection training configuration (milestone M1.4).
+#
+# Composes the shared `training` and `optimizer` groups (exactly like
+# `default.yaml`) and overrides only what the real YOLO detector needs. The
+# light-weight PyYAML loader in `training/config.py` understands this Hydra-style
+# `defaults` list, so it works today without hydra-core installed.
+#
+# Run a real training pass with:
+#   python -m device_ai.train \
+#       --config device_ai/training/configs/detector.yaml \
+#       --data-config <exported-dataset>/data.yaml \
+#       --run
+#
+# The `--data-config` path is the `data.yaml` produced by the dataset pipeline's
+# YOLO export (see the Dataset Preparation Guide).
+
+defaults:
+  - training
+  - optimizer
+
+# Logical model name; also the key used by the JSON-backed model registry.
+model_name: device-detector
+
+# Trainer registry key: resolves to `training.detector.YOLOTrainer`, which
+# delegates the training loop to Ultralytics while reusing the platform's
+# artifact/registry/tracker/export surface.
+trainer: yolo
+
+# Experiment grouping label for the tracker.
+experiment_name: die-detection
+
+# Detector-specific training-loop overrides.
+training:
+  # Square input resolution fed to YOLO (imgsz).
+  image_size: 640
+  # Stop after this many epochs without a mAP improvement (Ultralytics patience).
+  early_stopping_patience: 20
+  # Detector artifact version stamped onto the produced model record.
+  model_version: 1.0.0
+
+# Free-form run metadata.
+tags:
+  milestone: M1.4
+  stage: detector
+  component: device-detection

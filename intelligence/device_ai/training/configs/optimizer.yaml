@@ -1,0 +1,20 @@
+# Optimisation hyper-parameters (composed by default.yaml under the
+# `optimizer` key). Every field maps to `training.config.OptimizerConfig`.
+
+# Optimiser identifier (e.g. adamw, sgd, adam).
+optimizer: adamw
+
+# Base learning rate (must be > 0).
+learning_rate: 0.001
+
+# L2 weight-decay coefficient.
+weight_decay: 0.0005
+
+# Momentum term for SGD-style optimisers.
+momentum: 0.9
+
+# Learning-rate schedule: none, step, or cosine.
+scheduler: cosine
+
+# Linear warm-up epochs before the schedule engages (0 disables warm-up).
+warmup_epochs: 3

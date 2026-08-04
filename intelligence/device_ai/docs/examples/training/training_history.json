@@ -1,0 +1,37 @@
+{
+  "best_epoch": 0,
+  "best_metric": 0.375,
+  "device": "cpu",
+  "epochs": [
+    {
+      "epoch": 0,
+      "metrics": {
+        "loss": 0.520825,
+        "val_loss": 0.375
+      }
+    },
+    {
+      "epoch": 1,
+      "metrics": {
+        "loss": 0.520825,
+        "val_loss": 0.375
+      }
+    },
+    {
+      "epoch": 2,
+      "metrics": {
+        "loss": 0.520825,
+        "val_loss": 0.375
+      }
+    }
+  ],
+  "epochs_completed": 3,
+  "final_metrics": {
+    "loss": 0.520825,
+    "val_loss": 0.375
+  },
+  "git_commit": "23a1b3a",
+  "model_name": "device-detector",
+  "model_version": "1.0.0",
+  "run_id": "device-detector-1.0.0-20260731-120000"
+}

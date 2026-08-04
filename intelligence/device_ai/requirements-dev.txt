@@ -1,0 +1,12 @@
+# Device Intelligence Engine — development & test dependencies
+
+-r requirements.txt
+
+pytest==8.3.4
+pytest-cov==6.0.0
+httpx==0.28.1              # FastAPI TestClient transport
+black==24.10.0
+isort==5.13.2
+ruff==0.8.6
+mypy==1.14.1
+types-PyYAML==6.0.12.20240917    # type stubs for PyYAML (M1.3)

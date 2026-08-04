@@ -1,0 +1,107 @@
+{
+  "barcodes": [
+    {
+      "confidence": 0.99,
+      "kind": "qr",
+      "payload": "SN0FE1B9C5",
+      "symbology": "QRCODE"
+    },
+    {
+      "confidence": 0.95,
+      "kind": "barcode",
+      "payload": "019510777635",
+      "symbology": "EAN13"
+    }
+  ],
+  "created_at": "2026-08-01T12:00:00+00:00",
+  "engine_name": "ocr",
+  "engine_version": "mock-ocr-m16-1.0.0",
+  "fields": [
+    {
+      "confidence": 0.9215,
+      "field_type": "manufacturer",
+      "raw_text": "Dell",
+      "source": "text",
+      "value": "Dell"
+    },
+    {
+      "confidence": 0.765,
+      "field_type": "model",
+      "raw_text": "XPS-0FE1",
+      "source": "text",
+      "value": "XPS-0FE1"
+    },
+    {
+      "confidence": 0.8280000000000001,
+      "field_type": "serial_number",
+      "raw_text": "SN0FE1B9C5",
+      "source": "text",
+      "value": "SN0FE1B9C5"
+    },
+    {
+      "confidence": 0.90552,
+      "field_type": "imei",
+      "raw_text": "IMEI: 019510777635357",
+      "source": "text",
+      "value": "019510777635357"
+    },
+    {
+      "confidence": 0.873,
+      "field_type": "mac_address",
+      "raw_text": "MAC: 0F:E1:B9:C5:F1:CD",
+      "source": "text",
+      "value": "0F:E1:B9:C5:F1:CD"
+    },
+    {
+      "confidence": 0.99,
+      "field_type": "qr_code",
+      "raw_text": "SN0FE1B9C5",
+      "source": "qr",
+      "value": "SN0FE1B9C5"
+    },
+    {
+      "confidence": 0.95,
+      "field_type": "barcode",
+      "raw_text": "019510777635",
+      "source": "barcode",
+      "value": "019510777635"
+    }
+  ],
+  "identity": {
+    "imei": "019510777635357",
+    "mac_address": "0F:E1:B9:C5:F1:CD",
+    "manufacturer": "Dell",
+    "model": "XPS-0FE1",
+    "serial_number": "SN0FE1B9C5"
+  },
+  "source_hashes": [
+    "0fe1b9c5f1cd0de77f76c3535ed0225c85cb059892568f5db7f142a92fdaf12b"
+  ],
+  "spans": [
+    {
+      "bounding_box": null,
+      "confidence": 0.97,
+      "text": "Dell"
+    },
+    {
+      "bounding_box": null,
+      "confidence": 0.9,
+      "text": "Model: XPS-0FE1"
+    },
+    {
+      "bounding_box": null,
+      "confidence": 0.92,
+      "text": "S/N: SN0FE1B9C5"
+    },
+    {
+      "bounding_box": null,
+      "confidence": 0.88,
+      "text": "IMEI: 019510777635357"
+    },
+    {
+      "bounding_box": null,
+      "confidence": 0.9,
+      "text": "MAC: 0F:E1:B9:C5:F1:CD"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+# Device Intelligence Engine — core runtime dependencies (milestone M1.1)
+#
+# These are the only packages required to run the mock service, its tests
+# and tooling. Heavy model dependencies (PyTorch, Ultralytics, OpenCLIP,
+# EasyOCR, ONNX Runtime) are intentionally deferred to
+# requirements-models.txt so the base image stays small and fast to build.
+#
+# Pinned for reproducible builds (docs/engineering/08_AI.md).
+
+# --- Web framework & server ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20          # multipart/form-data (image uploads)
+
+# --- Configuration & validation ---
+pydantic==2.10.4
+pydantic-settings==2.7.1
+PyYAML==6.0.3                      # training/experiment config parsing (M1.3)
+
+# --- Imaging (mock hot path) ---
+pillow==11.1.0
+numpy==2.2.1
+
+# --- Logging ---
+loguru==0.7.3

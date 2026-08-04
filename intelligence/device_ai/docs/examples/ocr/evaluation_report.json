@@ -1,0 +1,100 @@
+{
+  "case_count": 4,
+  "cases": [
+    {
+      "fields": {
+        "manufacturer": {
+          "confidence": 0.931,
+          "correct": true,
+          "expected": "Dell",
+          "extracted": "Dell"
+        },
+        "model": {
+          "confidence": 0.8075,
+          "correct": true,
+          "expected": "XPS 15",
+          "extracted": "XPS 15"
+        },
+        "serial_number": {
+          "confidence": 0.837,
+          "correct": true,
+          "expected": "ABC12345",
+          "extracted": "ABC12345"
+        }
+      },
+      "name": "clean_label"
+    },
+    {
+      "fields": {
+        "imei": {
+          "confidence": 0.9261,
+          "correct": true,
+          "expected": "490154203237518",
+          "extracted": "490154203237518"
+        },
+        "mac_address": {
+          "confidence": 0.8536,
+          "correct": true,
+          "expected": "00:1A:2B:3C:4D:5E",
+          "extracted": "00:1A:2B:3C:4D:5E"
+        }
+      },
+      "name": "imei_and_mac"
+    },
+    {
+      "fields": {
+        "manufacturer": {
+          "confidence": 0.874,
+          "correct": true,
+          "expected": "Lenovo",
+          "extracted": "Lenovo"
+        },
+        "qr_code": {
+          "confidence": 1.0,
+          "correct": true,
+          "expected": "SNXY98765",
+          "extracted": "SNXY98765"
+        },
+        "serial_number": {
+          "confidence": 0.7,
+          "correct": true,
+          "expected": "SNXY98765",
+          "extracted": "SNXY98765"
+        }
+      },
+      "name": "barcode_mined_serial"
+    },
+    {
+      "fields": {
+        "barcode": {
+          "confidence": 1.0,
+          "correct": true,
+          "expected": "490154203237518",
+          "extracted": "490154203237518"
+        },
+        "imei": {
+          "confidence": 0.98,
+          "correct": true,
+          "expected": "490154203237518",
+          "extracted": "490154203237518"
+        }
+      },
+      "name": "barcode_mined_imei"
+    }
+  ],
+  "engine_name": "ocr",
+  "engine_version": "mock-ocr-m16-1.0.0",
+  "field_count": 10,
+  "generated_at": "2026-08-01T12:00:00+00:00",
+  "mean_confidence": 0.89092,
+  "overall_accuracy": 1.0,
+  "per_field_accuracy": {
+    "barcode": 1.0,
+    "imei": 1.0,
+    "mac_address": 1.0,
+    "manufacturer": 1.0,
+    "model": 1.0,
+    "qr_code": 1.0,
+    "serial_number": 1.0
+  }
+}

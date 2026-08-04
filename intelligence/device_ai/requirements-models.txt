@@ -1,0 +1,24 @@
+# Device Intelligence Engine — model dependencies (future milestones)
+#
+# NOT installed in the base runtime image. These packages back the real
+# model adapters (YOLO detector, OpenCLIP encoder, condition classifier,
+# OCR) that replace the mock implementations behind the existing
+# interfaces. Install alongside requirements.txt when integrating models:
+#
+#     pip install -r requirements.txt -r requirements-models.txt
+#
+# Versions are indicative and should be pinned exactly when the models are
+# actually integrated and validated.
+
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+torch==2.5.1
+torchvision==0.20.1
+ultralytics==8.3.58          # YOLO detector
+open-clip-torch==2.30.0      # OpenCLIP embeddings
+easyocr==1.7.2               # OCR engine
+opencv-python-headless==4.10.0.84
+onnxruntime==1.20.1
+onnx==1.17.0                 # ONNX graph export/validation
+hydra-core==1.3.2            # structured training/experiment configs
+mlflow==2.19.0              # experiment tracking & model registry backend

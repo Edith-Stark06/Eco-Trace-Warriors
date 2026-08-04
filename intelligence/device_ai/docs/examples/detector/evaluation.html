@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>EcoTrace DIE — Evaluation Report</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 2rem; color: #1a1a1a; }
+  h1 { color: #0b6b3a; }
+  h2 { margin-top: 1.5rem; color: #0b6b3a; }
+  table { border-collapse: collapse; margin: 0.5rem 0; }
+  th, td { border: 1px solid #ccc; padding: 4px 10px; text-align: left; }
+  th { background: #f0f7f2; }
+</style>
+</head>
+<body>
+<h1>Model Evaluation Report</h1>
+<table><tr><th>Model</th><td>device-detector</td></tr><tr><th>Version</th><td>1.0.0</td></tr><tr><th>Dataset version</th><td>v1</td></tr><tr><th>Generated at</th><td>2026-07-31T12:00:00</td></tr><tr><th>Samples</th><td>200</td></tr></table>
+<h2>Metrics</h2>
+<table><tr><th>precision</th><td>0.912</td></tr><tr><th>recall</th><td>0.884</td></tr><tr><th>mAP50</th><td>0.901</td></tr><tr><th>mAP50_95</th><td>0.742</td></tr><tr><th>f1</th><td>0.8978</td></tr></table>
+<h2>Confusion matrix</h2>
+<table><tr><th>true \ pred</th><th>laptop</th><th>smartphone</th><th>tablet</th><th>monitor</th><th>background</th></tr><tr><th>laptop</th><td>46</td><td>0</td><td>1</td><td>0</td><td>3</td></tr><tr><th>smartphone</th><td>0</td><td>44</td><td>2</td><td>0</td><td>4</td></tr><tr><th>tablet</th><td>1</td><td>1</td><td>39</td><td>0</td><td>4</td></tr><tr><th>monitor</th><td>0</td><td>0</td><td>1</td><td>42</td><td>2</td></tr><tr><th>background</th><td>2</td><td>3</td><td>2</td><td>1</td><td>0</td></tr></table>
+<h2>Inference benchmark</h2>
+<table><tr><th>Status</th><td>placeholder</td></tr><tr><th>Latency (ms)</th><td>None</td></tr><tr><th>Throughput (fps)</th><td>None</td></tr><tr><th>Note</th><td>Inference benchmarking is deferred to model implementation; no model is trained in this milestone.</td></tr></table>
+</body>
+</html>

@@ -1,0 +1,85 @@
+{
+  "source": "datasets/raw",
+  "generated_at": "2026-01-02T03:04:05+00:00",
+  "image_count": 3,
+  "images": [
+    {
+      "relative_path": "a.png",
+      "filename": "a.png",
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 64,
+      "height": 64,
+      "megapixels": 0.004,
+      "size_bytes": 12408,
+      "hashes": {
+        "sha256": "9f2c1e6d7a4b3c8f0e5d6a7b8c9d0e1f2a3b4c5d6e7f8091a2b3c4d5e6f70819",
+        "ahash": "ff7e3c1818003c7e",
+        "dhash": "0c1e3e7efcf87830",
+        "phash": "e6d2c3a1b0784c2f"
+      },
+      "quality": {
+        "blur_score": 742.19,
+        "brightness": 127.44,
+        "is_blurry": false,
+        "is_dark": false,
+        "is_bright": false,
+        "is_low_resolution": false,
+        "is_corrupted": false,
+        "issues": []
+      }
+    },
+    {
+      "relative_path": "b.png",
+      "filename": "b.png",
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 64,
+      "height": 64,
+      "megapixels": 0.004,
+      "size_bytes": 361,
+      "hashes": {
+        "sha256": "3d1a0b7c8e9f2a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b",
+        "ahash": "0000000000000000",
+        "dhash": "0000000000000000",
+        "phash": "8000000000000000"
+      },
+      "quality": {
+        "blur_score": 0.0,
+        "brightness": 8.0,
+        "is_blurry": true,
+        "is_dark": true,
+        "is_bright": false,
+        "is_low_resolution": false,
+        "is_corrupted": false,
+        "issues": ["blurry", "dark"]
+      }
+    },
+    {
+      "relative_path": "dup.png",
+      "filename": "dup.png",
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 64,
+      "height": 64,
+      "megapixels": 0.004,
+      "size_bytes": 12408,
+      "hashes": {
+        "sha256": "9f2c1e6d7a4b3c8f0e5d6a7b8c9d0e1f2a3b4c5d6e7f8091a2b3c4d5e6f70819",
+        "ahash": "ff7e3c1818003c7e",
+        "dhash": "0c1e3e7efcf87830",
+        "phash": "e6d2c3a1b0784c2f"
+      },
+      "quality": {
+        "blur_score": 742.19,
+        "brightness": 127.44,
+        "is_blurry": false,
+        "is_dark": false,
+        "is_bright": false,
+        "is_low_resolution": false,
+        "is_corrupted": false,
+        "issues": []
+      }
+    }
+  ]
+}
