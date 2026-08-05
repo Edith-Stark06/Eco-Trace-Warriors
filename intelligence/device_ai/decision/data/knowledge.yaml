@@ -1,0 +1,113 @@
+# Decision-knowledge catalogue for the Decision Knowledge Engine (M2.1).
+#
+# This file is DATA, not code: it holds the versioned knowledge of *how much each
+# upstream signal weighs* toward each of the six normalized decision dimensions,
+# plus how the five upstream confidences blend into a single overall confidence,
+# plus the saturation constants that map the environmental engine's unbounded
+# physical amounts onto a [0, 1] scale. It can be reviewed and tuned as the
+# upstream engines evolve, without touching the engine. A strict loader
+# (decision/knowledge.py) validates every entry on load and rejects anything
+# malformed — an unknown signal name, an unknown dimension, a negative weight, an
+# all-zero dimension, a non-positive saturation constant, a missing dimension — so
+# a bad catalogue never silently degrades the engine.
+#
+# The report this drives is NORMALIZED EVIDENCE ONLY. Every dimension score is a
+# weighted mean of normalized [0, 1] signals; none is a recommended action and
+# none is a monetary value.
+#
+# Top-level keys
+#   version        Semantic version string, stamped onto every produced report.
+#   normalization  Saturation constants for the unbounded environmental signals
+#                  (each strictly > 0; it is a divisor).
+#   dimensions     Decision-dimension wire value -> { signal name -> weight }.
+#                  All six dimensions are required. Allowed dimensions:
+#                  repairability, reusability, recycling, hazard,
+#                  environmental_priority, material_value.
+#   confidence     Confidence source -> weight, blended into the report's
+#                  separate overall-confidence axis. Allowed sources:
+#                  recoverability, components, materials, environmental, fusion.
+#
+# Allowed signal names (a dimension may weight any subset; weights are >= 0 and
+# at least one per dimension must be > 0):
+#   repairability               recoverability.repairability          [0,1]
+#   reusability                 recoverability.reusability            [0,1]
+#   recyclability               recoverability.recyclability          [0,1]
+#   circularity_index           environmental.circularity_index       [0,1]
+#   hazard_severity             recoverability.hazard_level severity  [0,1]
+#   hazard_reduction            environmental.hazard_reduction_score  [0,1]
+#   hazardous_mass_fraction     materials hazardous / total mass      [0,1]
+#   critical_material_presence  environmental critical recovery (sat) [0,1]
+#   recoverable_mass_fraction   materials recoverable / total mass    [0,1]
+#   environmental_savings       mean saturated carbon/energy/water    [0,1]
+#   identity_completeness       fused model/serial/imei/mac presence  [0,1]
+#
+# The weights below are deliberate, transparent priors: each dimension is
+# dominated by its most direct upstream signal, with smaller corroborating
+# weights from related signals. They are meant to be tuned against real triage
+# data before any external reporting.
+
+version: "1.0.0"
+
+# Amounts at which each unbounded environmental signal is treated as maximal.
+# Order-of-magnitude anchors for a single consumer device; tune against real
+# fleet data. Each must be strictly positive.
+normalization:
+  carbon_saturation_kg: 100.0
+  energy_saturation_mj: 1500.0
+  water_saturation_l: 1000.0
+  critical_recovery_saturation_kg: 0.05
+
+dimensions:
+  # Ease of returning the device to service. Dominated by the recoverability
+  # engine's own repairability score; a well-identified device is marginally
+  # more repairable (parts/manuals are findable).
+  repairability:
+    repairability: 0.80
+    identity_completeness: 0.20
+
+  # Fitness for a second life as-is. Dominated by the reusability score, lifted
+  # slightly by strong identity (provenance helps resale/redeployment).
+  reusability:
+    reusability: 0.80
+    identity_completeness: 0.20
+
+  # Fitness for the material-recovery stream. Blends the recyclability score,
+  # the circularity index and how much of the mass is actually recoverable.
+  recycling:
+    recyclability: 0.55
+    circularity_index: 0.25
+    recoverable_mass_fraction: 0.20
+
+  # How much hazardous handling the device demands (higher = more hazardous).
+  # Anchored on the assessed hazard severity, corroborated by the hazardous mass
+  # fraction and the environmental hazard-reduction opportunity.
+  hazard:
+    hazard_severity: 0.60
+    hazardous_mass_fraction: 0.25
+    hazard_reduction: 0.15
+
+  # How much environmental stake rides on handling this device well. Blends the
+  # aggregate resource savings, the circularity index and critical-material
+  # presence.
+  environmental_priority:
+    environmental_savings: 0.45
+    circularity_index: 0.25
+    critical_material_presence: 0.30
+
+  # Normalized worth of the recoverable materials (NOT a monetary value). Blends
+  # critical-material presence, recoverable mass fraction and the embodied-burden
+  # proxy (environmental savings scale with material value).
+  material_value:
+    critical_material_presence: 0.50
+    recoverable_mass_fraction: 0.25
+    environmental_savings: 0.25
+
+# How the five upstream confidences blend into the report's separate overall
+# confidence. The two engines nearest the decision evidence (materials and
+# environmental) carry the most weight; fusion anchors identity.
+confidence:
+  recoverability: 0.20
+  components: 0.15
+  materials: 0.25
+  environmental: 0.25
+  fusion: 0.15

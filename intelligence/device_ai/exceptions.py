@@ -390,3 +390,191 @@ class EnvironmentalFactorError(EnvironmentalError):
 
     code = "ENVIRONMENTAL_FACTOR_ERROR"
     http_status = HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+# ---------------------------------------------------------------------------
+# Decision knowledge engine errors (milestone M2.1)
+# ---------------------------------------------------------------------------
+
+
+class DecisionError(DeviceAIError):
+    """Base class for decision knowledge engine domain errors.
+
+    Like the fusion, recoverability, component, material and environmental
+    engines it consumes, the decision knowledge engine is internal-only (no
+    endpoints), so these errors are surfaced to the orchestrating code as typed
+    exceptions rather than through the HTTP error envelope.
+    """
+
+    code = "DECISION_ERROR"
+    http_status = HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+class DecisionKnowledgeError(DecisionError):
+    """Raised when the external decision-knowledge catalogue cannot be loaded.
+
+    The engine reads its per-dimension signal weights, confidence weights and
+    normalization constants from an external YAML/JSON file; this error is
+    raised when that file is missing, unparseable, or structurally invalid (not
+    a mapping, missing required keys, an unknown signal or dimension name, a
+    negative weight, an all-zero dimension, a non-positive saturation constant,
+    or a missing dimension).
+    """
+
+    code = "DECISION_KNOWLEDGE_ERROR"
+    http_status = HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+# ---------------------------------------------------------------------------
+# Circular decision engine errors (milestone M2.2)
+# ---------------------------------------------------------------------------
+
+
+class CircularDecisionError(DeviceAIError):
+    """Base class for circular decision engine domain errors.
+
+    Like the decision-knowledge, fusion, recoverability, component, material
+    and environmental engines it consumes, the circular decision engine is
+    internal-only (no endpoints), so these errors are surfaced to the
+    orchestrating code as typed exceptions rather than through the HTTP error
+    envelope.
+    """
+
+    code = "CIRCULAR_DECISION_ERROR"
+    http_status = HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+class CircularRuleError(CircularDecisionError):
+    """Raised when the external circular-decision rule catalogue cannot be loaded.
+
+    The engine reads its policy rules from an external YAML/JSON file; this
+    error is raised when that file is missing, unparseable, or structurally
+    invalid (not a mapping, missing required keys, a duplicate rule id, a
+    duplicate precedence, an unknown signal/operator/action/priority name, an
+    out-of-range threshold, a rule with no conditions, or a missing default
+    fallback).
+    """
+
+    code = "CIRCULAR_RULE_ERROR"
+    http_status = HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+# ---------------------------------------------------------------------------
+# Device passport core errors (milestone M2.3)
+# ---------------------------------------------------------------------------
+
+
+class PassportError(DeviceAIError):
+    """Base class for device-passport core domain errors.
+
+    Like the decision-knowledge, circular, fusion, recoverability, component,
+    material and environmental engines it composes, the device-passport core is
+    internal-only (no endpoints), so these errors are surfaced to the
+    orchestrating code as typed exceptions rather than through the HTTP error
+    envelope.
+    """
+
+    code = "PASSPORT_ERROR"
+    http_status = HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+class PassportSchemaError(PassportError):
+    """Raised when the external device-passport schema cannot be loaded.
+
+    The builder reads the assembled passport's structural contract from an
+    external YAML/JSON file; this error is raised when that file is missing,
+    unparseable, or structurally invalid (not a mapping, missing a non-empty
+    version, a missing/empty required-section list, a non-string section name,
+    or a duplicate section).
+    """
+
+    code = "PASSPORT_SCHEMA_ERROR"
+    http_status = HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+class PassportValidationError(PassportError):
+    """Raised when an assembled passport violates the external schema contract.
+
+    The strict validator raises this when a built :class:`DevicePassport` (or its
+    serialized form) is missing a required section, carries an out-of-range
+    confidence, or otherwise fails the shipped schema — so a malformed passport
+    never leaves the builder silently.
+    """
+
+    code = "PASSPORT_VALIDATION_ERROR"
+    http_status = HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+# ---------------------------------------------------------------------------
+# Device passport validation & integrity errors (milestone M2.4)
+# ---------------------------------------------------------------------------
+
+
+class PassportIntegrityError(DeviceAIError):
+    """Base class for device-passport validation & integrity domain errors.
+
+    Like the device-passport core it consumes, the validation & integrity engine
+    is internal-only (no endpoints), so these errors are surfaced to the
+    orchestrating code as typed exceptions rather than through the HTTP error
+    envelope. They signal an *engine* fault (a malformed rule file, an
+    unsupported hash algorithm) — never a passport that merely fails validation,
+    which is reported as ordered errors on the produced
+    :class:`~device_ai.integrity.models.PassportIntegrityReport` instead.
+    """
+
+    code = "PASSPORT_INTEGRITY_ERROR"
+    http_status = HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+class PassportIntegrityRuleError(PassportIntegrityError):
+    """Raised when the external passport validation-rules file cannot be loaded.
+
+    The integrity engine reads the sections, required fields and normalized
+    ``[0, 1]`` confidence fields it re-validates a passport against from an
+    external YAML/JSON file; this error is raised when that file is missing,
+    unparseable, or structurally invalid (not a mapping, missing a non-empty
+    version, a missing/empty section list, an unknown section kind, an object
+    section with no fields, a duplicate field, or a confidence field absent from
+    the section's own fields).
+    """
+
+    code = "PASSPORT_INTEGRITY_RULE_ERROR"
+    http_status = HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+# ---------------------------------------------------------------------------
+# Trust & provenance engine errors (milestone M2.5)
+# ---------------------------------------------------------------------------
+
+
+class PassportTrustError(DeviceAIError):
+    """Base class for trust & provenance engine domain errors.
+
+    Like the device-passport core and the validation & integrity engine it
+    consumes, the trust engine is internal-only (no endpoints), so these errors
+    are surfaced to the orchestrating code as typed exceptions rather than
+    through the HTTP error envelope. They signal an *engine* fault (a malformed
+    trust catalogue) — never inputs that merely score as low-trust, which are
+    reported as a low :class:`~device_ai.trust.models.TrustLevel` and ordered
+    warnings on the produced
+    :class:`~device_ai.trust.models.PassportTrustReport` instead.
+    """
+
+    code = "PASSPORT_TRUST_ERROR"
+    http_status = HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+class PassportTrustRuleError(PassportTrustError):
+    """Raised when the external trust catalogue cannot be loaded.
+
+    The trust engine reads its per-axis blend weights and its ordered
+    trust-level thresholds from an external YAML/JSON file; this error is raised
+    when that file is missing, unparseable, or structurally invalid (not a
+    mapping, missing a non-empty version, missing/empty weights or levels, an
+    unknown axis name, a negative or all-zero weight, a non-numeric or
+    out-of-range threshold, a duplicate or unknown level name, or levels that do
+    not cover the score range).
+    """
+
+    code = "PASSPORT_TRUST_RULE_ERROR"
+    http_status = HTTPStatus.UNPROCESSABLE_ENTITY

@@ -1,0 +1,147 @@
+# Device-passport schema for the Device Passport Core (M2.3).
+#
+# This file is DATA, not code: it declares the STRUCTURAL CONTRACT every assembled
+# DevicePassport must satisfy — which sections a passport must contain, the kind
+# of each section (a string, an object with a fixed set of fields, or an ordered
+# array), and which numeric fields are normalized confidences that must fall in
+# [0, 1]. It can be reviewed and versioned as the passport structure evolves,
+# without touching the builder. A strict loader (passport/schema.py) validates
+# this file on load, and a strict validator checks every built passport against
+# it, so a malformed passport never leaves the builder silently.
+#
+# The passport is a COMPOSITION of upstream reports (fusion, circular decision,
+# material, environmental, fingerprint), NOT a new inference: every value it
+# carries is copied or plainly summarized from a report the pipeline already
+# produced. This schema therefore describes shape and ranges only; it holds no
+# scoring weights, no thresholds and no policy.
+#
+# Top-level keys
+#   version   Semantic version string, stamped onto every produced passport as
+#             its schema_version and checked by the validator.
+#   sections  Mapping of section name -> { kind, [fields], [confidence_fields] }.
+#             Order here is documentation only; the passport emits its own fixed,
+#             deterministic key order.
+#
+# A section's `kind` is one of:
+#   string    a plain string value (e.g. the passport id).
+#   object    a mapping that must contain every name in its `fields` list.
+#   array     an ordered list (e.g. reasoning, warnings).
+#
+# `confidence_fields` (object sections only) names the subset of `fields` whose
+# values must be numeric and within [0, 1]; the validator rejects anything else.
+
+version: "1.0.0"
+
+sections:
+  # --- Identity & version -------------------------------------------------
+  passport_id:
+    kind: string
+
+  passport_version:
+    kind: string
+
+  eco_id:
+    kind: string
+
+  # --- Composed sections --------------------------------------------------
+  device_identity:
+    kind: object
+    fields:
+      - brand
+      - model
+      - serial_number
+      - imei
+      - mac_address
+
+  classification:
+    kind: object
+    fields:
+      - device_type
+      - confidence
+      - has_conflicts
+    confidence_fields:
+      - confidence
+
+  decision_summary:
+    kind: object
+    fields:
+      - recommended_action
+      - priority
+      - confidence
+      - winning_rule_id
+      - triggered_count
+    confidence_fields:
+      - confidence
+
+  material_summary:
+    kind: object
+    fields:
+      - material_count
+      - total_mass_g
+      - recoverable_mass_g
+      - hazardous_mass_g
+      - confidence
+    confidence_fields:
+      - confidence
+
+  environmental_summary:
+    kind: object
+    fields:
+      - carbon_saved_kg
+      - energy_saved_mj
+      - water_saved_l
+      - landfill_diversion_kg
+      - critical_material_recovery_kg
+      - circularity_index
+      - hazard_reduction_score
+      - confidence
+    confidence_fields:
+      - circularity_index
+      - hazard_reduction_score
+      - confidence
+
+  fingerprint_summary:
+    kind: object
+    fields:
+      - fingerprint
+      - dimension
+      - encoder_name
+      - encoder_version
+      - metric
+
+  confidence_summary:
+    kind: object
+    fields:
+      - identity_confidence
+      - decision_confidence
+      - material_confidence
+      - environmental_confidence
+      - overall
+    confidence_fields:
+      - identity_confidence
+      - decision_confidence
+      - material_confidence
+      - environmental_confidence
+      - overall
+
+  metadata:
+    kind: object
+    fields:
+      - passport_engine_version
+      - schema_version
+      - fusion_engine_version
+      - decision_engine_version
+      - decision_rules_version
+      - material_engine_version
+      - material_profile_version
+      - environmental_engine_version
+      - environmental_factors_version
+      - source_image_count
+      - created_at
+
+  # --- Ordered narrative --------------------------------------------------
+  reasoning:
+    kind: array
+
+  warnings:
+    kind: array

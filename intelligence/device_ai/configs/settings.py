@@ -35,12 +35,22 @@ Environment variables
 ``RECOVERABILITY_REPAIR_MIN_REPAIRABILITY`` Repairability floor for repair.
 ``RECOVERABILITY_RECYCLE_MIN_RECYCLABILITY`` Recyclability floor for recycling.
 ``RECOVERABILITY_LOW_CONFIDENCE_THRESHOLD`` Confidence below which review is forced.
-``COMPONENT_PROFILES_PATH`` Component-profile library locator (YAML/JSON, relative to the package).
-``COMPONENT_MIN_PRESENCE_CONFIDENCE`` Presence confidence below which a component is dropped.
-``MATERIAL_PROFILES_PATH`` Material-profile library locator (YAML/JSON, relative to the package).
+``COMPONENT_PROFILES_PATH`` Component-profile library locator (relative to pkg).
+``COMPONENT_MIN_PRESENCE_CONFIDENCE`` Confidence floor for keeping a component.
+``MATERIAL_PROFILES_PATH`` Material-profile library locator (relative to pkg).
 ``MATERIAL_MIN_CONFIDENCE`` Confidence below which a recovered material is dropped.
 ``ENVIRONMENTAL_FACTORS_PATH`` Conversion-factor catalogue locator (relative to pkg).
 ``ENVIRONMENTAL_MIN_CONFIDENCE`` Confidence below which a material is ignored.
+``DECISION_KNOWLEDGE_PATH`` Decision knowledge-catalogue locator (relative to pkg).
+``DECISION_MIN_CONFIDENCE`` Confidence below which a source is down-weighted.
+``CIRCULAR_RULES_PATH`` Circular-decision rule-catalogue locator (relative to pkg).
+``CIRCULAR_MIN_CONFIDENCE`` Confidence at/below which a recommendation is flagged.
+``PASSPORT_SCHEMA_PATH`` Device-passport schema locator (relative to pkg).
+``PASSPORT_VERSION`` Semantic version stamped onto every produced passport.
+``INTEGRITY_RULES_PATH`` Passport validation-rules locator (relative to pkg).
+``INTEGRITY_HASH_ALGORITHM`` Digest algorithm the canonical integrity hash uses.
+``TRUST_RULES_PATH`` Trust catalogue locator (relative to pkg).
+``TRUST_MIN_SCORE`` Trust score at/below which a low-trust warning is flagged.
 ``MAX_IMAGES``      Maximum number of images accepted per request.
 ``MAX_FILE_SIZE``   Maximum size, in bytes, of a single uploaded image.
 ``LOG_LEVEL``       Log verbosity (``DEBUG``/``INFO``/``WARNING``/...).
@@ -471,6 +481,112 @@ class Settings(BaseSettings):
             "Confidence at or below which a recovered material is ignored when "
             "aggregating the environmental savings, as too unlikely to count "
             "toward the avoided burden."
+        ),
+    )
+
+    # --- Decision knowledge (milestone M2.1) -------------------------------
+    decision_knowledge_path: str = Field(
+        default="decision/data/knowledge.yaml",
+        description=(
+            "Decision knowledge-catalogue locator. Resolved relative to the "
+            "device_ai package root when not absolute. Names the external YAML "
+            "(or JSON) file that holds the versioned per-dimension signal "
+            "weights, confidence weights and normalization constants the "
+            "decision engine consolidates the upstream reports with."
+        ),
+    )
+    decision_min_confidence: float = Field(
+        default=0.05,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Confidence at or below which an upstream confidence source is "
+            "dropped from the overall-confidence blend, so a genuinely absent "
+            "upstream signal neither anchors nor inflates the result."
+        ),
+    )
+
+    # --- Circular decision (milestone M2.2) --------------------------------
+    circular_rules_path: str = Field(
+        default="circular/data/rules.yaml",
+        description=(
+            "Circular-decision rule-catalogue locator. Resolved relative to the "
+            "device_ai package root when not absolute. Names the external YAML "
+            "(or JSON) file that holds the versioned, precedence-ordered policy "
+            "rules the circular engine recommends an end-of-life action with."
+        ),
+    )
+    circular_min_confidence: float = Field(
+        default=0.35,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Aggregated confidence at or below which the circular engine flags a "
+            "recommendation as low-confidence with an operator warning. It never "
+            "changes the recommended action, which the rules decide."
+        ),
+    )
+
+    # --- Device passport core (milestone M2.3) -----------------------------
+    passport_schema_path: str = Field(
+        default="passport/data/schema.yaml",
+        description=(
+            "Device-passport schema locator. Resolved relative to the device_ai "
+            "package root when not absolute. Names the external YAML (or JSON) "
+            "file that declares the required sections and structural contract the "
+            "passport builder assembles the upstream reports into and the strict "
+            "validator checks every built passport against."
+        ),
+    )
+    passport_version: str = Field(
+        default="1.0.0",
+        description=(
+            "Semantic version stamped onto every produced device passport. Bumped "
+            "when the passport's structure changes so consumers can detect the "
+            "schema a passport was assembled under."
+        ),
+    )
+
+    # --- Device passport validation & integrity (milestone M2.4) -----------
+    integrity_rules_path: str = Field(
+        default="integrity/data/rules.yaml",
+        description=(
+            "Device-passport validation-rules locator. Resolved relative to the "
+            "device_ai package root when not absolute. Names the external YAML "
+            "(or JSON) file that declares the sections, required fields and "
+            "normalized [0, 1] confidence fields the integrity engine "
+            "re-validates a passport against before hashing it."
+        ),
+    )
+    integrity_hash_algorithm: str = Field(
+        default="sha256",
+        description=(
+            "Digest algorithm the integrity engine computes a passport's "
+            "canonical integrity hash with, over its deterministic JSON "
+            "serialization. Defaults to SHA-256; must be an algorithm name "
+            "hashlib accepts."
+        ),
+    )
+
+    # --- Trust & provenance engine (milestone M2.5) ------------------------
+    trust_rules_path: str = Field(
+        default="trust/data/rules.yaml",
+        description=(
+            "Trust catalogue locator. Resolved relative to the device_ai "
+            "package root when not absolute. Names the external YAML (or JSON) "
+            "file that holds the versioned per-axis blend weights and the "
+            "ordered trust-level thresholds the trust engine scores a passport's "
+            "trustworthiness with."
+        ),
+    )
+    trust_min_score: float = Field(
+        default=0.4,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Aggregated trust score at or below which the trust engine flags a "
+            "passport as low-trust with an operator warning. It never changes "
+            "the trust level, which the catalogue thresholds decide."
         ),
     )
 

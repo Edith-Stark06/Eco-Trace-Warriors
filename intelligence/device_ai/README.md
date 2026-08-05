@@ -5,21 +5,30 @@
 > materials, carbon score) behind a clean REST API.
 
 **Module:** `intelligence/device_ai`
-**Status:** Milestone **M1.10** — **Material Intelligence Engine**: an
-internal-only, deterministic inference engine that consumes the fusion engine's
-(M1.7) immutable `DeviceContext`, the recoverability engine's (M1.8)
-`RecoverabilityReport` and the component engine's (M1.9) `ComponentReport` and
-produces an explainable `MaterialReport` — the recoverable and hazardous
-materials the device is made of, each with an estimated mass and confidence plus
-the source components it derives from, and device-level recoverable / hazardous
-weight totals with ordered human-readable reasoning and warnings — inferring from
-the component inventory + versioned material profiles + recoverability and device
-confidence, with the material knowledge stored in an **external, versioned**
-YAML/JSON catalogue. It ships **no new endpoint** and leaves the `/predict` API
-contract **unchanged and backward-compatible**. (Built on M1.9 — a component
-inference engine; M1.8 — a recoverability rule engine; M1.7 — a multi-modal
-fusion engine; M1.6 — an OCR intelligence engine; M1.5 — an OpenCLIP fingerprint
-engine; and M1.4 — a real Ultralytics YOLO detector.)
+**Status:** Milestone **M2.5** — **Trust & Provenance Engine**: an internal-only
+**deterministic trust evaluator** that consumes the four upstream artefacts the
+pipeline already produced (the immutable `DevicePassport` from M2.3, its
+`PassportIntegrityReport` from M2.4, the normalized `DecisionKnowledgeReport` from
+M2.1 and the actionable `DecisionReport` from M2.2) and emits a single, immutable
+**`PassportTrustReport`** — a normalized **trust score** (`[0, 1]` weighted
+average), a mapped **trust level** (high / medium / low / untrusted), four
+transparent sub-axes (**identity confidence**, **evidence consistency**, **decision
+confidence** and **integrity confidence**), **ordered reasoning** and **ordered
+warnings**. It answers one question: *how much can this document be trusted as a
+faithful representation of the device?* Unlike M2.3 (which *assembles*) and M2.4
+(which *checks*), the trust engine carries **no inference and no evidence
+collection of its own** — it reads the existing confidence and consistency signals
+its four inputs already carry, blends them into a weighted-average score via an
+**external, versioned catalogue**, and maps that score to a level. It ships **no
+new endpoint**, and no blockchain, smart contracts, digital signatures, QR codes,
+wallets, ownership history, marketplace or carbon credits, and leaves the
+`/predict` API contract **unchanged and backward-compatible**. (Built on M2.4 — a
+passport validation & integrity engine; M2.3 — a device passport core; M2.2 — a
+circular decision engine; M2.1 — a decision-knowledge engine; M1.11 — an
+environmental impact engine; M1.10 — a material inference engine; M1.9 — a
+component inference engine; M1.8 — a recoverability rule engine; M1.7 — a
+multi-modal fusion engine; M1.6 — an OCR intelligence engine; M1.5 — an OpenCLIP
+fingerprint engine; and M1.4 — a real Ultralytics YOLO detector.)
 **Version:** `1.0.0`
 
 ---
@@ -41,13 +50,19 @@ engine; and M1.4 — a real Ultralytics YOLO detector.)
 13. [Recoverability Intelligence Engine (M1.8)](#recoverability-intelligence-engine-m18)
 14. [Component Intelligence Engine (M1.9)](#component-intelligence-engine-m19)
 15. [Material Intelligence Engine (M1.10)](#material-intelligence-engine-m110)
-16. [Configuration](#configuration)
-17. [Running locally](#running-locally)
-18. [Running with Docker](#running-with-docker)
-19. [Testing](#testing)
-20. [Code quality](#code-quality)
-21. [Future integration points](#future-integration-points)
-22. [Roadmap](#roadmap)
+16. [Environmental Intelligence Engine (M1.11)](#environmental-intelligence-engine-m111)
+17. [Decision Knowledge Engine (M2.1)](#decision-knowledge-engine-m21)
+18. [Circular Decision Engine (M2.2)](#circular-decision-engine-m22)
+19. [Device Passport Core (M2.3)](#device-passport-core-m23)
+20. [Device Passport Validation & Integrity Engine (M2.4)](#device-passport-validation--integrity-engine-m24)
+21. [Trust & Provenance Engine (M2.5)](#trust--provenance-engine-m25)
+22. [Configuration](#configuration)
+23. [Running locally](#running-locally)
+24. [Running with Docker](#running-with-docker)
+25. [Testing](#testing)
+26. [Code quality](#code-quality)
+27. [Future integration points](#future-integration-points)
+28. [Roadmap](#roadmap)
 
 ---
 
@@ -1130,6 +1145,569 @@ existing deployment is unchanged) and one new error type, `MATERIAL_ERROR` (a ty
 malformed catalogue), surfaced to orchestrating code rather than through the HTTP
 envelope.
 
+## Environmental Intelligence Engine (M1.11)
+
+Milestone M1.11 ships the **fourth downstream consumer** of the fusion engine: an
+internal-only, **deterministic inference engine** that turns a fused
+`DeviceContext`, its `RecoverabilityReport`, its `ComponentReport` and its
+`MaterialReport` into an explainable **`EnvironmentalImpactReport`** — the
+**avoided environmental burden** of recovering the device rather than landfilling
+it: **carbon saved**, **energy saved**, **water saved**, **landfill diversion**,
+**critical-material recovery**, a **circularity index** and a **hazard-reduction
+score**, with **confidence on a wholly separate axis** and ordered reasoning +
+warnings. Like the material engine, its knowledge — the per-material-category
+conversion factors — lives in an **external, versioned YAML/JSON catalogue** so the
+factor library is **data, not logic**. The five physical metrics are real amounts
+(never clamped); the two indices are normalized `[0, 1]`. It mounts **no router**,
+adds **no endpoint**, and leaves the `/predict` contract **unchanged**. Full
+details live in [`docs/engineering/environmental.md`](docs/engineering/environmental.md).
+
+- **`environmental/data/factors.yaml`** is the external, versioned catalogue: a
+  `version`, a conservative `default` fallback and a per-`MaterialCategory` factor
+  (carbon/energy/water per kg + a `critical` flag). **`environmental/factors.py`**
+  owns the strict loader (typed `EnvironmentalFactorError`) and the never-failing
+  `factor_for()` fallback.
+- **`environmental/inference.py` → `EnvironmentalInferenceEngine`** is a pure fold:
+  recoverable materials above the confidence floor are grouped by category, each
+  category's recovered mass is converted to an avoided burden via the per-kg
+  factors, and the landfill/critical quantities, circularity index and
+  hazard-reduction score are derived; confidence blends the material and
+  recoverability confidences **without re-damping** (the upstream confidences
+  already encode device-type/conflict damping).
+- **`environmental/config.py` → `EnvironmentalConfig`** holds the catalogue locator
+  and the tunable weights; `ENVIRONMENTAL_FACTORS_PATH` and
+  `ENVIRONMENTAL_MIN_CONFIDENCE` map from env via `from_settings()`.
+- **`environmental/service.py` → `EnvironmentalService.analyze(context,
+  recoverability, components, materials)`** loads the catalogue once and stamps
+  provenance (engine/factor versions + injected clock). New error types:
+  `ENVIRONMENTAL_ERROR` (500) and its loader subclass `ENVIRONMENTAL_FACTOR_ERROR`
+  (422).
+
+## Decision Knowledge Engine (M2.1)
+
+Milestone M2.1 ships the **fifth downstream consumer** of the fusion engine and
+the first engine of **M2**: an internal-only, **deterministic inference engine**
+that consolidates all five upstream reports — `DeviceContext`,
+`RecoverabilityReport`, `ComponentReport`, `MaterialReport` and
+`EnvironmentalImpactReport` — into a single, normalized **`DecisionKnowledgeReport`**.
+It answers *"taken together, how strongly does each decision dimension weigh for
+this device, on one comparable scale?"* — **normalized evidence only**: six
+`[0, 1]` **decision dimensions** (repairability, reusability, recycling, hazard,
+environmental priority, material value), each a transparent **weighted mean** of
+upstream signals, plus a **separate** overall-confidence axis, an auditable
+per-dimension evidence breakdown and ordered reasoning + warnings. It does **not**
+recommend an action, assign a monetary value or optimize — those are later
+milestones. Like the material and environmental engines, its knowledge — the
+per-dimension signal weights and the normalization constants — lives in an
+**external, versioned YAML/JSON catalogue** so the weighting is **data, not
+logic**. It mounts **no router**, adds **no endpoint**, and leaves the `/predict`
+contract **unchanged**. Full details live in
+[`docs/engineering/decision.md`](docs/engineering/decision.md).
+
+### Design — fixed signal vocabulary, re-weightable priors, injected service
+
+- **`decision/data/knowledge.yaml`** is the external, versioned catalogue: a
+  `version`, a `normalization` block (four strictly-positive saturation constants
+  that map the environmental engine's unbounded physical amounts onto `[0, 1]`), a
+  `dimensions` block (all six dimensions, each a `signal → weight` map) and a
+  `confidence` block (the five upstream confidence sources → weight).
+- **`decision/knowledge.py`** owns the **fixed vocabulary** — eleven
+  `CANONICAL_SIGNALS` and five `CONFIDENCE_SOURCES` — and the strict loader: it
+  turns the file into immutable `Normalization`/`KnowledgeBase` value objects,
+  **validating aggressively** (version present, normalization strictly positive,
+  every dimension present, only canonical signals named, non-negative weights with
+  at least one positive per dimension/confidence map) and failing with a typed
+  `DecisionKnowledgeError`. The catalogue may **re-weight** the signals but may not
+  invent new ones, so a typo is a load-time error.
+- **`decision/inference.py` → `DecisionInferenceEngine`** is a pure three-stage
+  fold: (1) **project** the five reports onto the eleven normalized signals
+  (pass-through scores, a `HazardLevel` severity map, environmental saturation,
+  mass fractions, identity completeness); (2) **blend** each dimension as the
+  weighted mean of its signals, recording every `(signal, value, weight)` for
+  auditability; (3) **aggregate confidence** on a separate axis, dropping sources
+  at or below the floor and **without re-damping** (upstream confidences already
+  encode device-type/conflict damping).
+- **`decision/config.py` → `DecisionConfig`** is a thin locator + filter
+  (`knowledge_path`, `min_confidence`); both map from env via `from_settings()`.
+- **`decision/service.py` → `DecisionService.analyze(context, recoverability,
+  components, materials, environmental)`** loads the catalogue once and stamps
+  `eco_id`, `engine_version`, the catalogue `knowledge_version` and an injected
+  `created_at`. All collaborators are injected → deterministic tests.
+
+### Capabilities
+
+| Concern | Module | What it provides |
+|---|---|---|
+| **Domain model** | `decision/models.py` | Frozen `DecisionDimension`/`EvidenceSignal`/`DimensionEvidence`/`DecisionKnowledgeReport`; six normalized scores + separate confidence + evidence breakdown + `to_dict`. |
+| **External catalogue** | `decision/data/knowledge.yaml` | Versioned YAML: normalization constants + per-dimension signal weights + confidence weights. |
+| **Knowledge base & loader** | `decision/knowledge.py` | Fixed signal/confidence vocabulary; strict `load_knowledge()` → immutable `KnowledgeBase`; aggressive validation. |
+| **Inference** | `decision/inference.py` | `DecisionInferenceEngine`: project → weighted-mean blend → separate confidence blend; clamp/round; ordered reasoning/warnings. |
+| **Config** | `decision/config.py` | Catalogue locator + confidence floor; env mapping via `from_settings()`; package-root path resolution. |
+| **Orchestration** | `decision/service.py` | `analyze(context, recoverability, components, materials, environmental)` → immutable report; catalogue loaded once; all collaborators injected. |
+
+### Internal-only — no endpoints
+
+Like every engine before it, the decision engine is a **library**, not a service
+surface. A future orchestrator chains it onto the five upstream engines
+in-process:
+
+```python
+from device_ai.fusion import FusionService
+from device_ai.recoverability import RecoverabilityService
+from device_ai.components import ComponentService
+from device_ai.materials import MaterialService
+from device_ai.environmental import EnvironmentalService
+from device_ai.decision import DecisionService
+
+context = FusionService().fuse(evidence)                              # M1.7
+recoverability = RecoverabilityService().assess(context)             # M1.8
+components = ComponentService().analyze(context, recoverability)     # M1.9
+materials = MaterialService().analyze(context, recoverability, components)  # M1.10
+environmental = EnvironmentalService().analyze(
+    context, recoverability, components, materials
+)                                                                    # M1.11
+
+report = DecisionService().analyze(
+    context, recoverability, components, materials, environmental
+)                                                                    # M2.1
+report.repairability_score    # normalized [0, 1] evidence
+report.hazard_score           # normalized [0, 1] (higher = more hazardous)
+report.material_value_score   # normalized unit index (NOT currency)
+report.overall_confidence     # separate axis; never scales a score
+report.dimensions             # per-dimension evidence breakdown (signals + reason)
+report.reasoning              # ordered, human-readable explanations
+report.warnings               # operator-facing cautions
+report.to_dict()              # fully serializable
+```
+
+M2.1 adds two **opt-in** environment variables (`DECISION_KNOWLEDGE_PATH`,
+`DECISION_MIN_CONFIDENCE`; defaults reproduce the reference behaviour) and one new
+error type, `DECISION_ERROR` (a typed `DeviceAIError`, with the loader raising the
+`DECISION_KNOWLEDGE_ERROR` subclass on a malformed catalogue), surfaced to
+orchestrating code rather than through the HTTP envelope.
+
+## Circular Decision Engine (M2.2)
+
+Milestone M2.2 ships the **sixth downstream consumer** of the fusion engine and
+the second engine of **M2**: an internal-only, **deterministic rule-evaluation
+engine** that consumes four upstream reports — `DeviceContext`,
+`DecisionKnowledgeReport`, `RecoverabilityReport` and `EnvironmentalImpactReport` —
+and produces the pipeline's **first actionable recommendation**, a single
+**`DecisionReport`**. It answers *"given the consolidated evidence, what should
+actually be done with this device — and how urgently?"*: a recommended
+**end-of-life action** (`refurbish` / `repair` / `recycle` / `hazardous_disposal` /
+`manual_review`, reusing the recoverability engine's `RecommendedAction`
+vocabulary), a triage **priority** (`high` / `medium` / `low`), an aggregated
+**confidence**, the exact **rules that fired** (in precedence order, winner
+flagged) and ordered **reasoning** and **warnings**. Unlike M2.1's normalized
+evidence, this report carries a real recommendation — and it stays **auditable**
+because every recommendation is a **precedence-ordered, deterministic rule match**,
+never a black-box verdict. It assigns **no monetary value** and performs **no
+optimization**. Like the M2.1/M1.11/M1.10 engines, its decision policy — *which
+evidence triggers which action, and in what precedence* — lives in an **external,
+versioned YAML/JSON rule catalogue** so the policy is **data, not logic**. It
+mounts **no router**, adds **no endpoint**, and leaves the `/predict` contract
+**unchanged**. Full details live in
+[`docs/engineering/circular.md`](docs/engineering/circular.md).
+
+### Design — external rule catalogue, precedence-ordered match, injected service
+
+- **`circular/data/rules.yaml`** is the external, versioned catalogue: a `version`,
+  a precedence-ordered list of `rules` (each with `id`, unique `precedence`,
+  `action`, `priority`, `reason`, a non-empty `when` conjunction of
+  `{ signal, operator, threshold }` conditions, and an optional `confidence_factor`
+  in `(0, 1]` and `warning`) and a required `default` fallback. The shipped
+  catalogue's ten rules encode a **hazard-first → review-gate → recovery-ladder**
+  policy.
+- **`circular/rules.py`** owns the **fixed vocabulary** — sixteen
+  `CANONICAL_SIGNALS` and four `CONDITION_OPERATORS` (`gte`/`lte`/`gt`/`lt`) — and
+  the strict loader: it turns the file into immutable
+  `RuleCondition`/`DecisionRule`/`DefaultRule`/`RuleCatalogue` value objects,
+  **validating aggressively** (version present, at least one rule, unique ids and
+  precedences, non-negative integer precedence, only canonical signals/operators
+  named, in-range thresholds, `(0, 1]` confidence factors, a known action/priority,
+  a non-empty `when`, a present default) and failing with a typed
+  `CircularRuleError`. The catalogue may **re-order or re-tune** rules but may not
+  invent a signal or operator, so a typo is a load-time error.
+- **`circular/engine.py` → `CircularDecisionEngine`** is a pure three-stage
+  evaluation: (1) **project** the four reports onto the sixteen normalized `[0, 1]`
+  signals (pass-through scores, a `HazardLevel` severity map, the upstream
+  force/conflict flags as `0.0`/`1.0`, identity completeness); (2) **match** every
+  rule against the signals — a rule fires when **all** its conditions hold, and the
+  fired rule with the lowest precedence wins (the rest retained as overridden
+  alternatives), with the required `default` applied when nothing fires; (3)
+  **aggregate confidence** as the consolidated decision confidence damped by the
+  product of every fired rule's confidence factor — a **separate axis** that never
+  changes the action.
+- **`circular/config.py` → `CircularConfig`** is a thin locator + knobs
+  (`rules_path`, `min_confidence`, `identity_field_count`); the first two map from
+  env via `from_settings()`.
+- **`circular/service.py` → `CircularService.decide(context, knowledge,
+  recoverability, environmental)`** loads the catalogue once and stamps `eco_id`,
+  `engine_version`, the catalogue `rules_version` and an injected `created_at`. All
+  collaborators are injected → deterministic tests.
+
+### Capabilities
+
+| Concern | Module | What it provides |
+|---|---|---|
+| **Domain model** | `circular/models.py` | Frozen `Priority`/`TriggeredRule`/`DecisionReport` (re-uses `RecommendedAction`); action + priority + confidence + ordered triggered rules (winner flagged) + ordered reasoning/warnings + `to_dict`. |
+| **External catalogue** | `circular/data/rules.yaml` | Versioned YAML: precedence-ordered policy rules + required default fallback. |
+| **Rules & loader** | `circular/rules.py` | Fixed signal/operator vocabulary; strict `load_rules()` → immutable `RuleCatalogue`; aggressive validation. |
+| **Engine** | `circular/engine.py` | `CircularDecisionEngine`: project → precedence-ordered rule match → damped confidence; clamp/round; ordered reasoning/warnings. |
+| **Config** | `circular/config.py` | Catalogue locator + confidence floor + identity-field count; env mapping via `from_settings()`; package-root path resolution. |
+| **Orchestration** | `circular/service.py` | `decide(context, knowledge, recoverability, environmental)` → immutable report; catalogue loaded once; all collaborators injected. |
+
+### Internal-only — no endpoints
+
+Like every engine before it, the circular engine is a **library**, not a service
+surface. A future orchestrator chains it onto the upstream engines in-process —
+note the **four** inputs (`context`, `knowledge`, `recoverability`,
+`environmental`):
+
+```python
+from device_ai.decision import DecisionService
+from device_ai.circular import CircularService
+
+knowledge = DecisionService().analyze(
+    context, recoverability, components, materials, environmental
+)                                                                    # M2.1
+
+decision = CircularService().decide(
+    context, knowledge, recoverability, environmental
+)                                                                    # M2.2
+decision.recommended_action   # RecommendedAction (refurbish/repair/recycle/…)
+decision.priority             # Priority (high/medium/low)
+decision.confidence           # separate axis; never changes the action
+decision.triggered_rules      # rules that fired, precedence order, winner flagged
+decision.winning_rule         # the deciding rule, or None when the fallback applied
+decision.reasoning            # ordered, human-readable explanations
+decision.warnings             # operator-facing cautions
+decision.to_dict()            # fully serializable
+```
+
+M2.2 adds two **opt-in** environment variables (`CIRCULAR_RULES_PATH`,
+`CIRCULAR_MIN_CONFIDENCE`; defaults reproduce the reference behaviour) and one new
+error type, `CIRCULAR_DECISION_ERROR` (a typed `DeviceAIError`, 500, with the
+loader raising the `CIRCULAR_RULE_ERROR` subclass, 422, on a malformed catalogue),
+surfaced to orchestrating code rather than through the HTTP envelope.
+
+## Device Passport Core (M2.3)
+
+Milestone M2.3 ships the **Device Passport Core**: an internal-only,
+deterministic **assembler** that consumes five upstream artefacts — a fused,
+immutable `DeviceContext` (M1.7), a `DecisionReport` (M2.2), a `MaterialReport`
+(M1.10), an `EnvironmentalImpactReport` (M1.11) and a `DeviceFingerprint` (M1.5) —
+and **composes** them into a single, immutable **`DevicePassport`**: the
+device's consolidated, portable record. Every other engine *infers* something new;
+the passport core deliberately **does not**. It answers *"gather everything the
+pipeline already knows about this device into one auditable document"* — it
+**never re-scores a dimension, re-recommends an action or assigns a value**. The
+passport carries a content-addressed **passport id**, a stamped **passport
+version** and **EcoID**, device **identity** and **classification**, condensed
+**decision / material / environmental / fingerprint** summaries, a transparent
+**confidence summary**, provenance **metadata**, and ordered human-readable
+**reasoning** and **warnings**. The passport's **structure** — which sections it
+must contain and each section's field/range contract — lives in an **external,
+versioned** YAML **schema** (not a rule catalogue) behind a **strict validator**,
+so the shape is **data, not logic**. It mounts **no router**, adds **no
+endpoint**, and leaves the `/predict` contract **unchanged**. It implements **no
+blockchain, QR codes, CBOR, digital signatures, ownership history, lifecycle
+events or database persistence** — those are later milestones. Full details live in
+[`docs/engineering/passport.md`](docs/engineering/passport.md).
+
+### Design — external schema, deterministic builder, composition-not-inference
+
+- **`passport/data/schema.yaml`** is the external, versioned schema: a `version`
+  and thirteen ordered `sections`, each with a `kind` (`string` / `object` /
+  `array`), the `fields` an object section must carry and the `confidence_fields`
+  that must be numeric in `[0, 1]`. It describes the passport's **structure**, not a
+  decision policy; bumping a section or a field/range contract is a data change,
+  reviewable without touching code.
+- **`passport/schema.py`** owns the strict loader and validator: `load_schema()`
+  turns the file into immutable `SectionSchema`/`PassportSchema` value objects,
+  **validating aggressively** (version present, at least one section, every `kind`
+  known, object sections declaring a non-empty `fields` list, every
+  `confidence_field` present in its section's fields) and failing with a typed
+  `PassportSchemaError`. `validate_passport(payload, schema)` then checks a built
+  passport against that schema — every required section present and of the right
+  kind, every declared field present, every confidence field a real number in
+  `[0, 1]` (booleans rejected) — raising `PassportValidationError` on any breach.
+- **`passport/builder.py` → `PassportBuilder`** is the **deterministic** four-stage
+  composition: (1) **summarize** — project each upstream report onto its condensed
+  passport section (identity, classification, decision, material, environmental,
+  fingerprint), copying values verbatim; (2) **compose confidence** — the
+  `ConfidenceSummary.overall` is the plain **arithmetic mean** of the four upstream
+  confidences (classification, decision, material, environmental), rounded to six
+  decimals — **a transparent composition, never a new inference**; (3) **identify**
+  — derive a **content-addressed passport id** (`ET-PP-` + a 12-char uppercase
+  SHA-256 prefix over the device's identifying fields) so the same device always
+  maps to the same id, independent of the build timestamp; (4) **narrate** — lead
+  the reasoning with the composed recommendation line, extend it with the decision's
+  reasoning, and union the upstream warnings (de-duplicated, order-preserving), both
+  bounded by the config's presentation caps.
+- **`passport/config.py` → `PassportConfig`** is a thin locator + knobs
+  (`schema_path`, `passport_version`, `max_reasoning`, `max_warnings`); the first
+  two map from env via `from_settings()`.
+- **`passport/service.py` → `PassportService.build(context, decision, materials,
+  environmental, fingerprint=None)`** loads the schema **once** at construction,
+  runs the builder, **validates** the assembled passport against the schema and
+  stamps `passport_version`, the schema `version`, `engine_version` and an injected
+  `created_at`. All collaborators (config, schema, builder, clock) are injected →
+  deterministic tests. The fingerprint is **optional**: an absent fingerprint yields
+  a well-defined empty fingerprint section plus a warning, never an error.
+
+### Capabilities
+
+| Concern | Module | What it provides |
+|---|---|---|
+| **Domain model** | `passport/models.py` | Frozen `DeviceIdentity`/`Classification`/`DecisionSummary`/`MaterialSummary`/`EnvironmentalSummary`/`FingerprintSummary`/`ConfidenceSummary`/`PassportMetadata`/`DevicePassport`; ordered reasoning/warnings + `to_dict` + deterministic `to_json`. |
+| **External schema** | `passport/data/schema.yaml` | Versioned YAML: thirteen ordered sections with per-section kind, fields and confidence-field range contract. |
+| **Schema loader & validator** | `passport/schema.py` | Fixed `SectionKind` vocabulary; strict `load_schema()` → immutable `PassportSchema`; `validate_passport()` structural + range check; aggressive validation. |
+| **Builder** | `passport/builder.py` | `PassportBuilder`: summarize → compose confidence (arithmetic mean) → content-addressed id → narrate; verbatim composition, clamp/round; ordered reasoning/warnings. |
+| **Config** | `passport/config.py` | Schema locator + passport version + presentation caps in one frozen dataclass; env mapping via `from_settings()`; package-root path resolution. |
+| **Orchestration** | `passport/service.py` | `build(context, decision, materials, environmental, fingerprint=None)` → immutable, schema-validated passport; schema loaded once; all collaborators injected. |
+
+### Internal-only — no endpoints
+
+Like every engine before it, the passport core is a **library**, not a service
+surface. A future orchestrator chains it onto the upstream engines in-process —
+note the **five** inputs (`context`, `decision`, `materials`, `environmental`,
+`fingerprint`):
+
+```python
+from device_ai.circular import CircularService
+from device_ai.passport import PassportService
+
+decision = CircularService().decide(
+    context, knowledge, recoverability, environmental
+)                                                                    # M2.2
+
+passport = PassportService().build(
+    context, decision, materials, environmental, fingerprint
+)                                                                    # M2.3
+passport.passport_id          # "ET-PP-…" content-addressed, timestamp-independent
+passport.passport_version     # stamped semantic version
+passport.eco_id               # carried from the DeviceContext
+passport.classification       # device type + confidence
+passport.decision_summary     # recommended action + priority + confidence
+passport.material_summary     # recoverable/hazardous mass + confidence
+passport.environmental_summary# carbon/energy/water saved + indices + confidence
+passport.fingerprint_summary  # fingerprint id + encoder provenance (or empty)
+passport.confidence_summary   # arithmetic-mean overall + the four components
+passport.reasoning            # ordered, human-readable explanations
+passport.warnings             # operator-facing cautions
+passport.to_dict()            # fully serializable
+passport.to_json()            # deterministic, canonical JSON
+```
+
+M2.3 adds two **opt-in** environment variables (`PASSPORT_SCHEMA_PATH`,
+`PASSPORT_VERSION`; defaults reproduce the reference behaviour, so an existing
+deployment is unchanged) and one new error type, `PASSPORT_ERROR` (a typed
+`DeviceAIError`, 500, with the loader raising `PASSPORT_SCHEMA_ERROR` and the
+validator raising `PASSPORT_VALIDATION_ERROR`, both 422, on a malformed schema or
+a non-conformant passport), surfaced to orchestrating code rather than through the
+HTTP envelope.
+
+## Device Passport Validation & Integrity Engine (M2.4)
+
+Milestone M2.4 ships the **Device Passport Validation & Integrity Engine**: an
+internal-only, deterministic **checker** that consumes the M2.3 `DevicePassport`
+and produces a single, immutable **`PassportIntegrityReport`** — the passport's
+independent trust verdict. Every engine up to and including M2.3 *produces* the
+passport; this engine deliberately **produces nothing new about the device** — it
+answers *"is this passport well-formed, and has it been tampered with since it was
+built?"*. It **re-validates** the assembled passport against an **external,
+versioned** YAML **validation rule-set** and computes a **SHA-256 canonical
+integrity hash** over the passport's deterministic serialization, so any later
+byte-level mutation is detectable by recomputation. The report carries a
+**validation status** (`valid` / `valid_with_warnings` / `invalid`), the
+**canonical hash** and its **algorithm**, the observed **schema version** and
+**passport version**, the ordered **checked sections** (each with its `kind`,
+`present` and `valid` flags), and ordered **warnings** and **errors**. It
+**re-checks and hashes — it never re-scores a dimension, re-recommends an action,
+assigns a value or mutates the passport**. The validation rule-set — which sections
+must be present, each section's kind and field contract, and which fields must be
+confidences in `[0, 1]` — lives in an **external, versioned** YAML file behind a
+**strict loader**, so the integrity contract is **data, not logic**. It mounts **no
+router**, adds **no endpoint**, and leaves the `/predict` contract **unchanged**. It
+implements **no blockchain, digital signatures, QR codes, CBOR, ownership history,
+lifecycle events or database persistence** — those remain later milestones. Full
+details live in [`docs/engineering/integrity.md`](docs/engineering/integrity.md).
+
+### Design — external rule-set, inverted trust boundary, canonical hash
+
+- **`integrity/data/rules.yaml`** is the external, versioned validation rule-set: a
+  `version` and thirteen ordered `sections` mirroring the passport schema, each with
+  a `kind` (`string` / `object` / `array`), the `fields` an object section must
+  carry, the `confidence_fields` that must be numeric in `[0, 1]` and an optional
+  `required` flag (only `fingerprint_summary` is optional). It describes the
+  passport's **integrity contract**, reviewable and bumpable without touching code.
+- **`integrity/rules.py`** owns the **strict loader**: `load_rules()` turns the file
+  into immutable `SectionRule`/`IntegrityRuleSet` value objects, **validating
+  aggressively** (version present, sections a mapping, every `kind` known, object
+  sections declaring non-empty non-duplicate `fields`, string sections declaring
+  none, every `confidence_field` present in its section's fields, a boolean
+  `required`) and failing with a typed `PassportIntegrityRuleError`. A malformed
+  **rule-set is an engine fault** — it is **raised**, exactly like the passport
+  schema loader.
+- **`integrity/validator.py` → `PassportIntegrityValidator`** performs the two-part
+  check. **Structural:** for every rule section it records a `CheckedSection`
+  (`present` / `valid`) and appends ordered, de-duplicated warnings (a missing
+  *optional* section) and errors (a missing *required* section, a wrong section
+  kind, a missing object field, a confidence field that is absent, non-numeric,
+  boolean or outside `[0, 1]`). **Integrity:** it serializes the passport to its
+  deterministic canonical JSON and hashes the bytes with SHA-256. A malformed
+  **passport is untrusted input** — it is **reported** as ordered errors on the
+  report, **never raised**. This trust boundary is the deliberate **inverse** of the
+  M2.3 assembler (which raises `PassportValidationError` on its own output): the
+  integrity engine treats the passport as data to be judged, not trusted.
+- **`integrity/config.py` → `IntegrityConfig`** is a thin locator + knob
+  (`rules_path`, `hash_algorithm`); both map from env via `from_settings()`, and the
+  rules path resolves against the `device_ai` package root when relative.
+- **`integrity/service.py` → `IntegrityService.validate(passport)`** loads the
+  rule-set **once** at construction, drives the validator and stamps the observed
+  `schema_version` and `passport_version`, the rule-set `version`, `engine_version`
+  and an injected `created_at`. All collaborators (config, rule-set, validator,
+  clock) are injected → deterministic tests.
+
+### Capabilities
+
+| Concern | Module | What it provides |
+|---|---|---|
+| **Domain model** | `integrity/models.py` | Frozen `ValidationStatus`/`CheckedSection`/`PassportIntegrityReport`; status + canonical hash + schema/passport versions + ordered checked sections + ordered warnings/errors + `is_valid`/counts + `to_dict`/deterministic `to_json`. |
+| **External rule-set** | `integrity/data/rules.yaml` | Versioned YAML: thirteen ordered sections with per-section kind, fields, confidence-field range contract and optional-section flag. |
+| **Rule-set loader** | `integrity/rules.py` | Fixed `SectionKind` vocabulary; strict `load_rules()` → immutable `IntegrityRuleSet`; aggressive validation; **raises** on a malformed rule-set. |
+| **Validator** | `integrity/validator.py` | `PassportIntegrityValidator`: structural section/field/confidence checks (ordered, de-duplicated warnings + errors) + SHA-256 canonical integrity hash; **reports** a malformed passport, never raises. |
+| **Config** | `integrity/config.py` | Rule-set locator + hash algorithm in one frozen dataclass; env mapping via `from_settings()`; package-root path resolution. |
+| **Orchestration** | `integrity/service.py` | `validate(passport)` → immutable integrity report; rule-set loaded once; version/clock stamping; all collaborators injected. |
+
+### Internal-only — no endpoints
+
+Like every engine before it, the integrity engine is a **library**, not a service
+surface. A future orchestrator chains it directly onto the M2.3 passport core
+in-process — it consumes the **one** artefact the passport core produces:
+
+```python
+from device_ai.passport import PassportService
+from device_ai.integrity import IntegrityService
+
+passport = PassportService().build(
+    context, decision, materials, environmental, fingerprint
+)                                                                    # M2.3
+
+report = IntegrityService().validate(passport)                       # M2.4
+report.status                 # ValidationStatus (valid / valid_with_warnings / invalid)
+report.is_valid               # True unless status is INVALID
+report.canonical_hash         # 64-char SHA-256 hex over the canonical serialization
+report.hash_algorithm         # "sha256"
+report.schema_version         # observed passport schema version
+report.passport_version       # observed passport version
+report.checked_sections       # ordered CheckedSection tuple (name/kind/present/valid)
+report.warnings               # ordered, de-duplicated cautions
+report.errors                 # ordered, de-duplicated structural failures
+report.to_dict()              # fully serializable
+report.to_json()              # deterministic, canonical JSON
+```
+
+M2.4 adds two **opt-in** environment variables (`INTEGRITY_RULES_PATH`,
+`INTEGRITY_HASH_ALGORITHM`; defaults reproduce the reference behaviour, so an
+existing deployment is unchanged) and one new error type, `PASSPORT_INTEGRITY_ERROR`
+(a typed `DeviceAIError`, 500, with the loader raising the
+`PASSPORT_INTEGRITY_RULE_ERROR` subclass, 422, on a malformed rule-set or an
+unsupported hash algorithm), surfaced to orchestrating code rather than through the
+HTTP envelope.
+
+## Trust & Provenance Engine (M2.5)
+
+M2.5 is an internal-only, **deterministic trust evaluator**. It consumes the four
+upstream artefacts the pipeline already produced — the immutable `DevicePassport`
+(M2.3), its `PassportIntegrityReport` (M2.4), the normalized
+`DecisionKnowledgeReport` (M2.1) and the actionable `DecisionReport` (M2.2) — and
+emits a single, immutable **`PassportTrustReport`**. It answers one question about
+the passport: *how much can this document be trusted as a faithful representation
+of the device?* Unlike M2.3 (which *assembles* the passport) and M2.4 (which
+*checks* it), the trust engine carries **no inference and no evidence collection of
+its own**: it reads the existing confidence and consistency signals its four inputs
+already carry, blends them into a weighted-average score, and maps that score to a
+level. Full details live in [`docs/engineering/trust.md`](docs/engineering/trust.md).
+
+**The report carries the eight required fields** — a normalized `trust_score`
+(`[0, 1]` weighted average), a mapped `trust_level` (`high` / `medium` / `low` /
+`untrusted`), the four sub-axes `identity_confidence`, `evidence_consistency`,
+`decision_confidence` and `integrity_confidence`, ordered `reasoning` and ordered
+`warnings` — plus the four `TrustAxis` records (each with its value, catalogue
+**weight** and a **reason**) and provenance (`engine_version`, `rules_version`, an
+optional `created_at`).
+
+The four sub-axes are transparent projections of existing signals — never new
+inferences:
+
+| Axis | Projected from | How |
+|---|---|---|
+| **Identity confidence** | passport identity + classification | mean of identity completeness (fraction of the strong fields `model`/`serial`/`imei`/`mac` present) and classification confidence. |
+| **Evidence consistency** | passport + knowledge + decision device types, conflict flag | `1.0` when all present types agree with no conflict; `0.8` agree-but-conflict; `0.4`/`0.2` disagree (no-conflict/conflict); `0.5` when no type resolved. |
+| **Decision confidence** | knowledge + circular decision | arithmetic mean of the decision-knowledge overall confidence and the circular-decision confidence. |
+| **Integrity confidence** | integrity report | `1.0` when `valid`; `1.0 − penalty×warnings` when `valid_with_warnings`; `0.0` when `invalid`. |
+
+The `trust_score` is the catalogue-weighted average of the four axes
+(`Σ(valueᵢ × weightᵢ) / Σweightᵢ`, clamped and rounded to six places); the
+`trust_level` is the score mapped through the catalogue's descending score floors.
+Both are re-derivable by hand from the `axes` and thresholds. The engine's scoring
+policy — the per-axis blend weights and the level thresholds — lives **outside the
+code** in an external, versioned catalogue (`trust/data/rules.yaml`) behind a
+**strict loader** that fails with a typed `PassportTrustRuleError` on any
+structural problem. A malformed **catalogue** *raises* (an engine fault); inputs
+that merely **score low** are *reported* as a low level and ordered warnings, never
+raised.
+
+Component map (mirrors the M2.4 layering):
+
+| Component | Location | Responsibility |
+|---|---|---|
+| **Domain models** | `trust/models.py` | Frozen `TrustLevel`, `TrustAxis` and `PassportTrustReport`, each with its own `to_dict()`; canonical `to_json()`. |
+| **Catalogue loader** | `trust/rules.py` | Fixed `CANONICAL_AXES` vocabulary; strict `load_rules()` → immutable `TrustRuleSet` (`weight_for`, `level_for`); **raises** on a malformed catalogue. |
+| **Engine** | `trust/engine.py` | `TrustEngine.evaluate(...)`: project four reports → four axes → weighted-average score → mapped level; ordered reasoning + warnings; deterministic. |
+| **Config** | `trust/config.py` | Catalogue locator + low-trust floor + two projection knobs in one frozen dataclass; env mapping via `from_settings()`; package-root path resolution. |
+| **Orchestration** | `trust/service.py` | `assess(passport, integrity, knowledge, decision)` → immutable trust report; catalogue loaded once; version/clock stamping; all collaborators injected. |
+
+### Internal-only — no endpoints
+
+Like every engine before it, the trust engine is a **library**, not a service
+surface. A future orchestrator chains it directly onto the M2.3/M2.4 output
+in-process — it consumes the **four** artefacts the pipeline already produced:
+
+```python
+from device_ai.passport import PassportService
+from device_ai.integrity import IntegrityService
+from device_ai.trust import TrustService, TrustLevel
+
+passport = PassportService().build(
+    context, decision, materials, environmental, fingerprint
+)                                                                    # M2.3
+integrity = IntegrityService().validate(passport)                    # M2.4
+
+report = TrustService().assess(passport, integrity, knowledge, decision)  # M2.5
+report.trust_score            # normalized [0, 1] weighted average
+report.trust_level            # TrustLevel (high / medium / low / untrusted)
+report.identity_confidence    # the four sub-axes, also on report.axes
+report.evidence_consistency
+report.decision_confidence
+report.integrity_confidence
+report.axes                   # ordered TrustAxis tuple (name/value/weight/reason)
+report.reasoning              # ordered, human-readable reasons
+report.warnings               # ordered operator cautions
+report.to_dict()              # fully serializable
+report.to_json()              # deterministic, canonical JSON
+```
+
+M2.5 adds two **opt-in** environment variables (`TRUST_RULES_PATH`,
+`TRUST_MIN_SCORE`; defaults reproduce the reference behaviour, so an existing
+deployment is unchanged) and one new error type, `PASSPORT_TRUST_ERROR` (a typed
+`DeviceAIError`, 500, with the loader raising the `PASSPORT_TRUST_RULE_ERROR`
+subclass, 422, on a malformed catalogue), surfaced to orchestrating code rather
+than through the HTTP envelope.
+
 ## Configuration
 
 All configuration is via environment variables (parsed once at startup).
@@ -1171,6 +1749,18 @@ Copy `.env.example` to `.env` to override. Defaults live in
 | `COMPONENT_MIN_PRESENCE_CONFIDENCE` | `0.05` | Presence confidence at/below which an inferred component is dropped from the report (M1.9) |
 | `MATERIAL_PROFILES_PATH` | `materials/data/materials.yaml` | Locator of the external material-profile catalogue (YAML/JSON), resolved against the `device_ai` package root when relative (M1.10) |
 | `MATERIAL_MIN_CONFIDENCE` | `0.05` | Confidence at/below which an inferred material is dropped from the report (M1.10) |
+| `ENVIRONMENTAL_FACTORS_PATH` | `environmental/data/factors.yaml` | Locator of the external conversion-factor catalogue (YAML/JSON), resolved against the `device_ai` package root when relative (M1.11) |
+| `ENVIRONMENTAL_MIN_CONFIDENCE` | `0.05` | Confidence at/below which a recovered material is ignored when aggregating environmental savings (M1.11) |
+| `DECISION_KNOWLEDGE_PATH` | `decision/data/knowledge.yaml` | Locator of the external decision-knowledge catalogue (YAML/JSON), resolved against the `device_ai` package root when relative (M2.1) |
+| `DECISION_MIN_CONFIDENCE` | `0.05` | Confidence at/below which an upstream confidence source is dropped from the overall-confidence blend (M2.1) |
+| `CIRCULAR_RULES_PATH` | `circular/data/rules.yaml` | Locator of the external circular-decision rule catalogue (YAML/JSON), resolved against the `device_ai` package root when relative (M2.2) |
+| `CIRCULAR_MIN_CONFIDENCE` | `0.35` | Aggregated confidence at/below which a recommendation is flagged low-confidence with an operator warning; never changes the action (M2.2) |
+| `PASSPORT_SCHEMA_PATH` | `passport/data/schema.yaml` | Locator of the external device-passport schema (YAML/JSON), resolved against the `device_ai` package root when relative; the strict validator checks every built passport against it (M2.3) |
+| `PASSPORT_VERSION` | `1.0.0` | Semantic version stamped onto every produced device passport; bumped when the passport's structure changes (M2.3) |
+| `INTEGRITY_RULES_PATH` | `integrity/data/rules.yaml` | Locator of the external passport validation rule-set (YAML/JSON), resolved against the `device_ai` package root when relative; the strict validator re-checks every passport against it before hashing (M2.4) |
+| `INTEGRITY_HASH_ALGORITHM` | `sha256` | Hash algorithm for the canonical passport integrity hash; an unsupported value raises `PassportIntegrityError` (M2.4) |
+| `TRUST_RULES_PATH` | `trust/data/rules.yaml` | Locator of the external trust catalogue (YAML/JSON), resolved against the `device_ai` package root when relative; holds the per-axis blend weights and the level thresholds behind a strict loader (M2.5) |
+| `TRUST_MIN_SCORE` | `0.4` | Trust score at or below which a low-trust warning is flagged on the report; never changes the mapped trust level (M2.5) |
 | `MAX_IMAGES` | `6` | Max images per request |
 | `MAX_FILE_SIZE` | `10485760` | Max bytes per image (10 MB) |
 | `LOG_LEVEL` | `INFO` | Log verbosity |
@@ -1360,6 +1950,161 @@ the generic fallback + warning, and a conflicted context, plus determinism,
 provenance carry-over (engine/profile versions + injected clock), JSON shape,
 report immutability, eco_id carry-over and an injected custom library/config.
 
+The **M1.11** additions cover the Environmental Intelligence Engine — again
+entirely in the base environment (no images, models or fusion run; only the
+external catalogues are read from disk; the service tests build the four upstream
+reports by actually running the recoverability, component and material engines):
+the **external catalogue and its loader** (the shipped file's invariants —
+non-negative factors, every `MaterialCategory` covered, critical categories
+flagged, precious metal the largest carbon factor — the never-failing `factor_for`
+fallback, aggressive loader validation against hand-written good/bad `tmp_path`
+catalogues (missing file, malformed YAML, missing version, unknown category,
+negative/non-numeric/boolean/missing factor, empty factors, missing default), JSON
+parity, and the `from_settings` mapping); the **inference fold** against a small
+hand-built factor library (mass→savings conversion, linear scaling, no-clamping of
+physical metrics, per-category aggregation, default-factor fallback,
+recoverable/floor filtering, landfill/critical quantities, circularity and
+hazard-reduction indices, the separate confidence blend and that it never scales a
+metric, reasoning/warnings, and every `HazardLevel`); and the end-to-end
+`analyze()` across an identifiable laptop, a hazardous CRT, an unknown device and a
+conflicted context, plus determinism, provenance/version stamping, the injected
+clock, JSON shape and report immutability.
+
+The **M2.1** additions cover the Decision Knowledge Engine — again entirely in the
+base environment (no images, models or fusion run; only the external catalogues
+are read from disk; the service tests build the five upstream reports by actually
+running the recoverability, component, material and environmental engines): the
+**external catalogue and its loader** (the shipped file's invariants — every
+dimension defined, only canonical signals named, a positive weight per dimension,
+strictly-positive saturation constants — `weights_for`, aggressive loader
+validation against hand-written good/bad `tmp_path` catalogues (missing file,
+malformed YAML, empty, missing version, missing normalization, non-positive
+saturation, missing/unknown dimension, unknown signal, negative/boolean/all-zero
+weight, unknown/all-zero/missing confidence), JSON parity, and the `from_settings`
+mapping); the **inference fold** against a small hand-built knowledge base
+(pass-through scores, the hazard-severity mapping for every level, environmental
+saturation and clamping, mass fractions with the zero-mass guard, identity
+completeness, the per-dimension weighted mean, the evidence breakdown, the
+unit-interval invariant, the separate confidence blend with its floor and that it
+never scales a score, reasoning/warnings, device-type resolution, provenance and
+determinism); and the end-to-end `analyze()` across an identifiable laptop, a
+hazardous CRT, an unknown device and a conflicted context, plus the
+**normalized-evidence-only** invariant (no recommendation/monetary keys),
+determinism, provenance/version stamping, the injected clock, JSON shape, report
+immutability and injected knowledge/config.
+
+The **M2.2** additions cover the Circular Decision Engine — **80** new tests,
+again entirely offline (no images, models or fusion run; only the external
+catalogues are read from disk; the service tests build the four upstream reports by
+actually running the recoverability, component, material, environmental and
+decision-knowledge engines): the **external catalogue and its loader**
+(`test_circular_rules.py` — the shipped file's invariants (rules sorted by
+precedence, unique ids and precedences, only canonical signals/operators named,
+in-range thresholds, known actions/priorities, a valid default), the
+condition/rule matching semantics (operator predicates, missing signal read as
+`0.0`, conjunction), `to_dict` round-trips, aggressive loader validation against
+hand-written good/bad `tmp_path` catalogues (missing file, malformed YAML, empty,
+non-mapping root, missing version, no/non-list rules, missing default, a rule with
+no conditions, unknown signal/operator/action/priority, out-of-range threshold,
+negative/boolean precedence, boolean threshold, out-of-range confidence factor,
+duplicate id, duplicate precedence, precedence sorting), and JSON parity); the
+**deterministic evaluation** (`test_circular_engine.py` against a small hand-built
+catalogue and hand-built reports — signal pass-through, the hazard-severity mapping
+for every level, the upstream-force and conflict flags, identity completeness,
+precedence (lowest wins), triggered-rule ordering, determinism, every action and
+every priority reachable, the default fallback, confidence aggregation
+(pass-through, compounding factors, action invariance), reasoning/warnings, and
+provenance/device-type resolution); and the end-to-end `decide()`
+(`test_circular_service.py` against the shipped catalogue — an identifiable laptop,
+a hazardous CRT → `hazardous_disposal`/high, an unknown device → `manual_review`
+and a conflicted context, plus the **no-monetary-field** invariant, determinism,
+provenance/version stamping, the injected clock, JSON shape, report immutability,
+at-most-one-winner, and injected config/catalogue / `from_settings` mapping).
+
+The **M2.3** additions cover the Device Passport Core — **61** new tests, again
+entirely offline (no images, models or fusion run; only the external schema is read
+from disk; the service tests build the upstream reports by actually running the
+recoverability, component, material, environmental, decision-knowledge and circular
+engines): the **external schema and its loader/validator** (`test_passport_schema.py`
+— the shipped file's invariants (version `1.0.0`, thirteen ordered sections, the
+required section names, object sections carrying fields, the confidence-field range
+contract), aggressive loader validation against hand-written malformed schemas
+(missing file, empty, missing version, missing/empty sections, unknown kind, an
+object section with a null or empty `fields` list, a confidence field absent from
+its section's fields), a full conformant payload validating cleanly, and validator
+rejections (missing section, wrong section kind, missing object field, out-of-range
+and boolean confidence)); the **deterministic builder** (`test_passport_builder.py`
+against hand-built upstream reports — identity/classification/decision/material/
+environmental/fingerprint verbatim composition, the empty-fingerprint section +
+warning, the **arithmetic-mean** overall confidence `(0.9+0.85+0.8+0.75)/4`, the
+unit-interval bound, the content-addressed passport id (prefix + fixed length,
+determinism, changes with the device identity, ignores the timestamp), metadata
+provenance carry-over, the passport-version config fallback, the composed reasoning
+lead line, the de-duplicated warnings union, the reasoning/warnings caps, canonical
+sorted-compact JSON, the **no-monetary-field** invariant and immutability); and the
+end-to-end `build()` (`test_passport_service.py` running the real upstream engines —
+an identifiable laptop passport, **schema re-validation** of the serialized form,
+the default-schema load (thirteen sections), a no-fingerprint passport, version and
+injected-clock stamping, determinism across service instances, a stable passport id
+across instances, the confidence bound, a conflicted context, injected config and
+the `from_settings` mapping, plus the **no-monetary-field** invariant and
+immutability).
+
+The **M2.4** additions cover the Device Passport Validation & Integrity Engine —
+**51** new tests, again entirely offline (no images, models or fusion run; only the
+external rule-set is read from disk; the service tests build a passport by actually
+running the recoverability, component, material, environmental, decision-knowledge,
+circular and passport engines): the **external rule-set and its loader**
+(`test_integrity_rules.py` — the shipped file's invariants (version `1.0.0`,
+thirteen sections, the required section names, `fingerprint_summary` optional,
+object sections carrying fields, the confidence-field declarations), aggressive
+loader validation against hand-written malformed rule-sets (missing file, empty,
+missing version, missing/empty sections, unknown kind, an object section with a null
+or empty `fields` list, a confidence field absent from its section's fields, a
+string section carrying fields, a non-boolean `required`, a duplicate field), JSON
+parity, and the `SectionRule.to_dict` / `SectionKind.values` value objects); the
+**unit-level validator** (`test_integrity_validator.py` against hand-built passports
+and hand-built rule-sets — the happy path (valid, hashed), all three verdict states
+(valid / valid-with-warnings / invalid), every structural-error kind (missing
+required section, wrong kind, non-mapping object, missing object field,
+out-of-range and boolean confidence), the optional-section warning, error ordering
+and de-duplication, the SHA-256 hash (fixed-length hex, determinism, tamper
+detection, present even for an invalid passport) and the unsupported-algorithm
+engine fault); and the end-to-end `validate()` (`test_integrity_service.py` running
+the real upstream engines — a well-formed passport validating as valid with a
+64-hex hash and thirteen checked sections, the default rule-set load, a
+no-fingerprint passport still valid, version and injected-clock stamping,
+determinism and a stable hash across service instances, tamper detection, the
+`sha512` override producing a 128-char digest, the `from_settings` mapping, plus the
+**no-monetary-field** invariant and immutability).
+
+The **M2.5** additions cover the Trust & Provenance Engine — **73** new tests,
+again entirely offline (no images, models or fusion run; only the external
+catalogue is read from disk; the service tests build the four inputs by actually
+running the recoverability, component, material, environmental, decision-knowledge,
+circular, passport and integrity engines): the **external catalogue and its loader**
+(`test_trust_rules.py` — the shipped file's invariants (version `1.0.0`, all four
+axes weighted in canonical order with a positive total, the four levels sorted by
+descending floor with a `0.0` floor), the `level_for` mapping and inclusive floors,
+aggressive loader validation against hand-written malformed catalogues (missing
+file, empty, non-mapping root, missing version, missing/empty weights, unknown/
+missing axis, negative/all-zero/boolean weight, missing/empty levels, unknown/
+duplicate/missing level, no-`0.0`-floor, out-of-range floor, JSON parity,
+unparseable YAML), and the `AxisWeight` / `TrustLevelRule` value objects); the
+**deterministic engine** (`test_trust_engine.py` against hand-built reports and a
+hand-built catalogue — each axis in isolation (identity completeness full/half/
+empty, evidence agreement/conflict/disagreement/undefined, decision mean, integrity
+valid/invalid/warnings-damped), the weighted-average score, weight biasing, the
+invalid→untrusted path, clamping/rounding, the ordered reasoning covering every
+axis and the four warning kinds (low-trust, invalid-integrity, integrity-warnings,
+passport-warnings), and determinism); and the end-to-end `assess()`
+(`test_trust_service.py` against the shipped catalogue running the real upstream
+engines — a well-formed passport scoring into a valid report with four ordered
+axes, the default catalogue load, provenance/version stamping, the injected clock,
+determinism, score stability across service instances, injected config /
+`from_settings` mapping, a raised floor flagging a low-trust warning, plus the
+**no-monetary-field** invariant, immutability and JSON round-tripping).
+
 ## Code quality
 
 ```bash
@@ -1396,6 +2141,15 @@ Each mock is a drop-in behind an abstract interface in
 | `OCREngine` | `MockOCREngine` | **EasyOCR — shipped in M1.6** ✅ (standalone `/ocr/*` engine; `/predict`'s mock stays frozen) |
 | `ConditionAssessor` | `MockConditionAssessor` | OpenCV features + classifier |
 | `MaterialEstimator` | `MockMaterialEstimator` | **Deterministic material engine — shipped in M1.10** ✅ (standalone internal `materials/` engine; `/predict`'s mock stays frozen) |
+| `ConditionAssessor` | `MockConditionAssessor` | OpenCV features + classifier |
+
+> Beyond the `/predict` interfaces above, milestones **M1.11** (Environmental
+> Intelligence Engine), **M2.1** (Decision Knowledge Engine), **M2.2** (Circular
+> Decision Engine), **M2.3** (Device Passport Core), **M2.4** (Device Passport
+> Validation & Integrity Engine) and **M2.5** (Trust & Provenance Engine) ship as
+> standalone internal `environmental/`, `decision/`, `circular/`, `passport/`,
+> `integrity/` and `trust/` libraries consumed directly in-process — they add no
+> interface to `/predict`, whose mock pipeline stays frozen.
 
 ## Roadmap
 
@@ -1454,7 +2208,7 @@ Each mock is a drop-in behind an abstract interface in
   external YAML/JSON catalogue**. Priors + bounded corroboration, a strict
   validating loader, all weights configurable. No new endpoint; `/predict`
   contract unchanged. ✅
-- **M1.10 (this milestone)** — **Material Intelligence Engine**: an internal-only,
+- **M1.10** — **Material Intelligence Engine**: an internal-only,
   deterministic inference engine that consumes the fusion engine's immutable
   `DeviceContext`, the recoverability engine's `RecoverabilityReport` and the
   component engine's `ComponentReport` and produces an explainable `MaterialReport`
@@ -1466,8 +2220,88 @@ Each mock is a drop-in behind an abstract interface in
   device confidence. Source-gated inclusion, nominal mass with independently derived
   confidence, a strict validating loader, all weights configurable. No new endpoint;
   `/predict` contract unchanged. ✅
-- **M1.11** — carbon estimation; the Digital Device Passport; market-value
-  estimation; blockchain-anchored lifecycle records.
+- **M1.11** — **Environmental Intelligence Engine**: an internal-only,
+  deterministic engine that consumes the fusion engine's `DeviceContext`, the
+  recoverability, component and material reports and produces an explainable
+  `EnvironmentalImpactReport` — avoided **carbon** (kg CO₂e), **energy** (MJ) and
+  **water** (L) savings from recovering each material, device-level totals, a
+  single overall confidence, and ordered reasoning + warnings — from
+  **versioned conversion factors stored in an external YAML/JSON catalogue** with
+  a strict validating loader. No new endpoint; `/predict` contract unchanged. ✅
+- **M2.1** — **Decision Knowledge Engine**: an internal-only,
+  deterministic engine that consumes all five upstream artefacts (`DeviceContext`
+  plus the recoverability, component, material and environmental reports) and
+  produces a single, normalized `DecisionKnowledgeReport` — six `[0, 1]` evidence
+  dimensions (repairability, reusability, recycling, hazard, environmental
+  priority, material value), a **separately blended** overall confidence, and
+  ordered reasoning + warnings — by projecting the upstream reports onto eleven
+  canonical signals and blending them with **catalogue-driven weights** from an
+  external YAML/JSON knowledge base behind a strict validating loader. It computes
+  **normalized evidence only** — no recommended action, no economic/monetary
+  valuation, no optimization. No new endpoint; `/predict` contract unchanged. ✅
+- **M2.2** — **Circular Decision Engine**: an internal-only,
+  deterministic rule-evaluation engine that consumes four upstream artefacts
+  (`DeviceContext`, `DecisionKnowledgeReport`, `RecoverabilityReport`,
+  `EnvironmentalImpactReport`) and produces the pipeline's **first actionable
+  recommendation**, a `DecisionReport` — a recommended **end-of-life action**
+  (reusing the recoverability engine's `RecommendedAction`), a triage **priority**,
+  an aggregated **confidence**, the **rules that fired** (explicit precedence,
+  winner flagged) and ordered reasoning + warnings — by projecting the reports onto
+  sixteen canonical signals and matching them against a **precedence-ordered,
+  catalogue-driven** rule set from an external YAML/JSON catalogue behind a strict
+  validating loader. **Deterministic, auditable**, with confidence on a separate
+  axis; **no economic/monetary valuation, no optimization**. No new endpoint;
+  `/predict` contract unchanged. ✅
+- **M2.3** — **Device Passport Core**: an internal-only,
+  deterministic **assembler** that consumes five upstream artefacts
+  (`DeviceContext`, `DecisionReport`, `MaterialReport`, `EnvironmentalImpactReport`,
+  `DeviceFingerprint`) and **composes** them into a single, immutable
+  `DevicePassport` — a content-addressed **passport id**, a stamped **passport
+  version** and **EcoID**, device **identity** and **classification**, condensed
+  **decision / material / environmental / fingerprint** summaries, a transparent
+  **confidence summary** (the overall value the plain **arithmetic mean** of the
+  upstream confidences), provenance **metadata**, and ordered reasoning + warnings.
+  It **composes existing reports — it never re-scores or re-recommends**; the
+  passport's **structure** lives in an external, versioned YAML **schema** behind a
+  **strict validator**, and every passport serializes to **deterministic, canonical
+  JSON**. **No** blockchain, QR, CBOR, digital signatures, ownership history,
+  lifecycle events or persistence. No new endpoint; `/predict` contract unchanged. ✅
+- **M2.4** — **Device Passport Validation & Integrity
+  Engine**: an internal-only, deterministic **checker** that consumes the M2.3
+  `DevicePassport` and produces a single, immutable `PassportIntegrityReport` — a
+  **validation status** (valid / valid-with-warnings / invalid), a deterministic
+  **SHA-256 canonical integrity hash**, the observed **schema** and **passport**
+  versions, ordered **checked sections** (kind / present / valid) and ordered
+  **warnings** + **errors** — by **re-validating** the passport against a
+  **catalogue-driven** validation rule-set from an external YAML/JSON file behind a
+  **strict loader**, then hashing the passport's **canonical serialization** so any
+  later mutation is detectable. The trust boundary is **inverted** from the
+  assembler: a malformed **rule-set** is **raised**, a malformed **passport** is
+  **reported**. It **re-checks and hashes — it never re-scores, re-recommends or
+  mutates the passport**. **No** blockchain, digital signatures, QR, CBOR, ownership
+  history, lifecycle events or persistence. No new endpoint; `/predict` contract
+  unchanged. ✅
+- **M2.5 (this milestone)** — **Trust & Provenance Engine**: an
+  internal-only, deterministic **trust evaluator** that consumes the four upstream
+  artefacts (`DevicePassport`, `PassportIntegrityReport`, `DecisionKnowledgeReport`,
+  `DecisionReport`) and produces a single, immutable `PassportTrustReport` — a
+  normalized **trust score** (`[0, 1]` weighted average), a mapped **trust level**
+  (high / medium / low / untrusted), four transparent sub-axes (**identity
+  confidence**, **evidence consistency**, **decision confidence**, **integrity
+  confidence**) and ordered **reasoning** + **warnings** — by **projecting** the
+  existing confidence and consistency signals its inputs already carry onto the four
+  axes and **blending** them with **catalogue-driven weights** from an external
+  YAML/JSON catalogue behind a **strict loader**, then mapping the score to a level
+  via the catalogue's thresholds. It **grades an existing verdict — it carries no
+  inference and no evidence of its own**; a malformed **catalogue** is **raised**, a
+  low-trust **input** is **reported**. **No** blockchain, smart contracts, digital
+  signatures, QR, wallets, ownership history, marketplace, carbon credits or
+  persistence. No new endpoint; `/predict` contract unchanged. ✅
+- **M2.6+ (future)** — economic valuation on top of the M2.2 recommendation;
+  blockchain-anchored lifecycle records and digital signatures over the M2.3
+  passport, its M2.4 integrity hash and its M2.5 trust report; QR/CBOR passport
+  encodings; ownership history and persistence; marketplace, carbon-credit and
+  fleet-analytics integration.
 
 ---
 

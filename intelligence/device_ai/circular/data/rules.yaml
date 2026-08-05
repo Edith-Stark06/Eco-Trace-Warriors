@@ -1,0 +1,210 @@
+# Circular-decision rule catalogue for the Circular Decision Engine (M2.2).
+#
+# This file is DATA, not code: it holds the versioned policy of *which
+# consolidated evidence triggers which end-of-life recommendation, and in what
+# order of precedence*. It can be reviewed and tuned as triage policy evolves,
+# without touching the engine. A strict loader (circular/rules.py) validates
+# every entry on load and rejects anything malformed — a duplicate id, a
+# duplicate precedence, an unknown signal/operator/action/priority, an
+# out-of-range threshold, a rule with no conditions, or a missing default — so a
+# bad catalogue never silently degrades the engine.
+#
+# The report this drives is an ACTUAL RECOMMENDATION (an action + a priority),
+# NOT a monetary valuation and NOT an optimization. Each rule maps a conjunction
+# of normalized [0, 1] signal conditions onto one recommendation.
+#
+# Precedence (lower wins)
+#   Every rule has a unique integer precedence. The engine fires every rule
+#   whose conditions ALL hold, then the fired rule with the LOWEST precedence
+#   determines the recommendation; the rest are retained on the report as
+#   overridden alternatives. When no rule fires, the required `default` applies.
+#
+# Top-level keys
+#   version   Semantic version string, stamped onto every produced report.
+#   rules     List of rules; each has id, precedence, action, priority, reason,
+#             a non-empty `when` list of conditions, and optional
+#             confidence_factor (in (0, 1]) and warning.
+#   default   Fallback { action, priority, reason } applied when no rule fires.
+#
+# A `when` condition is { signal, operator, threshold }.
+#   operator  one of: gte, lte, gt, lt
+#   threshold a value in [0, 1]
+#
+# Allowed actions:   refurbish, repair, recycle, hazardous_disposal, manual_review
+# Allowed priorities: high, medium, low
+#
+# Allowed signals (projected from the four upstream inputs):
+#   repairability                consolidated decision repairability      [0,1]
+#   reusability                  consolidated decision reusability        [0,1]
+#   recycling                    consolidated decision recycling          [0,1]
+#   hazard_score                 consolidated decision hazard evidence    [0,1]
+#   environmental_priority       consolidated environmental stake         [0,1]
+#   material_value               consolidated recoverable-material worth  [0,1]
+#   decision_confidence          consolidated decision overall confidence [0,1]
+#   hazard_severity              recoverability hazard-level severity      [0,1]
+#   recoverability_confidence    recoverability report confidence          [0,1]
+#   upstream_manual_review       recoverability forced manual review (0/1)
+#   upstream_hazardous_disposal  recoverability forced hazardous disposal (0/1)
+#   circularity_index            environmental circularity index          [0,1]
+#   hazard_reduction             environmental hazard-reduction score      [0,1]
+#   environmental_confidence     environmental report confidence           [0,1]
+#   identity_completeness        fused model/serial/imei/mac presence      [0,1]
+#   conflict                     fused cross-module conflict flag (0/1)
+
+version: "1.0.0"
+
+rules:
+  # --- Hazard first: it gates every other disposition -------------------
+  - id: upstream_forced_hazardous_disposal
+    precedence: 10
+    action: hazardous_disposal
+    priority: high
+    reason: >-
+      The recoverability engine forced hazardous disposal for this device
+      class, so it must be routed to the hazardous-waste stream regardless of
+      its recoverability scores.
+    when:
+      - signal: upstream_hazardous_disposal
+        operator: gte
+        threshold: 1.0
+    warning: >-
+      Hazardous disposal is mandatory; do not route this device to reuse,
+      repair or standard recycling.
+
+  - id: high_hazard_severity
+    precedence: 20
+    action: hazardous_disposal
+    priority: high
+    reason: >-
+      The assessed hazard severity is high, so hazardous handling takes
+      precedence over any recovery pathway.
+    when:
+      - signal: hazard_severity
+        operator: gte
+        threshold: 0.7
+    warning: >-
+      High assessed hazard; confirm hazardous transport and handling before
+      acting.
+
+  # --- Review gates: uncertainty forces a human decision ----------------
+  - id: upstream_forced_manual_review
+    precedence: 30
+    action: manual_review
+    priority: medium
+    reason: >-
+      The recoverability engine forced a manual review (low fused confidence or
+      an unrecognized device type), so the disposition cannot be automated.
+    when:
+      - signal: upstream_manual_review
+        operator: gte
+        threshold: 1.0
+    confidence_factor: 0.85
+    warning: >-
+      A human must confirm this device's disposition before it is routed.
+
+  - id: identity_conflict_review
+    precedence: 40
+    action: manual_review
+    priority: medium
+    reason: >-
+      Fusion reported conflicting cross-module evidence, so the device identity
+      is uncertain and the recommendation should be confirmed by a human.
+    when:
+      - signal: conflict
+        operator: gte
+        threshold: 1.0
+    confidence_factor: 0.85
+    warning: >-
+      Conflicting module evidence was fused; verify the device identity before
+      acting on this recommendation.
+
+  - id: low_confidence_review
+    precedence: 50
+    action: manual_review
+    priority: low
+    reason: >-
+      The consolidated decision confidence is low, so the automated
+      recommendation is not reliable enough to route on its own.
+    when:
+      - signal: decision_confidence
+        operator: lte
+        threshold: 0.35
+    warning: >-
+      Low consolidated confidence; review the evidence before disposition.
+
+  # --- Recovery ladder: reuse, then repair, then recycle ----------------
+  - id: high_value_refurbish
+    precedence: 60
+    action: refurbish
+    priority: high
+    reason: >-
+      The device is highly reusable and carries a large environmental stake, so
+      refurbishing it for a second life yields the greatest circular benefit.
+    when:
+      - signal: reusability
+        operator: gte
+        threshold: 0.65
+      - signal: environmental_priority
+        operator: gte
+        threshold: 0.5
+
+  - id: refurbish
+    precedence: 70
+    action: refurbish
+    priority: medium
+    reason: >-
+      The device is reusable enough to be refurbished for a second life as-is.
+    when:
+      - signal: reusability
+        operator: gte
+        threshold: 0.65
+
+  - id: repair
+    precedence: 80
+    action: repair
+    priority: medium
+    reason: >-
+      The device is repairable enough to be returned to service, though not
+      reusable as-is.
+    when:
+      - signal: repairability
+        operator: gte
+        threshold: 0.55
+
+  - id: high_value_recycle
+    precedence: 90
+    action: recycle
+    priority: high
+    reason: >-
+      The device is recyclable and carries high recoverable-material worth, so
+      routing it to material recovery preserves critical materials.
+    when:
+      - signal: recycling
+        operator: gte
+        threshold: 0.45
+      - signal: material_value
+        operator: gte
+        threshold: 0.6
+
+  - id: recycle
+    precedence: 100
+    action: recycle
+    priority: low
+    reason: >-
+      The device is recyclable but neither reusable nor economically repairable,
+      so material recovery is the best remaining pathway.
+    when:
+      - signal: recycling
+        operator: gte
+        threshold: 0.45
+
+# Applied only when no rule above fires: nothing cleared a recovery threshold and
+# no hazard/review gate matched, so a human should decide rather than the engine
+# guess.
+default:
+  action: manual_review
+  priority: low
+  reason: >-
+    No decision rule matched the consolidated evidence (no recovery threshold
+    was cleared and no hazard or review gate applied), so the device is routed
+    to manual review rather than guessed.

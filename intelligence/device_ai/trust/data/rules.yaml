@@ -1,0 +1,39 @@
+# Trust & Provenance Engine Rule Catalogue (milestone M2.5)
+#
+# This catalogue defines how the four trust sub-axes are blended into a
+# normalized trust score, and how score thresholds map onto the ordered trust
+# levels. It is policy, not logic — the weights and thresholds can be reviewed
+# and tuned without touching the engine itself. The loader validates aggressively
+# and rejects any malformed or incomplete catalogue before the engine sees it.
+
+version: "1.0.0"
+
+# Per-axis blend weights for the trust score's weighted average. The trust score
+# is the sum of (value × weight) across the four axes, divided by the total
+# weight. Every canonical axis must be weighted exactly once; unknown axis names
+# are rejected at load time. The weights are non-negative and must sum to a
+# positive total (so the weighted average is well-defined).
+weights:
+  identity_confidence: 0.30
+  evidence_consistency: 0.25
+  decision_confidence: 0.20
+  integrity_confidence: 0.25
+
+# Trust-level thresholds: a passport whose score meets or exceeds a level's
+# min_score (and is below the next-higher level's floor) maps to that level.
+# Every TrustLevel (high/medium/low/untrusted) must be declared exactly once;
+# unknown level names are rejected. The levels are automatically sorted by
+# descending floor, and one level must have a 0.0 floor so every score in [0, 1]
+# resolves to exactly one level.
+levels:
+  - level: high
+    min_score: 0.75
+
+  - level: medium
+    min_score: 0.50
+
+  - level: low
+    min_score: 0.25
+
+  - level: untrusted
+    min_score: 0.0
