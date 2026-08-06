@@ -578,3 +578,77 @@ class PassportTrustRuleError(PassportTrustError):
 
     code = "PASSPORT_TRUST_RULE_ERROR"
     http_status = HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+# ---------------------------------------------------------------------------
+# Blockchain ledger core errors (milestone M3.1)
+# ---------------------------------------------------------------------------
+
+
+class LedgerError(DeviceAIError):
+    """Base class for blockchain ledger core domain errors.
+
+    Like the device-passport core, the validation & integrity engine and the
+    trust engine it consumes, the ledger core is internal-only (no endpoints),
+    so these errors are surfaced to the orchestrating code as typed exceptions
+    rather than through the HTTP error envelope. They signal an *engine* fault
+    (a malformed config file, an unsupported hash algorithm) — never a chain
+    that merely fails verification, which is reported as ``is_valid=False`` on
+    the produced :class:`~device_ai.ledger.models.Blockchain` instead.
+    """
+
+    code = "LEDGER_ERROR"
+    http_status = HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+class LedgerConfigError(LedgerError):
+    """Raised when the external blockchain-ledger config file cannot be loaded.
+
+    The ledger core reads its hash algorithm, blockchain version and genesis
+    sentinel from an external YAML/JSON file; this error is raised when that
+    file is missing, unparseable, or structurally invalid (not a mapping, a
+    non-string field, an empty hash algorithm, an empty version, or a genesis
+    sentinel that is not a hex string).
+    """
+
+    code = "LEDGER_CONFIG_ERROR"
+    http_status = HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+# ---------------------------------------------------------------------------
+# Device lifecycle ledger engine errors (milestone M3.3)
+# ---------------------------------------------------------------------------
+
+
+class LifecycleError(DeviceAIError):
+    """Base class for device-lifecycle ledger engine domain errors.
+
+    Like the blockchain ledger core it composes with, the device-lifecycle
+    engine is internal-only (no endpoints), so these errors are surfaced to the
+    orchestrating code as typed exceptions rather than through the HTTP error
+    envelope. They signal an *engine* fault — an empty event sequence with no
+    genesis event to anchor on, or an attempt to anchor a lifecycle that failed
+    validation — never a lifecycle that merely violates a transition rule, which
+    is reported as ``is_valid=False`` on the produced
+    :class:`~device_ai.lifecycle.models.LifecycleRecord` instead.
+    """
+
+    code = "LIFECYCLE_ERROR"
+    http_status = HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+class LifecycleRuleError(LifecycleError):
+    """Raised when the external lifecycle transition-rules file cannot be loaded.
+
+    The lifecycle engine reads its state machine — the legal event-type
+    transitions, the initial (genesis) events and the terminal events — from an
+    external YAML/JSON file; this error is raised when that file is missing,
+    unparseable, or structurally invalid (not a mapping, a missing/empty
+    version, a transitions block that does not declare every lifecycle event
+    type exactly once, an unknown event-type name, a duplicate transition
+    target, an empty initial-events list, a terminal event that still declares
+    outgoing transitions, or a non-terminal event with no outgoing transition).
+    """
+
+    code = "LIFECYCLE_RULE_ERROR"
+    http_status = HTTPStatus.UNPROCESSABLE_ENTITY

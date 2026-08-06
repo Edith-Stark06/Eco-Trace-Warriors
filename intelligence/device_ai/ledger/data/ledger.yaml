@@ -1,0 +1,24 @@
+# Blockchain Ledger Core Configuration (milestone M3.1)
+#
+# This file configures the internal, deterministic blockchain ledger. The ledger
+# is a tamper-evident data structure that chains passport records together via
+# cryptographic hashes — it has no consensus, no proof-of-work, no networking and
+# no persistence. This configuration holds only the handful of operational knobs
+# the builder needs; it is loaded by a strict validating loader that rejects any
+# malformed file before the builder sees it.
+
+# Semantic version of this configuration document.
+version: "1.0.0"
+
+# The cryptographic hash algorithm used for block and record integrity anchors.
+# Must be a name recognized by Python's hashlib (e.g. sha256, sha3_256, sha512).
+# SHA-256 offers a strong, collision-resistant, deterministic digest.
+hash_algorithm: "sha256"
+
+# Semantic version stamped onto every produced Blockchain.
+blockchain_version: "1.0.0"
+
+# The sentinel value used as the previous_hash for the genesis block (index 0).
+# Defaults to 64 zero characters (the hex length of a SHA-256 digest), a common
+# blockchain convention marking "no previous block".
+genesis_previous_hash: "0000000000000000000000000000000000000000000000000000000000000000"

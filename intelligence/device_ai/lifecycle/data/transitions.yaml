@@ -1,0 +1,59 @@
+# Device Lifecycle Ledger Engine Transition Rules (milestone M3.3)
+#
+# This file defines the state machine the lifecycle engine validates a device's
+# event history against: which event-type transitions are legal, which events may
+# begin a lifecycle, and (implicitly, via an empty successor set) which events end
+# one. It is policy, not logic — the transitions can be reviewed and tuned without
+# touching the engine itself. The loader validates aggressively and rejects any
+# malformed or incomplete rule set before the engine sees it.
+
+version: "1.0.0"
+
+# The event types a lifecycle may legally begin with. A device enters the ledger
+# when its passport is first minted (registered). Must be a non-empty list of
+# known event types.
+initial_events:
+  - registered
+
+# The legal successor set for every event type. Each key is an event type and its
+# value is the ordered list of event types that may immediately follow it. Every
+# event type must appear exactly once; an empty list marks a terminal event (a
+# lifecycle end). Self-transitions and duplicates are rejected at load time.
+transitions:
+  # A freshly registered device goes into service, or straight to collection.
+  registered:
+    - in_use
+    - collected
+
+  # An in-use device is eventually collected for end-of-life handling.
+  in_use:
+    - collected
+
+  # A collected device moves toward assessment, possibly via transit.
+  collected:
+    - in_transit
+    - assessed
+
+  # In transit between facilities, a device arrives to be assessed or collected
+  # again at the next hop.
+  in_transit:
+    - assessed
+    - collected
+
+  # Once assessed (graded), a device is refurbished, recycled, or disposed of.
+  assessed:
+    - refurbished
+    - recycled
+    - disposed
+
+  # A refurbished device re-enters service or is recycled later in its second life.
+  refurbished:
+    - in_use
+    - recycled
+
+  # Recycling recovers materials; the residual is disposed of.
+  recycled:
+    - disposed
+
+  # Disposal is the terminal state — no event may follow it.
+  disposed: []

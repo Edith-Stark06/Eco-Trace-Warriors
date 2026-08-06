@@ -5,24 +5,46 @@
 > materials, carbon score) behind a clean REST API.
 
 **Module:** `intelligence/device_ai`
-**Status:** Milestone **M2.5** — **Trust & Provenance Engine**: an internal-only
-**deterministic trust evaluator** that consumes the four upstream artefacts the
+**Status:** Milestone **M3.3** — **Device Lifecycle Ledger Engine**: an
+internal-only, **deterministic device-history builder** that models the complete
+lifecycle of a device as an ordered sequence of immutable **`LifecycleEvent`**
+objects (registered → in use → collected → … → disposed), validates that ordering
+against an **external, versioned state machine** (a `LifecycleRuleSet` loaded from
+YAML/JSON behind a strict validating loader), and composes the result into an
+immutable **`LifecycleRecord`**. It sits *above* the ledger core — where the
+ledger chains passport *verdicts*, this engine chains a device's *history* — and
+ties into the ledger **through the M3.2 backend abstraction**, depending only on
+an injected **`LedgerService`** to confirm, list and load anchored passport chains
+without touching a concrete store. An illegal event ordering is *reported* as
+`is_valid == False`; only a malformed **rules file** *raises* (a typed
+`LifecycleRuleError`). It carries **no inference and no evidence of its own** and
+implements **no** Hyperledger Fabric, chaincode, smart contracts, REST endpoints,
+networking, GPS tracking, event streaming, QR scanning, wallets or digital
+signatures. Built on **M3.2** — the **Ledger Backend Abstraction Layer**: a
+technology-agnostic **`LedgerBackend`** protocol and three deterministic,
+in-memory implementations (**`MemoryLedgerBackend`**, **`MockFabricLedgerBackend`**,
+**`MockEthereumLedgerBackend`**) that let the **`LedgerService`** persist chains
+through an *injected* backend, depending only on the protocol — so the ledger
+technology can change without touching the domain or service. Every write returns
+a **`LedgerReceipt`** carrying the chain id and backend-specific metadata. Built
+on **M3.1** — the **Blockchain Ledger Core**, an internal-only, **deterministic
+immutable-ledger builder** that consumes the three upstream artefacts the passport
 pipeline already produced (the immutable `DevicePassport` from M2.3, its
-`PassportIntegrityReport` from M2.4, the normalized `DecisionKnowledgeReport` from
-M2.1 and the actionable `DecisionReport` from M2.2) and emits a single, immutable
-**`PassportTrustReport`** — a normalized **trust score** (`[0, 1]` weighted
-average), a mapped **trust level** (high / medium / low / untrusted), four
-transparent sub-axes (**identity confidence**, **evidence consistency**, **decision
-confidence** and **integrity confidence**), **ordered reasoning** and **ordered
-warnings**. It answers one question: *how much can this document be trusted as a
-faithful representation of the device?* Unlike M2.3 (which *assembles*) and M2.4
-(which *checks*), the trust engine carries **no inference and no evidence
-collection of its own** — it reads the existing confidence and consistency signals
-its four inputs already carry, blends them into a weighted-average score via an
-**external, versioned catalogue**, and maps that score to a level. It ships **no
-new endpoint**, and no blockchain, smart contracts, digital signatures, QR codes,
-wallets, ownership history, marketplace or carbon credits, and leaves the
-`/predict` API contract **unchanged and backward-compatible**. (Built on M2.4 — a
+`PassportIntegrityReport` from M2.4 and its `PassportTrustReport` from M2.5) and
+emits a tamper-evident **`Blockchain`** — an ordered chain of **`Block`** objects,
+each carrying one **`LedgerRecord`** payload and one **`BlockHeader`** that links
+it to the previous block via a deterministic SHA-256 hash. It answers one
+question: *how do we record this passport in an append-only, independently
+verifiable audit trail?* Unlike M2.3 (which *assembles* the passport), M2.4 (which
+*checks* it) and M2.5 (which *scores* it), the ledger core carries **no inference
+and no evidence collection of its own** — it snapshots the three reports' key
+outcomes into a record, hashes it, and chains it by embedding the SHA-256 digest
+of the previous block's header (or a genesis sentinel for the first block). It
+ships **no new endpoint**, and **no** Hyperledger Fabric, Ethereum, consensus,
+proof-of-work, smart contracts, chaincode, wallets, certificates, digital
+signatures, networking or persistence (the M3.2 mocks emit technology-*shaped*
+metadata only), and leaves the `/predict` API contract **unchanged and
+backward-compatible**. (Built on M2.5 — a trust & provenance engine; M2.4 — a
 passport validation & integrity engine; M2.3 — a device passport core; M2.2 — a
 circular decision engine; M2.1 — a decision-knowledge engine; M1.11 — an
 environmental impact engine; M1.10 — a material inference engine; M1.9 — a
@@ -56,13 +78,16 @@ fingerprint engine; and M1.4 — a real Ultralytics YOLO detector.)
 19. [Device Passport Core (M2.3)](#device-passport-core-m23)
 20. [Device Passport Validation & Integrity Engine (M2.4)](#device-passport-validation--integrity-engine-m24)
 21. [Trust & Provenance Engine (M2.5)](#trust--provenance-engine-m25)
-22. [Configuration](#configuration)
-23. [Running locally](#running-locally)
-24. [Running with Docker](#running-with-docker)
-25. [Testing](#testing)
-26. [Code quality](#code-quality)
-27. [Future integration points](#future-integration-points)
-28. [Roadmap](#roadmap)
+22. [Blockchain Ledger Core (M3.1)](#blockchain-ledger-core-m31)
+23. [Ledger Backend Abstraction Layer (M3.2)](#ledger-backend-abstraction-layer-m32)
+24. [Device Lifecycle Ledger Engine (M3.3)](#device-lifecycle-ledger-engine-m33)
+25. [Configuration](#configuration)
+26. [Running locally](#running-locally)
+27. [Running with Docker](#running-with-docker)
+28. [Testing](#testing)
+29. [Code quality](#code-quality)
+30. [Future integration points](#future-integration-points)
+31. [Roadmap](#roadmap)
 
 ---
 
@@ -1708,6 +1733,248 @@ deployment is unchanged) and one new error type, `PASSPORT_TRUST_ERROR` (a typed
 subclass, 422, on a malformed catalogue), surfaced to orchestrating code rather
 than through the HTTP envelope.
 
+## Blockchain Ledger Core (M3.1)
+
+M3.1 is the **first component of milestone M3** — an internal-only,
+**deterministic immutable-ledger builder**. It consumes the three upstream
+artefacts the passport pipeline already produced — the immutable `DevicePassport`
+(M2.3), its `PassportIntegrityReport` (M2.4) and its `PassportTrustReport` (M2.5)
+— and emits a tamper-evident **`Blockchain`**: an ordered chain of **`Block`**
+objects, each carrying one **`LedgerRecord`** payload and one **`BlockHeader`**
+that links it to the previous block via a deterministic SHA-256 hash. It answers
+one question: *how do we record this passport in an append-only, independently
+verifiable audit trail?* Unlike M2.3 (which *assembles* the passport), M2.4
+(which *checks* it) and M2.5 (which *scores* it), the ledger core carries **no
+inference and no evidence collection of its own**: it snapshots the three
+reports' key outcomes into a record, hashes it, and chains it. Full details live
+in [`docs/engineering/ledger.md`](docs/engineering/ledger.md).
+
+**The chain is built by local hash-chaining alone** — **no** Hyperledger Fabric,
+Ethereum, consensus, proof-of-work, smart contracts, wallets, digital signatures,
+REST endpoints, networking or persistence. Each `LedgerRecord` snapshots the
+passport id + version (M2.3), the canonical integrity hash + engine version
+(M2.4), and the trust score + level + engine version (M2.5). Each block's
+`previous_hash` is the SHA-256 digest of the prior block's header (or a genesis
+sentinel of 64 zeros for the first block) and its `record_hash` is the SHA-256
+digest of its own record, so any later mutation of a block's contents or the
+chain's order breaks the recomputed hashes and is detected on verification. The
+future Hyperledger Fabric backend in
+[`docs/engineering/09_BLOCKCHAIN.md`](../../docs/engineering/09_BLOCKCHAIN.md) is a
+**separate** concern that can later anchor these hashes.
+
+The four sub-artefacts are frozen, slotted value objects, each with its own
+`to_dict()` and canonical `to_json()`:
+
+| Artefact | Meaning |
+|---|---|
+| **`LedgerRecord`** | The block payload — a snapshot of the passport id/version, integrity hash/engine version, and trust score/level/engine version. |
+| **`BlockHeader`** | The chain link — `index`, optional `timestamp`, `previous_hash` (prior header's SHA-256 or the genesis sentinel), `record_hash` (this record's SHA-256). |
+| **`Block`** | One immutable block: its `header` + single `record`, with `index`/`previous_hash`/`record_hash` convenience properties delegating to the header. |
+| **`Blockchain`** | The ordered chain: `blocks`, `version`, `is_valid`, `block_count`, optional `created_at`. |
+
+`verify_chain` recomputes the chain from scratch and checks **sequential indices**
+(from `0`), **previous-hash linking** (the genesis sentinel, then each prior
+header's recomputed hash) and **record-hash matching** (each block's own record).
+A malformed **config** or an unsupported hash algorithm (engine faults) *raise*
+(`LedgerConfigError` / `LedgerError`); a mutated block or re-ordered chain is
+never raised — it is *reported* as `is_valid == False`, because detecting that
+tampering is exactly the job the core exists to do.
+
+Component map (mirrors the M2.4/M2.5 layering):
+
+| Component | Location | Responsibility |
+|---|---|---|
+| **Domain models** | `ledger/models.py` | Frozen `LedgerRecord`, `BlockHeader`, `Block`, `Blockchain`, each with its own `to_dict()`; canonical `to_json()`. |
+| **Config loader** | `ledger/config.py` | Frozen `LedgerConfig`; strict `load_config()` validating hash algorithm / versions / hex genesis; **raises** `LedgerConfigError` on a malformed file. |
+| **Builder** | `ledger/builder.py` | `LedgerBuilder`: `create_record` → `create_block` → `create_chain` / `append_block` / `verify_chain`; deterministic SHA-256 hashing and previous-hash linking. |
+| **Orchestration** | `ledger/service.py` | `genesis` / `append` / `append_record` / `build_chain` / `verify` → immutable chain; config loaded once; version/clock stamping; all collaborators injected. |
+
+### Internal-only — no endpoints
+
+Like every engine before it, the ledger core is a **library**, not a service
+surface. A future orchestrator chains it directly onto the M2.3/M2.4/M2.5 output
+in-process — it consumes the **three** artefacts the pipeline already produced:
+
+```python
+from device_ai.passport import PassportService
+from device_ai.integrity import IntegrityService
+from device_ai.trust import TrustService
+from device_ai.ledger import LedgerService
+
+passport = PassportService().build(
+    context, decision, materials, environmental, fingerprint
+)                                                                    # M2.3
+integrity = IntegrityService().validate(passport)                    # M2.4
+trust = TrustService().assess(passport, integrity, knowledge, decision)  # M2.5
+
+ledger = LedgerService()                                             # M3.1
+chain = ledger.genesis(passport, integrity, trust)          # first device (index 0)
+chain = ledger.append(chain, passport2, integrity2, trust2) # subsequent devices
+chain.is_valid                # structural validation status
+ledger.verify(chain)          # re-verify on demand (tamper detection)
+chain.blocks                  # ordered Block tuple (header + record)
+chain.to_dict()               # fully serializable ledger
+chain.to_json()               # deterministic, canonical JSON
+```
+
+M3.1 adds **no** environment variables — the ledger's policy (hash algorithm,
+versions, genesis sentinel) lives entirely in the external, versioned
+`ledger/data/ledger.yaml` behind a strict loader, and `from_settings()` returns
+the default config. It adds one new error type, `LEDGER_ERROR` (a typed
+`DeviceAIError`, 500, for an unsupported hash algorithm) with the loader raising
+the `LEDGER_CONFIG_ERROR` subclass (422) on a malformed config — surfaced to
+orchestrating code rather than through the HTTP envelope. The `/predict` contract
+is **unchanged**.
+
+## Ledger Backend Abstraction Layer (M3.2)
+
+M3.2 is the **second component of milestone M3**. M3.1 produces a `Blockchain` as
+an in-memory value but never says **where a chain lives** or **how it is
+written**; M3.2 answers that without committing to a technology. It introduces a
+technology-agnostic **`LedgerBackend`** protocol and makes the `LedgerService`
+persist chains through an *injected* backend, depending only on that protocol — so
+the ledger technology (in-memory, a mock Fabric channel, a mock Ethereum
+contract, or a future *real* anchor) can change without touching the domain or the
+service. Full details live in
+[`docs/engineering/ledger.md`](docs/engineering/ledger.md).
+
+**Still no real ledger technology** — **no** Hyperledger Fabric SDK, chaincode,
+certificates, consensus, Ethereum RPC, smart contracts, wallets, digital
+signatures, networking or persistence. All three backends are **deterministic**
+and **in-memory**; the two mocks emit technology-*shaped* metadata only, to prove
+the abstraction. The service owns chain **identity** — it derives a stable,
+content-addressed `chain_id` from the chain's genesis block and passes it to the
+backend — so each backend is a pure key-value store and never re-implements
+identity logic.
+
+The `LedgerBackend` protocol (`@runtime_checkable`) is four methods, and every
+`write` returns an immutable **`LedgerReceipt`** (`chain_id`, `backend`,
+`metadata`):
+
+| Method | Contract |
+|---|---|
+| `write(chain_id, chain) → LedgerReceipt` | Persist `chain` under `chain_id` (last-write-wins); return a receipt with the id and backend metadata. |
+| `read(chain_id) → Blockchain \| None` | The stored chain, or **`None`** for an unknown id — never raises on a miss. |
+| `exists(chain_id) → bool` | Whether a chain is stored under `chain_id`. |
+| `list_ids() → list[str]` | Every stored chain id (order not guaranteed). |
+
+Three implementations ship — the service drives all three identically, differing
+**only** in the metadata each records:
+
+| Backend | `name` | Receipt metadata |
+|---|---|---|
+| **`MemoryLedgerBackend`** | `memory` | `block_count`. The default (constructed when none is injected) and the one used throughout the test suite. |
+| **`MockFabricLedgerBackend`** | `mock_fabric` | Fabric-*shaped*: a monotonic `tx_id` (`fabric-tx-00000001`, …), `channel` (`ecotrace-ledger`, injectable), `block_number`. |
+| **`MockEthereumLedgerBackend`** | `mock_ethereum` | Ethereum-*shaped*: a content-addressed `tx_hash` (`"0x" + SHA-256(chain.to_json())`), monotonic `nonce`/`block_number`, `gas_used` (`21000`, injectable), `contract` (`0xEcoTraceLedger`, injectable). |
+
+The `LedgerService` gains a persistence surface built entirely on the protocol,
+with the backend injected exactly like the config, builder and clock before it
+(`LedgerService(*, config=None, builder=None, backend=None, clock=_utc_now)`,
+defaulting to `MemoryLedgerBackend()`):
+
+```python
+from device_ai.ledger import LedgerService, MockFabricLedgerBackend
+
+# Default in-memory backend — nothing to wire — or inject any conforming backend.
+ledger = LedgerService(backend=MockFabricLedgerBackend())   # M3.2
+
+chain = ledger.genesis(passport, integrity, trust)          # M3.1 (unchanged)
+receipt = ledger.save(chain)          # → LedgerReceipt(chain_id, backend, metadata)
+ledger.exists(receipt.chain_id)       # True
+ledger.load(receipt.chain_id) == chain  # round-trips
+ledger.list_ids()                     # [receipt.chain_id]
+```
+
+M3.2 is **purely additive**: the `backend=` parameter is keyword-only with a
+default, so every existing construction and every M3.1 method behaves exactly as
+before, and all 60 M3.1 tests pass unchanged. It adds **no** new environment
+variables, **no** new error types and leaves the `/predict` contract **unchanged**.
+
+## Device Lifecycle Ledger Engine (M3.3)
+
+M3.3 is the **third component of milestone M3** and the first to model a device's
+*complete history* rather than a single passport verdict. It is an internal-only,
+**deterministic device-history builder**: a caller records an ordered sequence of
+immutable **`LifecycleEvent`** objects (each a `LifecycleEventType` plus an
+optional actor, location, note and timestamp), the engine validates that ordering
+against an **external, versioned state machine**, and composes it into an
+immutable **`LifecycleRecord`**. Full details live in
+[`docs/engineering/lifecycle.md`](docs/engineering/lifecycle.md).
+
+The state machine is **policy, not logic** — it lives in
+`lifecycle/data/transitions.yaml` behind a strict loader (`load_rules`) that
+validates aggressively and fails with a typed **`LifecycleRuleError`** on any
+structural problem (an unknown or missing event type, a self-transition or
+duplicate target, no terminal event, an empty/unknown initial event, …). The
+shipped rules encode an e-waste lifecycle: `registered` is the sole initial
+event, `disposed` the sole terminal one, with a fork at `assessed`
+(refurbish / recycle / dispose) and a legal loop (`refurbished → in_use`):
+
+| Event type | Legal successors |
+|---|---|
+| `registered` (initial) | `in_use`, `collected` |
+| `in_use` | `collected` |
+| `collected` | `in_transit`, `assessed` |
+| `in_transit` | `assessed`, `collected` |
+| `assessed` | `refurbished`, `recycled`, `disposed` |
+| `refurbished` | `in_use`, `recycled` |
+| `recycled` | `disposed` |
+| `disposed` (terminal) | — |
+
+The stateless **`LifecycleEngine`** is three methods — `validate(events, rules)`
+(is the ordering a legal path?), `build_record(...)` (validate then snapshot into
+a `LifecycleRecord` with the verdict, event count, current state and provenance)
+and `can_append(record, event, rules)` (the incremental predicate). An illegal
+ordering — a non-initial genesis event, an undeclared transition, or an event
+after a terminal one — is **reported** as `is_valid == False`, never raised; only
+a malformed rules file (an engine fault) raises. The injectable
+**`LifecycleService`** façade loads the rules once at construction and stamps
+engine/rules versions (and an optional timestamp) onto every record; like every
+service before it, every collaborator is constructor-injected with a sensible
+default:
+
+```python
+from device_ai.lifecycle import LifecycleEventType, LifecycleService
+
+E = LifecycleEventType
+svc = LifecycleService()                             # loads the shipped rules once
+
+record = svc.build("ET-PP-0000000001", [
+    svc.event(E.REGISTERED, actor="mint"),
+    svc.event(E.IN_USE),
+    svc.event(E.COLLECTED, location="Bengaluru hub"),
+    svc.event(E.ASSESSED),
+    svc.event(E.RECYCLED),
+    svc.event(E.DISPOSED),
+])
+assert record.is_valid and record.current_state == "disposed"
+
+svc.append(record, svc.event(E.IN_USE))              # is_valid == False (after terminal)
+```
+
+**Ledger integration through the M3.2 backend abstraction.** The engine models a
+device's *history*; the M3.1 ledger anchors a passport's *verdicts*. The service
+correlates the two **through the injected `LedgerService`** — never a concrete
+store — so it works identically across every backend:
+
+```python
+from device_ai.ledger import LedgerService, MockFabricLedgerBackend
+from device_ai.lifecycle import LifecycleService
+
+svc = LifecycleService(ledger=LedgerService(backend=MockFabricLedgerBackend()))
+svc.is_anchored(chain_id)      # → bool   (delegates to ledger.exists)
+svc.anchored_chain(chain_id)   # → Blockchain | None  (delegates to ledger.load)
+svc.anchored_ids()             # → list[str]  (delegates to ledger.list_ids)
+```
+
+M3.3 is **purely additive** and **internal-only**: it adds the `lifecycle/`
+package and two typed exceptions (`LifecycleError`, `LifecycleRuleError`) and one
+env-driven knob (`LIFECYCLE_RULES_PATH`, defaulting to the packaged rules), and
+touches **no** upstream engine, **no** router and **no** part of the `/predict`
+contract. It implements **no** Hyperledger Fabric, chaincode, smart contracts,
+REST endpoints, networking, GPS tracking, event streaming, QR scanning, wallets
+or digital signatures — those are out of scope for M3.3.
+
 ## Configuration
 
 All configuration is via environment variables (parsed once at startup).
@@ -1761,6 +2028,7 @@ Copy `.env.example` to `.env` to override. Defaults live in
 | `INTEGRITY_HASH_ALGORITHM` | `sha256` | Hash algorithm for the canonical passport integrity hash; an unsupported value raises `PassportIntegrityError` (M2.4) |
 | `TRUST_RULES_PATH` | `trust/data/rules.yaml` | Locator of the external trust catalogue (YAML/JSON), resolved against the `device_ai` package root when relative; holds the per-axis blend weights and the level thresholds behind a strict loader (M2.5) |
 | `TRUST_MIN_SCORE` | `0.4` | Trust score at or below which a low-trust warning is flagged on the report; never changes the mapped trust level (M2.5) |
+| `LIFECYCLE_RULES_PATH` | `lifecycle/data/transitions.yaml` | Locator of the external lifecycle transition-rules state machine (YAML/JSON), resolved against the `device_ai` package root when relative; the strict loader validates it (every event type declared once, ≥1 terminal event, known initial events) before the engine runs (M3.3) |
 | `MAX_IMAGES` | `6` | Max images per request |
 | `MAX_FILE_SIZE` | `10485760` | Max bytes per image (10 MB) |
 | `LOG_LEVEL` | `INFO` | Log verbosity |
@@ -2105,6 +2373,74 @@ determinism, score stability across service instances, injected config /
 `from_settings` mapping, a raised floor flagging a low-trust warning, plus the
 **no-monetary-field** invariant, immutability and JSON round-tripping).
 
+The **M3.1** additions cover the Blockchain Ledger Core — **60** new tests, again
+entirely offline (no images, models or fusion run; only the external config is
+read from disk; the service tests build the three inputs by actually running the
+recoverability, component, material, environmental, decision-knowledge, circular,
+passport, integrity and trust engines): the **four frozen value objects**
+(`test_ledger_models.py` — fixed `to_dict` key order and values, `created_at`/
+`timestamp` `None` serialization, canonical sorted-compact `to_json`, the `Block`
+convenience properties delegating to the header, the nested `Block`/`Blockchain`
+serialization, immutability and the **no networking/consensus/monetary surface**
+invariant); the **external config and its loader** (`test_ledger_config.py` — the
+shipped file loading and validating, defaults matching the module constants,
+relative/absolute path resolution, custom YAML/JSON loading with default fallback,
+aggressive loader validation against hand-written malformed files (missing file,
+empty, non-mapping root, missing version, unsupported/empty hash algorithm,
+non-hex genesis) and the `from_settings` mapping); the **deterministic builder**
+(`test_ledger_builder.py` against hand-built reports — record/block/chain
+creation, the genesis sentinel, previous-hash linking (the computed hash of the
+prior header), deterministic record hashing, distinct records hashing differently,
+empty/single/three-block chain validation, tamper detection (wrong index, mutated
+record, broken previous link), the unsupported-algorithm engine fault, a
+`sha3_256` alternate, and determinism (byte-identical chains, canonical JSON));
+and the end-to-end service (`test_ledger_service.py` against the shipped config
+running the real upstream engines — record creation from real artefacts,
+`genesis`/`append`/`append_record`/`build_chain`, intact-chain verification and
+tamper detection, determinism across service instances, the injected clock, the
+default config load, plus the **no networking/consensus/monetary surface**
+invariant and immutability).
+
+The **M3.2** additions cover the Ledger Backend Abstraction Layer — **29** new
+tests, again entirely offline (a `_sample_artifacts` helper hand-crafts the
+passport/integrity/trust inputs, so no upstream engines run). A single **shared
+backend contract** (`test_ledger_backend.py`) runs against **all three**
+implementations via a parametrized fixture — `@runtime_checkable` protocol
+satisfaction (`isinstance`), write/read round-trip, `read` returning `None` for an
+unknown id, `exists`, `list_ids`, overwrite (last-write-wins) and the receipt's
+`chain_id`/`backend` — alongside per-backend metadata checks (memory `block_count`;
+Fabric `tx_id`/`channel`/`block_number` and its monotonic transaction counter;
+Ethereum `tx_hash`/`nonce`/`gas_used`/`contract`, the advancing nonce and the
+**deterministic** content-addressed `tx_hash`) and the service-level
+`save`/`load`/`exists`/`list_ids` driving an injected backend. Together M3.1 + M3.2
+add **89** ledger tests, all passing.
+
+The **M3.3** additions cover the Device Lifecycle Ledger Engine — **68** new
+tests across four modules, all offline (no images, models or upstream engines run;
+only the external rules file is read from disk): the **three value objects**
+(`test_lifecycle_models.py` — the event-type wire values and `values()` ordering,
+fixed `to_dict` key order and values, `occurred_at`/`created_at` `None`
+serialization, canonical sorted-compact `to_json`, the `is_empty`/`event_types`
+properties, immutability and the **no GPS/networking/streaming surface**
+invariant); the **strict rules loader** (`test_lifecycle_rules.py` — the shipped
+rules loading and validating, every event type declared once in canonical order,
+the `registered` initial and `disposed` terminal events, expected transitions, a
+JSON round-trip, ~18 malformed-rules rejection cases (missing/empty/non-mapping,
+missing version/transitions/initial_events, incomplete transitions, unknown
+key/target, self-transition, duplicate target, no terminal event,
+empty/duplicate/unknown initial events, non-list targets), the typed error's
+`code`/`path` and the `LifecycleTransition` helpers); the **deterministic engine**
+(`test_lifecycle_engine.py` against a hand-built rule set — `validate` over
+empty/genesis/non-initial/linear/illegal/post-terminal/refurbish-loop sequences,
+`build_record` provenance stamping and invalid-path-is-data, and `can_append`);
+and the **injectable service** (`test_lifecycle_service.py` against the shipped
+rules — config resolution, default rule-loading and injected ledger, the
+clock-stamped/clockless `event` factory, `build`/`append`/`can_append`, clockless
+determinism, append not mutating the original, and **ledger integration through
+the backend abstraction** — reporting absence for unknown ids and seeing a chain
+anchored via a `MockEthereumLedgerBackend`). Together M3.1 + M3.2 + M3.3 add
+**157** ledger/lifecycle tests, all passing.
+
 ## Code quality
 
 ```bash
@@ -2146,10 +2482,11 @@ Each mock is a drop-in behind an abstract interface in
 > Beyond the `/predict` interfaces above, milestones **M1.11** (Environmental
 > Intelligence Engine), **M2.1** (Decision Knowledge Engine), **M2.2** (Circular
 > Decision Engine), **M2.3** (Device Passport Core), **M2.4** (Device Passport
-> Validation & Integrity Engine) and **M2.5** (Trust & Provenance Engine) ship as
-> standalone internal `environmental/`, `decision/`, `circular/`, `passport/`,
-> `integrity/` and `trust/` libraries consumed directly in-process — they add no
-> interface to `/predict`, whose mock pipeline stays frozen.
+> Validation & Integrity Engine), **M2.5** (Trust & Provenance Engine) and
+> **M3.1** (Blockchain Ledger Core) ship as standalone internal `environmental/`,
+> `decision/`, `circular/`, `passport/`, `integrity/`, `trust/` and `ledger/`
+> libraries consumed directly in-process — they add no interface to `/predict`,
+> whose mock pipeline stays frozen.
 
 ## Roadmap
 
@@ -2281,7 +2618,7 @@ Each mock is a drop-in behind an abstract interface in
   mutates the passport**. **No** blockchain, digital signatures, QR, CBOR, ownership
   history, lifecycle events or persistence. No new endpoint; `/predict` contract
   unchanged. ✅
-- **M2.5 (this milestone)** — **Trust & Provenance Engine**: an
+- **M2.5** — **Trust & Provenance Engine**: an
   internal-only, deterministic **trust evaluator** that consumes the four upstream
   artefacts (`DevicePassport`, `PassportIntegrityReport`, `DecisionKnowledgeReport`,
   `DecisionReport`) and produces a single, immutable `PassportTrustReport` — a
@@ -2297,11 +2634,72 @@ Each mock is a drop-in behind an abstract interface in
   low-trust **input** is **reported**. **No** blockchain, smart contracts, digital
   signatures, QR, wallets, ownership history, marketplace, carbon credits or
   persistence. No new endpoint; `/predict` contract unchanged. ✅
-- **M2.6+ (future)** — economic valuation on top of the M2.2 recommendation;
-  blockchain-anchored lifecycle records and digital signatures over the M2.3
-  passport, its M2.4 integrity hash and its M2.5 trust report; QR/CBOR passport
-  encodings; ownership history and persistence; marketplace, carbon-credit and
-  fleet-analytics integration.
+- **M3.1** — **Blockchain Ledger Core**: an
+  internal-only, deterministic **immutable-ledger builder** that consumes the
+  three upstream artefacts (`DevicePassport`, `PassportIntegrityReport`,
+  `PassportTrustReport`) and produces a tamper-evident **`Blockchain`** — an
+  ordered chain of **`Block`** objects, each carrying one **`LedgerRecord`**
+  payload and one **`BlockHeader`** that links it to the previous block via
+  deterministic SHA-256 hash-chaining. Each record snapshots the passport id +
+  version (M2.3), the canonical integrity hash + engine version (M2.4), and the
+  trust score + level + engine version (M2.5). Each block's `previous_hash` is the
+  SHA-256 digest of the prior block's header (or a genesis sentinel of 64 zeros
+  for the first block) and its `record_hash` is the SHA-256 digest of its own
+  record, so any later mutation of a block's contents or the chain's order breaks
+  the recomputed hashes and is detected on verification. The core's operational
+  knobs (hash algorithm, versions, genesis sentinel) live in an **external,
+  versioned** YAML/JSON file behind a **strict loader** that fails with a typed
+  `LedgerConfigError` on any structural problem. A malformed **config** or an
+  unsupported hash algorithm (engine faults) *raise*; a mutated block or re-ordered
+  chain is *reported* as `is_valid == False`. **The chain is built by local
+  hash-chaining alone** — **no** Hyperledger Fabric, Ethereum, consensus,
+  proof-of-work, smart contracts, wallets, digital signatures, REST endpoints,
+  networking or persistence. The future Hyperledger Fabric backend in
+  `docs/engineering/09_BLOCKCHAIN.md` is a **separate** concern that can later
+  anchor these hashes. No new endpoint; `/predict` contract unchanged. ✅
+- **M3.2 (this milestone)** — **Ledger Backend Abstraction Layer**: a
+  technology-agnostic **`LedgerBackend`** protocol (`@runtime_checkable`;
+  `write`/`read`/`exists`/`list_ids`) and three deterministic, in-memory
+  implementations — **`MemoryLedgerBackend`**, **`MockFabricLedgerBackend`**,
+  **`MockEthereumLedgerBackend`** — that let the **`LedgerService`** persist chains
+  through an *injected* backend, depending only on the protocol, so the ledger
+  technology can change without touching the domain or service. The service owns
+  chain **identity** (a content-addressed `chain_id` derived from the genesis
+  block), so each backend is a pure key-value store; every `write` returns a
+  **`LedgerReceipt`** (`chain_id`, `backend`, `metadata`) with the two mocks
+  emitting Fabric-/Ethereum-*shaped* metadata (transaction id/channel/block number;
+  content-addressed tx hash/nonce/gas/contract). **Still no** real Fabric SDK,
+  chaincode, certificates, consensus, Ethereum RPC, smart contracts, wallets,
+  digital signatures, networking or persistence — the mocks prove the abstraction,
+  not wire behaviour. Purely additive over M3.1 (`backend=` is keyword-only with a
+  `MemoryLedgerBackend` default); no new env vars, no new error types; no new
+  endpoint; `/predict` contract unchanged. ✅
+- **M3.3 (this milestone)** — **Device Lifecycle Ledger Engine**: an
+  internal-only, deterministic **device-history builder** that models the complete
+  lifecycle of a device as an ordered sequence of immutable **`LifecycleEvent`**
+  objects and validates that ordering against an **external, versioned state
+  machine** (`LifecycleRuleSet`, loaded from `lifecycle/data/transitions.yaml`
+  behind a strict loader), composing the result into an immutable
+  **`LifecycleRecord`** (device id, ordered events, validity verdict, current
+  state, provenance). The shipped rules encode an e-waste lifecycle — `registered`
+  initial, `disposed` terminal, a fork at `assessed` (refurbish/recycle/dispose)
+  and a legal `refurbished → in_use` loop. The stateless **`LifecycleEngine`**
+  (`validate` / `build_record` / `can_append`) reports an illegal ordering as
+  `is_valid == False` — never raised; only a malformed **rules file** *raises* a
+  typed **`LifecycleRuleError`**. The injectable **`LifecycleService`** stamps
+  provenance and correlates a history with an anchored passport chain **through the
+  injected `LedgerService`** (`is_anchored`/`anchored_chain`/`anchored_ids`),
+  depending only on the M3.2 `LedgerBackend` abstraction — never a concrete store.
+  **No** Hyperledger Fabric, chaincode, smart contracts, REST endpoints,
+  networking, GPS tracking, event streaming, QR scanning, wallets or digital
+  signatures. Purely additive; one new env knob (`LIFECYCLE_RULES_PATH`); no new
+  endpoint; `/predict` contract unchanged. ✅
+- **M3.4+ (future)** — economic valuation on top of the M2.2 recommendation;
+  a *real* Hyperledger Fabric / Ethereum backend behind the M3.2 `LedgerBackend`
+  protocol, anchoring the M3.1 ledger chain and the M3.3 lifecycle history;
+  digital signatures over the M2.3 passport, its M2.4 integrity hash and its M2.5
+  trust report; QR/CBOR passport encodings; ownership history and persistence;
+  marketplace, carbon-credit and fleet-analytics integration.
 
 ---
 

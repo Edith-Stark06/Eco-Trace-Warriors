@@ -590,6 +590,18 @@ class Settings(BaseSettings):
         ),
     )
 
+    # --- Device lifecycle ledger engine (milestone M3.3) -------------------
+    lifecycle_rules_path: str = Field(
+        default="lifecycle/data/transitions.yaml",
+        description=(
+            "Lifecycle transition-rules locator. Resolved relative to the "
+            "device_ai package root when not absolute. Names the external YAML "
+            "(or JSON) file that holds the versioned lifecycle state machine — "
+            "the legal event-type transitions and the initial (genesis) events "
+            "the lifecycle engine validates a device's event history against."
+        ),
+    )
+
     @field_validator("min_images")
     @classmethod
     def _min_not_greater_than_max(cls, value: int, info: ValidationInfo) -> int:
