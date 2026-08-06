@@ -1,0 +1,66 @@
+# Device-detection training configuration — YOLO11m variant (Sprint P4.1.1).
+#
+# The "medium" size: the largest YOLO11 backbone targeted by this project. It
+# is the accuracy-first / server-side reference variant — used to establish an
+# upper bound on achievable mAP for the 19-class device taxonomy and as the
+# teacher/oracle against which the nano and small variants are compared. It is
+# not intended for on-device inference.
+#
+# This file composes the shared `training` and `optimizer` groups (exactly like
+# `detector.yaml`) and overrides only what this variant needs. The light-weight
+# PyYAML loader in `training/config.py` understands the Hydra-style `defaults`
+# list, so it works today without hydra-core installed.
+#
+# Selecting the base weights (no interface change):
+#   The base checkpoint is *not* a config field — the platform reads it from
+#   `settings.detector_weights` (env `DETECTOR_WEIGHTS`, resolved relative to
+#   MODEL_DIR). Point this variant at the medium backbone at run time:
+#
+#     DETECTOR_WEIGHTS=yolo11m.pt \
+#     python -m device_ai.train \
+#         --config device_ai/training/configs/detector_yolo11m.yaml \
+#         --data-config <exported-dataset>/data.yaml \
+#         --run
+#
+#   The `--data-config` path is the `data.yaml` produced by the dataset
+#   pipeline's YOLO export (see docs/ai/device_detection_dataset.md).
+#
+#   The medium backbone is the most memory-hungry of the three; on a
+#   constrained GPU reduce the batch size at run time without editing this file:
+#       --batch-size 8
+#
+# This sprint prepares training only — it neither downloads weights nor trains.
+
+defaults:
+  - training
+  - optimizer
+
+# Logical model name; also the key used by the JSON-backed model registry.
+# Variant-specific so the three sizes register as distinct model lineages.
+model_name: device-detector-yolo11m
+
+# Trainer registry key: resolves to `training.detector.YOLOTrainer`, which
+# delegates the training loop to Ultralytics while reusing the platform's
+# artifact/registry/tracker/export surface.
+trainer: yolo
+
+# Experiment grouping label for the tracker.
+experiment_name: die-detection
+
+# Variant-specific training-loop overrides.
+training:
+  # Square input resolution fed to YOLO (imgsz).
+  image_size: 640
+  # Stop after this many epochs without a mAP improvement (Ultralytics patience).
+  early_stopping_patience: 20
+  # Detector artifact version stamped onto the produced model record.
+  model_version: 1.0.0
+
+# Free-form run metadata. `base_weights` is provenance only — the effective
+# checkpoint is whatever `DETECTOR_WEIGHTS` resolves to at run time (above).
+tags:
+  milestone: P4.1.1
+  stage: detector
+  component: device-detection
+  variant: yolo11m
+  base_weights: yolo11m.pt

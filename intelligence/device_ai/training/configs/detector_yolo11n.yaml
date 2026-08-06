@@ -1,0 +1,61 @@
+# Device-detection training configuration — YOLO11n variant (Sprint P4.1.1).
+#
+# The "nano" size: the smallest, fastest YOLO11 backbone. It is the default
+# production target for the Device Intelligence Engine because it is the only
+# variant that comfortably meets the edge/mobile latency budget while retaining
+# usable accuracy on the 19-class device taxonomy.
+#
+# This file composes the shared `training` and `optimizer` groups (exactly like
+# `detector.yaml`) and overrides only what this variant needs. The light-weight
+# PyYAML loader in `training/config.py` understands the Hydra-style `defaults`
+# list, so it works today without hydra-core installed.
+#
+# Selecting the base weights (no interface change):
+#   The base checkpoint is *not* a config field — the platform reads it from
+#   `settings.detector_weights` (env `DETECTOR_WEIGHTS`, resolved relative to
+#   MODEL_DIR). Point this variant at the nano backbone at run time:
+#
+#     DETECTOR_WEIGHTS=yolo11n.pt \
+#     python -m device_ai.train \
+#         --config device_ai/training/configs/detector_yolo11n.yaml \
+#         --data-config <exported-dataset>/data.yaml \
+#         --run
+#
+#   The `--data-config` path is the `data.yaml` produced by the dataset
+#   pipeline's YOLO export (see docs/ai/device_detection_dataset.md).
+#
+# This sprint prepares training only — it neither downloads weights nor trains.
+
+defaults:
+  - training
+  - optimizer
+
+# Logical model name; also the key used by the JSON-backed model registry.
+# Variant-specific so the three sizes register as distinct model lineages.
+model_name: device-detector-yolo11n
+
+# Trainer registry key: resolves to `training.detector.YOLOTrainer`, which
+# delegates the training loop to Ultralytics while reusing the platform's
+# artifact/registry/tracker/export surface.
+trainer: yolo
+
+# Experiment grouping label for the tracker.
+experiment_name: die-detection
+
+# Variant-specific training-loop overrides.
+training:
+  # Square input resolution fed to YOLO (imgsz).
+  image_size: 640
+  # Stop after this many epochs without a mAP improvement (Ultralytics patience).
+  early_stopping_patience: 20
+  # Detector artifact version stamped onto the produced model record.
+  model_version: 1.0.0
+
+# Free-form run metadata. `base_weights` is provenance only — the effective
+# checkpoint is whatever `DETECTOR_WEIGHTS` resolves to at run time (above).
+tags:
+  milestone: P4.1.1
+  stage: detector
+  component: device-detection
+  variant: yolo11n
+  base_weights: yolo11n.pt
