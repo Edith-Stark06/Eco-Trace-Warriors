@@ -23,6 +23,12 @@ package before resolving a trainer so the registration is always in effect.
 
 from __future__ import annotations
 
+from .benchmark import benchmark_inference, measure_model_size
+from .data_manifest import (
+    build_data_yaml,
+    build_training_manifest,
+    write_split_lists,
+)
 from .evaluation import (
     DetectionEvaluator,
     extract_confusion,
@@ -34,7 +40,12 @@ from .yolo_trainer import YOLOTrainer
 __all__ = [
     "DetectionEvaluator",
     "YOLOTrainer",
+    "benchmark_inference",
+    "build_data_yaml",
+    "build_training_manifest",
     "extract_confusion",
     "extract_metrics",
+    "measure_model_size",
     "names_to_list",
+    "write_split_lists",
 ]
