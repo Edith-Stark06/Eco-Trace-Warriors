@@ -1,0 +1,15 @@
+# TEMPLATE — annotation_errors.csv (P4.1.6 PART 4). One row per annotation defect found in review/QA.
+# Example rows only (ids prefixed EXAMPLE-); no real images. Remove them before use.
+# error_id is referenced from annotation_review.csv (error_ref) so a review row links to its defect.
+# error_type: wrong_class | missed_positive | loose_box | clipped_box | duplicate_box | missing_label | orphan_label | wrong_flag | out_of_range | non_positive_size | out_of_taxonomy
+# source: first_review | second_review | qa_audit | annotation_validator  (who/what found it).
+# expected_class / actual_class: canonical taxonomy names (code-owned); empty when not class-related.
+# expected_class / actual_class must be one of the 19 classes (laptop..battery) or empty.
+# severity: blocking | major | minor  — blocking + major must be fixed before batch acceptance.
+# status: open | fixed | rejected | waived  — resolution state of the defect.
+error_id,found_date,batch_id,image_id,error_type,source,expected_class,actual_class,severity,status,resolution,notes
+EXAMPLE-ER0001,2026-08-07,EXAMPLE-B001,crt_monitor_partnerX_000004.png,missed_positive,first_review,crt_monitor,,blocking,fixed,box added on re-annotation,second crt_monitor at frame left was unboxed
+EXAMPLE-ER0002,2026-08-07,EXAMPLE-B002,cable_web_000033.webp,wrong_class,qa_audit,cable,power_supply,major,fixed,relabelled to cable,bare lead had no converter body (guidelines section 14)
+EXAMPLE-ER0003,2026-08-07,EXAMPLE-B002,mouse_field_000009.jpg,loose_box,qa_audit,mouse,,minor,fixed,box tightened,about 15px slack on all edges
+EXAMPLE-ER0004,2026-08-07,EXAMPLE-B002,tablet_field_000014.jpg,duplicate_box,second_review,tablet,,major,fixed,removed duplicate line,one tablet carried two overlapping boxes
+EXAMPLE-ER0005,2026-08-07,EXAMPLE-B004,television_web_000002.jpg,out_of_taxonomy,qa_audit,,,minor,rejected,image excluded,depicted device was a projector (not in taxonomy)

@@ -1,0 +1,12 @@
+# TEMPLATE — qa_report.csv (P4.1.6 PART 4). One row per batch QA run (quality_assurance.md section 11).
+# Example rows only (ids prefixed EXAMPLE-); no real images. Remove them before use.
+# Columns map 1:1 to the eight QA metrics in quality_assurance.md section 2 + the run verdict.
+# *_pct columns are percentages, no % sign. Count columns are integers.
+# class_consistency_ok: y | n  (confusable pairs resolved by one rule dataset-wide).
+# qa_verdict: qa_pass | qa_fail  — qa_pass requires every metric at threshold (or a logged waiver).
+# report_path points at the archived ImageValidator/AnnotationValidator/statistics JSON for this batch.
+# waiver_reason: empty unless a coverage item (missing_classes) was explicitly waived by the QA lead.
+batch_id,qa_date,qa_lead,sample_boxes,bbox_accuracy_pct,missing_labels,duplicate_labels,incorrect_classes,class_consistency_ok,image_completeness_pct,annotation_completeness_pct,orphan_labels,review_agreement_pct,review_sample_size,qa_verdict,report_path,waiver_reason,notes
+EXAMPLE-B001,2026-08-07,QA001,120,97,0,0,0,y,100,100,0,96,24,qa_pass,datasets/quality/EXAMPLE-B001/,,all thresholds met
+EXAMPLE-B002,2026-08-07,QA001,140,92,2,1,3,n,100,98,0,91,28,qa_fail,datasets/quality/EXAMPLE-B002/,,returned to re-annotation: power_supply vs cable confusion
+EXAMPLE-B003,2026-08-07,QA001,110,96,0,0,0,y,100,100,0,97,22,qa_pass,datasets/quality/EXAMPLE-B003/,server class waived: source images unavailable this cycle,coverage waiver logged
