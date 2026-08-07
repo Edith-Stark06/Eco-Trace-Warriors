@@ -1,0 +1,32 @@
+{
+  "duplicates": {
+    "groups": 1,
+    "images": 1
+  },
+  "format_counts": {
+    "PNG": 5
+  },
+  "mode_counts": {
+    "RGB": 5
+  },
+  "quality": {
+    "blurry": 1,
+    "bright": 1,
+    "corrupted": 0,
+    "dark": 0,
+    "low_resolution": 0,
+    "mean_blur_score": 10061.75,
+    "mean_brightness": 152.09
+  },
+  "resolution": {
+    "max_height": 1080,
+    "max_width": 1920,
+    "mean_height": 705.6,
+    "mean_width": 1036.8,
+    "min_height": 480,
+    "min_width": 640
+  },
+  "total_images": 5,
+  "total_size_bytes": 274114,
+  "total_size_mb": 0.261
+}

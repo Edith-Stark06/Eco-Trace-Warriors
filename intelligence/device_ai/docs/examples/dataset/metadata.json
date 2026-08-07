@@ -1,0 +1,141 @@
+{
+  "generated_at": "2026-01-15T14:30:00+00:00",
+  "image_count": 5,
+  "images": [
+    {
+      "filename": "laptop_field_000001.png",
+      "format": "PNG",
+      "hashes": {
+        "ahash": "aaaaaaaaaaaaaaaa",
+        "dhash": "5a5a5a5a5a5a5a5a",
+        "phash": "ff55155515550555",
+        "sha256": "94e6072172724b1ac7d0f7458d125f09ce6b1877f40135171030c719da298792"
+      },
+      "height": 600,
+      "megapixels": 0.48,
+      "mode": "RGB",
+      "quality": {
+        "blur_score": 17906.22,
+        "brightness": 134.51,
+        "is_blurry": false,
+        "is_bright": false,
+        "is_corrupted": false,
+        "is_dark": false,
+        "is_low_resolution": false,
+        "issues": []
+      },
+      "relative_path": "laptop_field_000001.png",
+      "size_bytes": 6195,
+      "width": 800
+    },
+    {
+      "filename": "laptop_field_000001_copy.png",
+      "format": "PNG",
+      "hashes": {
+        "ahash": "aaaaaaaaaaaaaaaa",
+        "dhash": "5a5a5a5a5a5a5a5a",
+        "phash": "ff55155515550555",
+        "sha256": "94e6072172724b1ac7d0f7458d125f09ce6b1877f40135171030c719da298792"
+      },
+      "height": 600,
+      "megapixels": 0.48,
+      "mode": "RGB",
+      "quality": {
+        "blur_score": 17906.22,
+        "brightness": 134.51,
+        "is_blurry": false,
+        "is_bright": false,
+        "is_corrupted": false,
+        "is_dark": false,
+        "is_low_resolution": false,
+        "issues": []
+      },
+      "relative_path": "laptop_field_000001_copy.png",
+      "size_bytes": 6195,
+      "width": 800
+    },
+    {
+      "filename": "monitor_ewaste_000017.png",
+      "format": "PNG",
+      "hashes": {
+        "ahash": "ce8c9819317367e6",
+        "dhash": "1c38317363c7ce8c",
+        "phash": "8e5af0a502a5fba5",
+        "sha256": "a8c6731fef98567209210c26d42b71efbf632a7c4c38240c29376285617d6fb1"
+      },
+      "height": 768,
+      "megapixels": 0.786,
+      "mode": "RGB",
+      "quality": {
+        "blur_score": 2.35,
+        "brightness": 149.5,
+        "is_blurry": true,
+        "is_bright": false,
+        "is_corrupted": false,
+        "is_dark": false,
+        "is_low_resolution": false,
+        "issues": [
+          "blurry"
+        ]
+      },
+      "relative_path": "monitor_ewaste_000017.png",
+      "size_bytes": 87506,
+      "width": 1024
+    },
+    {
+      "filename": "smartphone_lab_000042.png",
+      "format": "PNG",
+      "hashes": {
+        "ahash": "2d964ba5d24ba5d2",
+        "dhash": "49249249249349b6",
+        "phash": "d623de2376037683",
+        "sha256": "0858fce7009ac5605adf50da464c874201b7156d58df82678769f3222a3f7b3d"
+      },
+      "height": 480,
+      "megapixels": 0.307,
+      "mode": "RGB",
+      "quality": {
+        "blur_score": 14189.04,
+        "brightness": 104.5,
+        "is_blurry": false,
+        "is_bright": false,
+        "is_corrupted": false,
+        "is_dark": false,
+        "is_low_resolution": false,
+        "issues": []
+      },
+      "relative_path": "smartphone_lab_000042.png",
+      "size_bytes": 50662,
+      "width": 640
+    },
+    {
+      "filename": "tablet_donor_000003.png",
+      "format": "PNG",
+      "hashes": {
+        "ahash": "8ce7319cc7319cc7",
+        "dhash": "388ee3388ee3380c",
+        "phash": "b05ab05af55e4ea4",
+        "sha256": "9f8d60063b8a1327c5e0d73aad974ba5d1af359cb94702313fd93dec25676b94"
+      },
+      "height": 1080,
+      "megapixels": 2.074,
+      "mode": "RGB",
+      "quality": {
+        "blur_score": 304.94,
+        "brightness": 237.45,
+        "is_blurry": false,
+        "is_bright": true,
+        "is_corrupted": false,
+        "is_dark": false,
+        "is_low_resolution": false,
+        "issues": [
+          "bright"
+        ]
+      },
+      "relative_path": "tablet_donor_000003.png",
+      "size_bytes": 123556,
+      "width": 1920
+    }
+  ],
+  "source": "docs/examples/dataset (synthetic)"
+}
