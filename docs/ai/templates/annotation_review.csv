@@ -1,0 +1,16 @@
+# TEMPLATE — annotation_review.csv (P4.1.6 PART 4). One row per review event.
+# Example rows only (ids prefixed EXAMPLE-); no real images. Remove them before use.
+# Append-only: never edit a prior row; a correction/conflict/escalation is a NEW row (annotation_review_manual.md section 8).
+# review_stage: first | second | conflict | escalation
+# reviewer_id must differ from the annotator; second reviewer differs from first (separation of duties).
+# *_ok columns: y | n | na  (na when the stage does not assess that criterion).
+# image_id is the filename join key; leave empty for batch-level events (second-review agreement, escalation).
+# sample_pct / agreement_pct: set on second-review rows (percent, no % sign); empty otherwise.
+# disposition: pass | needs_fix | accepted | rejected | resolved | escalated
+# error_ref: matching error_id in annotation_errors.csv, or empty when there is no logged defect.
+review_id,review_date,batch_id,image_id,review_stage,reviewer_id,class_ok,completeness_ok,box_tightness_ok,flags_ok,duplicate_ok,sample_pct,agreement_pct,disposition,error_count,error_ref,notes
+EXAMPLE-AR0001,2026-08-07,EXAMPLE-B001,laptop_field_000001.jpg,first,REV001,y,y,y,y,y,,,pass,0,,clean tight boxes
+EXAMPLE-AR0002,2026-08-07,EXAMPLE-B001,crt_monitor_partnerX_000004.png,first,REV001,y,n,y,y,y,,,needs_fix,1,EXAMPLE-ER0001,missed a second crt_monitor in frame
+EXAMPLE-AR0003,2026-08-07,EXAMPLE-B001,,second,REV002,na,na,na,na,na,5,96,accepted,0,,audit of first review met 95pct agreement
+EXAMPLE-AR0004,2026-08-07,EXAMPLE-B001,monitor_web_000021.jpg,conflict,QA001,y,na,na,na,na,,,resolved,0,,QA lead ruled monitor not television per guidelines section 14
+EXAMPLE-AR0005,2026-08-07,EXAMPLE-B002,,escalation,QA001,na,na,na,na,na,,,escalated,0,,guideline gap on power_supply vs cable sent to dataset lead
