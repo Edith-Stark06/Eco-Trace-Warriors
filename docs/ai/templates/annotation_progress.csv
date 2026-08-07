@@ -1,0 +1,23 @@
+# TEMPLATE — annotation_progress.csv (P4.1.4 PART 7). One row per taxonomy class.
+# Placeholder values only; no real images. Update during Stage 3 (annotate).
+# status: not_started | in_progress | complete. difficult_count tracks flagged hard images.
+class_id,class_name,min_target,recommended_target,ideal_target,collected,annotated,difficult_count,negative_count,status,owner,notes
+0,laptop,300,600,1000,0,0,0,0,not_started,,
+1,smartphone,300,600,1000,0,0,0,0,not_started,,
+2,tablet,200,400,700,0,0,0,0,not_started,,
+3,desktop,200,400,700,0,0,0,0,not_started,,
+4,server,150,300,500,0,0,0,0,not_started,,under-served: self-collect + synthetic
+5,monitor,250,500,800,0,0,0,0,not_started,,
+6,crt_monitor,150,300,500,0,0,0,0,not_started,,under-served + hazardous
+7,television,250,500,800,0,0,0,0,not_started,,
+8,printer,200,400,700,0,0,0,0,not_started,,
+9,keyboard,200,400,700,0,0,0,0,not_started,,
+10,mouse,200,400,700,0,0,0,0,not_started,,
+11,router,200,400,700,0,0,0,0,not_started,,
+12,power_supply,200,400,700,0,0,0,0,not_started,,under-served: self-collect
+13,cable,200,400,700,0,0,0,0,not_started,,under-served: self-collect
+14,camera,200,400,700,0,0,0,0,not_started,,
+15,game_console,150,300,500,0,0,0,0,not_started,,under-served: community + self-collect
+16,smartwatch,200,400,700,0,0,0,0,not_started,,
+17,headphones,200,400,700,0,0,0,0,not_started,,
+18,battery,200,400,700,0,0,0,0,not_started,,under-served + hazardous

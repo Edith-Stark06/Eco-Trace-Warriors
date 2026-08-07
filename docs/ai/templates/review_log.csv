@@ -1,0 +1,9 @@
+# TEMPLATE — review_log.csv (P4.1.4 PART 7). One row per review/QA event.
+# Placeholder rows only; no real images. Fill during Stage 2 (Gate A) and Stage 4 (Gate B).
+# gate: A_image_quality | B_annotation_quality
+# review_type: structural | semantic | qa_audit | balance | provenance
+# outcome: pass | fail | waived
+review_id,review_date,batch_id,gate,review_type,reviewer,sample_size,sample_pct,agreement_pct,issues_found,outcome,followup_action,notes
+EXAMPLE-R0001,2026-01-02,EXAMPLE-0001,A_image_quality,structural,data_engineer,480,100,,3,pass,excluded 3 corrupt,ImageValidator report archived
+EXAMPLE-R0002,2026-01-05,EXAMPLE-0001,B_annotation_quality,qa_audit,qa_lead,24,5,96,2,pass,,>=95% agreement met
+EXAMPLE-R0003,2026-01-05,EXAMPLE-0002,B_annotation_quality,semantic,reviewer,120,100,,7,fail,returned to annotator,loose boxes on crt_monitor
