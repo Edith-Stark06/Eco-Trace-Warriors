@@ -1,0 +1,5 @@
+.venv/
+OIDv4_ToolKit/
+staging/
+__pycache__/
+*.pyc

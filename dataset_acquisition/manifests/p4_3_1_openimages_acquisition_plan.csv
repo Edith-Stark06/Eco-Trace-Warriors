@@ -1,0 +1,32 @@
+# P4.3.1 Open Images V7 -> EcoTrace acquisition PLAN (declarative input, hand-authored).
+# One row per taxonomy class (0-18); class_id/ecotrace_class are code-owned
+# (components/data/components.yaml via dataset/taxonomy.py) - do NOT reorder/rename.
+# mapping_status: MAPPED  = a single unambiguous Open Images V7 boxable class exists.
+#                 UNMAPPED = no safe OID box source; BLOCKED from canonical staging
+#                            (open_images_class is empty; the class is never downloaded).
+# source is "Open Images V7" for MAPPED rows only. Do NOT guess ambiguous classes.
+# source_license records what is known WITHOUT claiming redistribution rights:
+#   OID image licences are per-image Flickr licences (VARY; must be verified per image);
+#   OID box annotations are CC-BY-4.0 (Google). UNMAPPED rows have UNKNOWN licence.
+# planned_* mirror the per-class targets in docs/ai/templates/collection_progress.csv.
+# This PLAN fabricates no acquisition results; realised counts live in the STATUS csv.
+class_id,ecotrace_class,open_images_class,mapping_status,source,source_license,planned_min,planned_recommended,planned_ideal,notes
+0,laptop,Laptop,MAPPED,Open Images V7,images=per-image-Flickr(VARY-verify); annotations=CC-BY-4.0(Google),150,300,500,completed single-class pilot (P4.2.x); staging openimages_laptop_v1 + canonical_v1
+1,smartphone,Mobile phone,MAPPED,Open Images V7,images=per-image-Flickr(VARY-verify); annotations=CC-BY-4.0(Google),150,300,500,
+2,tablet,Tablet computer,MAPPED,Open Images V7,images=per-image-Flickr(VARY-verify); annotations=CC-BY-4.0(Google),150,300,500,
+3,desktop,,UNMAPPED,,UNKNOWN,150,300,500,no boxable OID "Desktop computer"/"Computer" class; BLOCKED
+4,server,,UNMAPPED,,UNKNOWN,150,300,500,under-served; no OID box source; BLOCKED
+5,monitor,Computer monitor,MAPPED,Open Images V7,images=per-image-Flickr(VARY-verify); annotations=CC-BY-4.0(Google),150,300,500,
+6,crt_monitor,,UNMAPPED,,UNKNOWN,150,300,500,under-served; indistinguishable from OID "Computer monitor"; BLOCKED
+7,television,Television,MAPPED,Open Images V7,images=per-image-Flickr(VARY-verify); annotations=CC-BY-4.0(Google),150,300,500,
+8,printer,Printer,MAPPED,Open Images V7,images=per-image-Flickr(VARY-verify); annotations=CC-BY-4.0(Google),150,300,500,
+9,keyboard,Computer keyboard,MAPPED,Open Images V7,images=per-image-Flickr(VARY-verify); annotations=CC-BY-4.0(Google),150,300,500,
+10,mouse,Computer mouse,MAPPED,Open Images V7,images=per-image-Flickr(VARY-verify); annotations=CC-BY-4.0(Google),150,300,500,
+11,router,,UNMAPPED,,UNKNOWN,150,300,500,no boxable OID Router/Modem class; BLOCKED
+12,power_supply,,UNMAPPED,,UNKNOWN,150,300,500,under-served; OID "Power plugs and sockets" != PSU; BLOCKED
+13,cable,,UNMAPPED,,UNKNOWN,150,300,500,under-served; no OID box source; BLOCKED
+14,camera,Camera,MAPPED,Open Images V7,images=per-image-Flickr(VARY-verify); annotations=CC-BY-4.0(Google),150,300,500,
+15,game_console,,UNMAPPED,,UNKNOWN,150,300,500,under-served; no OID box source; BLOCKED
+16,smartwatch,,UNMAPPED,,UNKNOWN,150,300,500,OID "Watch" merges analog+smart = AMBIGUOUS; BLOCKED
+17,headphones,Headphones,MAPPED,Open Images V7,images=per-image-Flickr(VARY-verify); annotations=CC-BY-4.0(Google),150,300,500,
+18,battery,,UNMAPPED,,UNKNOWN,150,300,500,under-served; no OID box source; BLOCKED
