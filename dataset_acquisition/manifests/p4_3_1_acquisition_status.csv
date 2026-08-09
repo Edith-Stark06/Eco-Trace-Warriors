@@ -1,0 +1,32 @@
+# P4.3.1 acquisition STATUS (machine-updated by scripts/acquire_openimages_multiclass.py).
+# One row per taxonomy class (0-18). EVERY count column is derived from real files /
+# real tool reports on disk - NEVER hand-fabricated. A class that has not been run
+# stays state=NOT_STARTED with all counts 0.
+# state lifecycle (kept strictly separated; QA stays PENDING this sprint):
+#   NOT_STARTED -> DOWNLOADED -> CONVERTED -> VALIDATED -> QA_PENDING
+#                -> QA_ACCEPTED | QA_REJECTED   (QA_* set ONLY by human review)
+#   BLOCKED_UNMAPPED = class has no safe Open Images mapping (never downloaded).
+# Only QA_ACCEPTED images may ever become Dataset v1.0 candidates. Dataset v1.0 is NOT released.
+# requested = --limit asked; downloaded = image files pulled; valid_images/valid_annotations
+# from Gate A / Gate B reports; duplicates from DuplicateDetector; conversion_errors from
+# conversion_errors.json; qa_pending/qa_accepted/qa_rejected from the review manifest.
+class_id,ecotrace_class,mapping_status,state,requested,downloaded,converted,valid_images,valid_annotations,duplicates,conversion_errors,qa_pending,qa_accepted,qa_rejected,staging_dir,last_updated,provenance_note
+0,laptop,MAPPED,QA_PENDING,21,21,21,20,20,0,0,7,0,0,dataset_acquisition/staging/openimages_laptop_canonical_v1,2026-08-09,completed pilot (P4.2.x); counts from that pilot's own reports - see its remediation_manifest.json
+1,smartphone,MAPPED,QA_PENDING,20,6,6,6,6,0,0,6,0,0,dataset_acquisition/staging/openimages_smartphone_v1,2026-08-09,bounded real pilot (P4.3.1) --limit 20; OID "Mobile phone" returned 6 images; all converted+validated; counts from that run's own reports
+2,tablet,MAPPED,NOT_STARTED,0,0,0,0,0,0,0,0,0,0,,,
+3,desktop,UNMAPPED,BLOCKED_UNMAPPED,0,0,0,0,0,0,0,0,0,0,,,no safe Open Images mapping
+4,server,UNMAPPED,BLOCKED_UNMAPPED,0,0,0,0,0,0,0,0,0,0,,,no safe Open Images mapping
+5,monitor,MAPPED,NOT_STARTED,0,0,0,0,0,0,0,0,0,0,,,
+6,crt_monitor,UNMAPPED,BLOCKED_UNMAPPED,0,0,0,0,0,0,0,0,0,0,,,no safe Open Images mapping
+7,television,MAPPED,NOT_STARTED,0,0,0,0,0,0,0,0,0,0,,,
+8,printer,MAPPED,NOT_STARTED,0,0,0,0,0,0,0,0,0,0,,,
+9,keyboard,MAPPED,NOT_STARTED,0,0,0,0,0,0,0,0,0,0,,,
+10,mouse,MAPPED,NOT_STARTED,0,0,0,0,0,0,0,0,0,0,,,
+11,router,UNMAPPED,BLOCKED_UNMAPPED,0,0,0,0,0,0,0,0,0,0,,,no safe Open Images mapping
+12,power_supply,UNMAPPED,BLOCKED_UNMAPPED,0,0,0,0,0,0,0,0,0,0,,,no safe Open Images mapping
+13,cable,UNMAPPED,BLOCKED_UNMAPPED,0,0,0,0,0,0,0,0,0,0,,,no safe Open Images mapping
+14,camera,MAPPED,NOT_STARTED,0,0,0,0,0,0,0,0,0,0,,,
+15,game_console,UNMAPPED,BLOCKED_UNMAPPED,0,0,0,0,0,0,0,0,0,0,,,no safe Open Images mapping
+16,smartwatch,UNMAPPED,BLOCKED_UNMAPPED,0,0,0,0,0,0,0,0,0,0,,,ambiguous OID "Watch"
+17,headphones,MAPPED,NOT_STARTED,0,0,0,0,0,0,0,0,0,0,,,
+18,battery,UNMAPPED,BLOCKED_UNMAPPED,0,0,0,0,0,0,0,0,0,0,,,no safe Open Images mapping
