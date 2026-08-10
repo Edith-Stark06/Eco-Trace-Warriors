@@ -3,10 +3,7 @@ OIDv4_ToolKit/
 staging/
 __pycache__/
 *.pyc
-<<<<<<< HEAD
 
 # Temporary review scratch dirs and timestamped backups (never commit)
 review/tmp_*/
 review/**/*.backup_*.json
-=======
->>>>>>> 8dfb780 (feat(ai): add multiclass dataset acquisition workflow)
