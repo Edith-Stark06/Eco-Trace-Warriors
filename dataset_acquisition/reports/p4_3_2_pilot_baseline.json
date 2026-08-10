@@ -1,0 +1,21 @@
+{
+  "note": "Pre-acquisition fingerprints of the three protected pilot staging dirs, captured before the P4.3.2 multi-class expansion batch. file_count and total_bytes are the documented P4.2.x / P4.3.1 pilot baselines; the P4.3.2 protection check compares live fingerprints against these to prove the pilots were not modified.",
+  "sprint": "P4.3.2",
+  "pilot_protection": {
+    "openimages_laptop_v1": {
+      "exists": true,
+      "file_count": 72,
+      "total_bytes": 10525045
+    },
+    "openimages_laptop_canonical_v1": {
+      "exists": true,
+      "file_count": 47,
+      "total_bytes": 6110063
+    },
+    "openimages_smartphone_v1": {
+      "exists": true,
+      "file_count": 15,
+      "total_bytes": 1003504
+    }
+  }
+}
