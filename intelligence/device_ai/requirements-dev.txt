@@ -10,3 +10,10 @@ isort==5.13.2
 ruff==0.8.6
 mypy==1.14.1
 types-PyYAML==6.0.12.20240917    # type stubs for PyYAML (M1.3)
+
+# Dataset-acquisition adapter tests (P4.3.3) exercise the chunked, low-memory
+# Open Images bbox scan in scripts/acquire_openimages_lowmem.py, which streams
+# the annotation CSV via pandas.read_csv(chunksize=...). pandas is an
+# acquisition-tooling dependency (it also lives in dataset_acquisition/.venv),
+# pinned here to the same version so the test suite can import the adapter.
+pandas==3.0.5

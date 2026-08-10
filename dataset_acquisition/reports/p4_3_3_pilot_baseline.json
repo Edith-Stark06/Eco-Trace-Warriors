@@ -1,0 +1,37 @@
+{
+  "note": "Pre-acquisition fingerprints captured before the P4.3.3 printer recovery, of the three protected P4.2.x/P4.3.1 pilots plus the two P4.3.2 staged classes (tablet, monitor). The P4.3.3 protection check compares live fingerprints against these to prove none were modified by the printer acquisition. newest_mtime is retained for reference; the unchanged verdict is derived from file_count + total_bytes only.",
+  "sprint": "P4.3.3",
+  "captured_stage": "before",
+  "pilot_protection": {
+    "openimages_laptop_v1": {
+      "exists": true,
+      "file_count": 72,
+      "total_bytes": 10525045,
+      "newest_mtime": 1786215228.854
+    },
+    "openimages_laptop_canonical_v1": {
+      "exists": true,
+      "file_count": 47,
+      "total_bytes": 6110063,
+      "newest_mtime": 1786226672.759
+    },
+    "openimages_smartphone_v1": {
+      "exists": true,
+      "file_count": 15,
+      "total_bytes": 1003504,
+      "newest_mtime": 1786303320.771
+    },
+    "openimages_tablet_v1": {
+      "exists": true,
+      "file_count": 305,
+      "total_bytes": 42838399,
+      "newest_mtime": 1786310205.722
+    },
+    "openimages_monitor_v1": {
+      "exists": true,
+      "file_count": 302,
+      "total_bytes": 44514158,
+      "newest_mtime": 1786310217.127
+    }
+  }
+}

@@ -1,0 +1,222 @@
+{
+  "report": "P4.3.3 Printer Acquisition Recovery & Low-Memory Open Images Ingestion",
+  "sprint": "P4.3.3",
+  "generated": "2026-08-10T00:00:00+00:00",
+  "generated_note": "Injected deterministic timestamp, not wall clock.",
+  "machine_readable_companion_of": "dataset_acquisition/reports/p4_3_3_printer_recovery_report.md",
+  "evidence_policy": "Every number is derived from real on-disk artifacts (the orchestrator status JSON, the converter's conversion_report.json/conversion_errors.json, the provenance manifest, the visual-QA qa_data.json, and the measured memory-evidence capture). Unmeasured values are recorded as NOT MEASURED, never invented.",
+  "dataset_v1_released": false,
+  "verdict": "PRINTER_RECOVERED_QA_PENDING",
+  "sections": {
+    "1_sprint_overview": {
+      "goal": "Make printer-class acquisition possible in a memory-bounded, reproducible way, recovering the class that P4.3.2 left BLOCKED by a host-memory OOM.",
+      "workflow": "INVESTIGATE OOM -> BUILD LOW-MEMORY ADAPTER -> TEST -> DRY-RUN -> BOUNDED REAL ACQUISITION (limit 20 then 100) -> CONVERT/VALIDATE/QA -> REGRESSION -> STOP.",
+      "outcome": "Printer recovered to QA_PENDING with full evidence; no OOM; no other class touched; Dataset v1.0 NOT released."
+    },
+    "2_scope_and_constraints": {
+      "did": [
+        "Added one project-owned, thin low-memory acquisition adapter (scripts/acquire_openimages_lowmem.py) that plugs into the frozen P4.3.1 orchestrator through its existing DownloadFn seam.",
+        "Reused the frozen orchestrator, converter, validators, DuplicateDetector, provenance mechanism, visual-QA generator and report conventions verbatim.",
+        "Acquired only the printer class into its isolated per-class staging dir."
+      ],
+      "did_not": [
+        "No YOLO training, no Dataset v1.0 release, no QA_ACCEPTED, no unrelated classes.",
+        "Did not merely raise the download limit, disable validation, delete annotations, fabricate labels, reduce QA requirements, change taxonomy, change image-quality thresholds, change provenance requirements, edit the vendored OIDv4_ToolKit, or fall back to another dataset.",
+        "No frozen intelligence/device_ai module (.py) was modified."
+      ]
+    },
+    "3_root_cause": {
+      "summary": "The vendored OIDv4_ToolKit loads the entire Open Images train bbox CSV in a single pandas.read_csv, inferring every column as object dtype; the frame balloons past host memory and the process dies before any image is fetched.",
+      "observed_error": "numpy._core._exceptions._ArrayMemoryError: Unable to allocate ... for an array with shape (14610229,) and data type object",
+      "location": "OIDv4_ToolKit/modules/csv_downloader.py:TTV -> pandas.read_csv",
+      "csv_path": "dataset_acquisition/OIDv4_ToolKit/OID/csv_folder/train-annotations-bbox.csv",
+      "csv_bytes": 1194033454,
+      "csv_rows_total_approx": 14610229,
+      "csv_columns": 13,
+      "classification": "Genuine host-memory constraint, not a mapping or data-absence problem (Printer -> printer is MAPPED; tablet/monitor read the same CSV successfully in P4.3.2)."
+    },
+    "4_remediation_design": {
+      "approach": "A thin, project-owned adapter that replaces only the fragile annotation-scan step with a memory-bounded chunked reader, then reuses the toolkit's own aws s3 --no-sign-request object layout and writes the exact OIDv4 per-class source layout the frozen converter already consumes.",
+      "module": "scripts/acquire_openimages_lowmem.py",
+      "integration_seam": "acquire_openimages_multiclass.DownloadFn (DownloadRequest -> DownloadResult); orchestrator run(args, download_fn=...) injection. No new dataset architecture, no second annotation format.",
+      "chunked_read": "pandas.read_csv(usecols=<11 of 13 columns>, dtype=<string/float32/int8>, chunksize=500000); each chunk filtered to the class MID (and any active attribute filters) before retention.",
+      "columns_loaded": 11,
+      "columns_skipped": ["Source", "Confidence"],
+      "dtypes": {"ImageID": "string", "LabelName": "string", "XMin/XMax/YMin/YMax": "float32", "Is*": "int8"},
+      "early_exit": "Selection stops the instant a new distinct ImageID appears once --limit distinct ids are held; the bbox CSV is ImageID-contiguous, so every selected image is complete at that point.",
+      "determinism": "First-seen CSV order until --limit distinct ids are held; identical CSV + limit selects an identical, fully-boxed set regardless of chunk size (verified by a chunk-size-parametrized test over [1,2,3,7,1000]).",
+      "source_fidelity": "Exact source ImageIDs and exact source XYXY boxes preserved; normalized OID coords multiplied by the real downloaded image's pixel dimensions (same math as the vendored get_label).",
+      "vendored_toolkit_modified": false
+    },
+    "5_data_source": {
+      "source": "Open Images V7",
+      "confirmed_in": ["p4_3_3_real_printer.json (\"source\": \"Open Images V7\")", "provenance_manifest.json records"]
+    },
+    "6_taxonomy_basis": {
+      "taxonomy": "intelligence/device_ai/dataset/taxonomy.py (frozen v1.0.0), loaded dynamically via load_taxonomy().",
+      "printer_class_id": 8,
+      "class_id_assumed": false
+    },
+    "7_source_class_mapping": {
+      "resolved_from": "dataset_acquisition/manifests/p4_3_1_openimages_acquisition_plan.csv (P4.3.1 plan manifest); MID resolved at runtime from class-descriptions-boxable.csv.",
+      "ecotrace_class": "printer",
+      "class_id": 8,
+      "open_images_class": "Printer",
+      "open_images_mid": "/m/01m4t",
+      "mapping_status": "MAPPED",
+      "hardcoded": false
+    },
+    "8_memory_evidence": {
+      "note": "Measured on this host with tracemalloc (Python peak) and Windows GetProcessMemoryInfo PeakWorkingSetSize (whole-process high-water mark) around a real scan of the full 1.19 GB CSV. Full detail in p4_3_3_memory_evidence.json.",
+      "scan_limit": 20,
+      "rows_read": 1000000,
+      "chunks_read": 2,
+      "chunk_size": 500000,
+      "matched_rows": 31,
+      "selected_images": 20,
+      "py_peak_tracemalloc_mib": 48.3,
+      "proc_peak_working_set_mib": 175.6,
+      "proc_peak_over_csv_ratio": 0.154,
+      "oom_reproduced": false,
+      "interpretation": "Resident set stays a small fraction of the 1.11 GiB file because only leading chunks are streamed and columns are narrowed; the P4.3.2 OOM did not occur."
+    },
+    "9_acquisition_target_and_ceiling_policy": {
+      "pilot_start_limit": 20,
+      "controlled_target_limit": 100,
+      "planned_min_recommended_max": [150, 300, 500],
+      "ceiling_policy": "Limit is a ceiling, not a promise. Actual availability recorded; never padded.",
+      "within_planned_recommended": true
+    },
+    "10_execution_dry_run": {
+      "state": "DRY_RUN",
+      "requested": 20,
+      "dry_run": true,
+      "wrote_image_data": false,
+      "artifact": "dataset_acquisition/reports/p4_3_3_dryrun_printer.json"
+    },
+    "11_execution_bounded_real_acquisition": {
+      "pilot_limit_20": {
+        "state": "QA_PENDING",
+        "note": "Proved the full pipeline end-to-end with no OOM (20/20/20 reconciling) before scaling."
+      },
+      "controlled_limit_100": {
+        "state": "QA_PENDING",
+        "requested": 100,
+        "downloaded": 96,
+        "gap_explained": "100 distinct ImageIDs were selected by the bounded scan; 96 landed as readable files from the public S3 bucket. 4 were unavailable/unreadable and are honestly reported as not downloaded (not padded).",
+        "artifact": "dataset_acquisition/reports/p4_3_3_real_printer.json"
+      }
+    },
+    "12_acquisition_accounting": {
+      "class": "printer",
+      "class_id": 8,
+      "requested": 100,
+      "downloaded": 96,
+      "source_images_found": 96,
+      "source_labels_found": 96,
+      "converted": 96,
+      "conversion_failed": 0,
+      "orphan_source_labels": 0,
+      "valid_images": 96,
+      "valid_annotations": 96,
+      "total_source_objects": 121,
+      "total_converted_objects": 121,
+      "duplicates": 0,
+      "reconciles": true,
+      "reconciliation_note": "downloaded == source_images_found == converted == valid_images == valid_annotations == 96; source objects == converted objects == 121; conversion_failed == orphans == duplicates == 0."
+    },
+    "13_provenance": {
+      "records": 96,
+      "per_record_fields": ["source", "source_class", "source_image_filename", "source_annotation_filename", "ecotrace_class", "ecotrace_class_id", "sha256", "width", "height", "object_count", "conversion_version", "conversion_timestamp", "taxonomy_version"],
+      "source": "Open Images V7",
+      "source_class": "Printer",
+      "ecotrace_class_id": 8,
+      "sha256_present": "96/96",
+      "provenance_missing": 0,
+      "license_note": "images=per-image-Flickr(VARY-verify); annotations=CC-BY-4.0(Google)",
+      "redistribution_claim": "None asserted beyond the recorded per-image license note."
+    },
+    "14_conversion": {
+      "converter": "scripts/convert_openimages_to_yolo.py (frozen)",
+      "conversion_version": "openimages-multiclass-v1",
+      "converter_rewritten": false,
+      "invalid_box_clipped": false,
+      "error_count": 0,
+      "reject_never_clip": true
+    },
+    "15_image_validation": {
+      "tooling": "frozen P4.2.x ImageValidator via the orchestrator, thresholds unchanged (blur 100.0, dark 40.0, bright 220.0, min_dim 32, max_dim 12000, duplicate hamming 5).",
+      "structural_image_issues": 0,
+      "valid_images": 96,
+      "note": "valid_images == converted == 96 => zero structural rejections. Thresholds not altered."
+    },
+    "16_image_quality_flags": {
+      "policy": "Advisory metadata; no blurry image auto-rejected, no difficult sample auto-approved.",
+      "blurry_flagged": 16,
+      "blur_threshold": 100.0,
+      "source": "manual_review/qa_data.json"
+    },
+    "17_annotation_validation": {
+      "annotation_issue_count": 0,
+      "images_without_labels": 0,
+      "labels_without_images": 0,
+      "class_id_tally": {"8": 121},
+      "foreign_or_out_of_range_class_ids": 0,
+      "source_annotation_silently_corrected": false
+    },
+    "18_duplicate_detection": {
+      "detector": "frozen DuplicateDetector (hamming 5)",
+      "within_class_exact": 0,
+      "within_class_near": 0,
+      "auto_deleted": 0
+    },
+    "19_qa_boundary": {
+      "terminal_state": "QA_PENDING",
+      "qa_pending": 96,
+      "qa_accepted": 0,
+      "qa_rejected": 0,
+      "auto_approved": false
+    },
+    "20_visual_qa_preparation": {
+      "generator": "scripts/make_visual_qa_multiclass.py (read-only w.r.t. staged data)",
+      "previews": 96,
+      "contact_sheet": true,
+      "objects_tagged": 121,
+      "qa_status": "QA_PENDING",
+      "out_dir": "dataset_acquisition/staging/openimages_multiclass_v1/openimages_printer_v1/manual_review",
+      "note": "Generating previews is not QA sign-off; final state remains QA_PENDING pending human review."
+    },
+    "21_pilot_protection": {
+      "baseline": "dataset_acquisition/reports/p4_3_3_pilot_baseline.json",
+      "after": "dataset_acquisition/reports/p4_3_3_pilot_after.json",
+      "method": "file_count + total_bytes compared per dir.",
+      "all_protected_unchanged": true,
+      "dirs": {
+        "openimages_laptop_v1": {"files": "72/72", "bytes": "10525045/10525045", "unchanged": true},
+        "openimages_laptop_canonical_v1": {"files": "47/47", "bytes": "6110063/6110063", "unchanged": true},
+        "openimages_smartphone_v1": {"files": "15/15", "bytes": "1003504/1003504", "unchanged": true},
+        "openimages_tablet_v1": {"files": "305/305", "bytes": "42838399/42838399", "unchanged": true},
+        "openimages_monitor_v1": {"files": "302/302", "bytes": "44514158/44514158", "unchanged": true}
+      },
+      "stop_on_change_triggered": false
+    },
+    "22_dataset_v1_status_and_stop_condition": {
+      "testing": {
+        "p4_3_3_adapter_tests": "21 passed",
+        "full_device_ai_suite": "869 passed",
+        "ruff": "clean on scripts/acquire_openimages_lowmem.py and the new test (strict repo config)",
+        "mypy_new_module": "clean (0 errors from acquire_openimages_lowmem.py)",
+        "mypy_preexisting": "validate_annotations.py:75 [no-any-return] is pre-existing in a frozen validator reached transitively; identical when checking the untouched orchestrator alone; not introduced by P4.3.3 and not fixed (frozen, out of scope)."
+      },
+      "frozen_code_verification": {
+        "device_ai_py_modules_changed": 0,
+        "only_frozen_tree_change": "intelligence/device_ai/requirements-dev.txt (declares pandas==3.0.5 as a test dependency; no pipeline/model code touched).",
+        "git_diff_check": "clean (no whitespace/conflict-marker errors)"
+      },
+      "is_dataset_v1": false,
+      "is_released": false,
+      "released_statement": "Dataset v1.0 is NOT RELEASED.",
+      "stop": "Printer reached QA_PENDING with all evidence generated. Per the sprint contract, work halts here: no further acquisition, no QA_ACCEPTED, no v1.0 release, no training, no commit, no push. Awaiting explicit human review."
+    }
+  }
+}
