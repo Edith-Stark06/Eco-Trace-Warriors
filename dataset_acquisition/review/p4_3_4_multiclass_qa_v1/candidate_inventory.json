@@ -1,0 +1,18 @@
+{
+  "candidates": [],
+  "dataset_v1_released": false,
+  "generated_at": "2026-08-10T00:00:00+00:00",
+  "is_dataset_v1": false,
+  "is_released": false,
+  "no_human_decision_fabricated": true,
+  "note": "Human QA decisions are pending; no images have been promoted.",
+  "package": "multiclass-human-qa",
+  "package_version": "p4-3-4-multiclass-human-qa-v1",
+  "part": "7-candidate-inventory",
+  "promoted_count": 0,
+  "promotion_rule": "Only items with status == 'QA_ACCEPTED' are promoted.",
+  "source": "Open Images V7",
+  "sprint": "P4.3.4",
+  "taxonomy_version": "1.0.0",
+  "total_reviewable_items": 301
+}

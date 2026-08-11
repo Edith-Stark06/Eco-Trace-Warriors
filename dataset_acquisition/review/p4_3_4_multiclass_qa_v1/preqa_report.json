@@ -1,0 +1,227 @@
+{
+  "all_gate_a_passed": true,
+  "all_gate_b_passed": true,
+  "class_count": 4,
+  "classes": [
+    {
+      "duplicate_hashes": 0,
+      "ecotrace_class": "smartphone",
+      "ecotrace_class_id": 1,
+      "gate_a_image_validation": {
+        "corrupted": [],
+        "duplicate_filenames": [],
+        "duplicate_hashes": [],
+        "invalid_aspect_ratio": [],
+        "is_valid": true,
+        "issues": [],
+        "oversized_files": [],
+        "oversized_resolution": [],
+        "summary": {
+          "corrupted": 0,
+          "duplicate_filenames": 0,
+          "duplicate_hashes": 0,
+          "invalid_aspect_ratio": 0,
+          "oversized_files": 0,
+          "oversized_resolution": 0,
+          "total_issues": 0,
+          "undersized": 0,
+          "unsupported_extensions": 0
+        },
+        "total_files_scanned": 6,
+        "total_images": 6,
+        "undersized": [],
+        "unsupported_extensions": []
+      },
+      "gate_a_passed": true,
+      "gate_b_annotation_validation": {
+        "class_counts": {
+          "1": 13
+        },
+        "images_root": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/staging/openimages_smartphone_v1/images",
+        "issue_counts_by_code": {},
+        "issues": [],
+        "labels_root": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/staging/openimages_smartphone_v1/labels",
+        "num_classes": 19,
+        "summary": {
+          "empty_labels": 0,
+          "images_without_labels": 0,
+          "is_valid": true,
+          "issue_count": 0,
+          "labels_without_images": 0,
+          "total_boxes": 13,
+          "total_labels": 6
+        },
+        "taxonomy_version": "1.0.0"
+      },
+      "gate_b_passed": true
+    },
+    {
+      "duplicate_hashes": 0,
+      "ecotrace_class": "tablet",
+      "ecotrace_class_id": 2,
+      "gate_a_image_validation": {
+        "corrupted": [],
+        "duplicate_filenames": [],
+        "duplicate_hashes": [],
+        "invalid_aspect_ratio": [],
+        "is_valid": true,
+        "issues": [],
+        "oversized_files": [],
+        "oversized_resolution": [],
+        "summary": {
+          "corrupted": 0,
+          "duplicate_filenames": 0,
+          "duplicate_hashes": 0,
+          "invalid_aspect_ratio": 0,
+          "oversized_files": 0,
+          "oversized_resolution": 0,
+          "total_issues": 0,
+          "undersized": 0,
+          "unsupported_extensions": 0
+        },
+        "total_files_scanned": 100,
+        "total_images": 100,
+        "undersized": [],
+        "unsupported_extensions": []
+      },
+      "gate_a_passed": true,
+      "gate_b_annotation_validation": {
+        "class_counts": {
+          "2": 124
+        },
+        "images_root": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/staging/openimages_multiclass_v1/openimages_tablet_v1/images",
+        "issue_counts_by_code": {},
+        "issues": [],
+        "labels_root": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/staging/openimages_multiclass_v1/openimages_tablet_v1/labels",
+        "num_classes": 19,
+        "summary": {
+          "empty_labels": 0,
+          "images_without_labels": 0,
+          "is_valid": true,
+          "issue_count": 0,
+          "labels_without_images": 0,
+          "total_boxes": 124,
+          "total_labels": 100
+        },
+        "taxonomy_version": "1.0.0"
+      },
+      "gate_b_passed": true
+    },
+    {
+      "duplicate_hashes": 0,
+      "ecotrace_class": "monitor",
+      "ecotrace_class_id": 5,
+      "gate_a_image_validation": {
+        "corrupted": [],
+        "duplicate_filenames": [],
+        "duplicate_hashes": [],
+        "invalid_aspect_ratio": [],
+        "is_valid": true,
+        "issues": [],
+        "oversized_files": [],
+        "oversized_resolution": [],
+        "summary": {
+          "corrupted": 0,
+          "duplicate_filenames": 0,
+          "duplicate_hashes": 0,
+          "invalid_aspect_ratio": 0,
+          "oversized_files": 0,
+          "oversized_resolution": 0,
+          "total_issues": 0,
+          "undersized": 0,
+          "unsupported_extensions": 0
+        },
+        "total_files_scanned": 99,
+        "total_images": 99,
+        "undersized": [],
+        "unsupported_extensions": []
+      },
+      "gate_a_passed": true,
+      "gate_b_annotation_validation": {
+        "class_counts": {
+          "5": 161
+        },
+        "images_root": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/staging/openimages_multiclass_v1/openimages_monitor_v1/images",
+        "issue_counts_by_code": {},
+        "issues": [],
+        "labels_root": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/staging/openimages_multiclass_v1/openimages_monitor_v1/labels",
+        "num_classes": 19,
+        "summary": {
+          "empty_labels": 0,
+          "images_without_labels": 0,
+          "is_valid": true,
+          "issue_count": 0,
+          "labels_without_images": 0,
+          "total_boxes": 161,
+          "total_labels": 99
+        },
+        "taxonomy_version": "1.0.0"
+      },
+      "gate_b_passed": true
+    },
+    {
+      "duplicate_hashes": 0,
+      "ecotrace_class": "printer",
+      "ecotrace_class_id": 8,
+      "gate_a_image_validation": {
+        "corrupted": [],
+        "duplicate_filenames": [],
+        "duplicate_hashes": [],
+        "invalid_aspect_ratio": [],
+        "is_valid": true,
+        "issues": [],
+        "oversized_files": [],
+        "oversized_resolution": [],
+        "summary": {
+          "corrupted": 0,
+          "duplicate_filenames": 0,
+          "duplicate_hashes": 0,
+          "invalid_aspect_ratio": 0,
+          "oversized_files": 0,
+          "oversized_resolution": 0,
+          "total_issues": 0,
+          "undersized": 0,
+          "unsupported_extensions": 0
+        },
+        "total_files_scanned": 96,
+        "total_images": 96,
+        "undersized": [],
+        "unsupported_extensions": []
+      },
+      "gate_a_passed": true,
+      "gate_b_annotation_validation": {
+        "class_counts": {
+          "8": 121
+        },
+        "images_root": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/staging/openimages_multiclass_v1/openimages_printer_v1/images",
+        "issue_counts_by_code": {},
+        "issues": [],
+        "labels_root": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/staging/openimages_multiclass_v1/openimages_printer_v1/labels",
+        "num_classes": 19,
+        "summary": {
+          "empty_labels": 0,
+          "images_without_labels": 0,
+          "is_valid": true,
+          "issue_count": 0,
+          "labels_without_images": 0,
+          "total_boxes": 121,
+          "total_labels": 96
+        },
+        "taxonomy_version": "1.0.0"
+      },
+      "gate_b_passed": true
+    }
+  ],
+  "dataset_v1_released": false,
+  "generated_at": "2026-08-10T00:00:00+00:00",
+  "is_dataset_v1": false,
+  "is_released": false,
+  "no_human_decision_fabricated": true,
+  "note": "Automated structural gates only. A PASS is not a human QA decision; every image remains PENDING_REVIEW.",
+  "package": "multiclass-human-qa",
+  "package_version": "p4-3-4-multiclass-human-qa-v1",
+  "part": "2-automated-pre-qa-gate",
+  "source": "Open Images V7",
+  "sprint": "P4.3.4",
+  "taxonomy_version": "1.0.0"
+}
