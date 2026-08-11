@@ -1,0 +1,1387 @@
+{
+  "blur_threshold": 100.0,
+  "blurry_count": 16,
+  "contact_sheets": [
+    "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/contact_sheet_p01.jpg",
+    "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/contact_sheet_p02.jpg",
+    "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/contact_sheet_p03.jpg",
+    "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/contact_sheet_p04.jpg"
+  ],
+  "ecotrace_class": "printer",
+  "ecotrace_class_id": 8,
+  "page_count": 4,
+  "qa_status": "QA_PENDING",
+  "tiles": [
+    {
+      "blur": 601.76,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "000060e3121c7305.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa01_000060e3121c7305.jpg",
+      "qa_id": 1,
+      "stem": "000060e3121c7305",
+      "width": 1024
+    },
+    {
+      "blur": 194.65,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "000d8d43d6a775c1.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa02_000d8d43d6a775c1.jpg",
+      "qa_id": 2,
+      "stem": "000d8d43d6a775c1",
+      "width": 768
+    },
+    {
+      "blur": 64.53,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "001952f2e3bf13a5.jpg",
+      "height": 806,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa03_001952f2e3bf13a5.jpg",
+      "qa_id": 3,
+      "stem": "001952f2e3bf13a5",
+      "width": 1024
+    },
+    {
+      "blur": 149.53,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "0043a6bdfaad66a5.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa04_0043a6bdfaad66a5.jpg",
+      "qa_id": 4,
+      "stem": "0043a6bdfaad66a5",
+      "width": 1024
+    },
+    {
+      "blur": 199.44,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "006ec68881b8ab72.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa05_006ec68881b8ab72.jpg",
+      "qa_id": 5,
+      "stem": "006ec68881b8ab72",
+      "width": 681
+    },
+    {
+      "blur": 63.5,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "0072ffcb6e5e4c3d.jpg",
+      "height": 1024,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa06_0072ffcb6e5e4c3d.jpg",
+      "qa_id": 6,
+      "stem": "0072ffcb6e5e4c3d",
+      "width": 768
+    },
+    {
+      "blur": 446.46,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "00ba5b735fd84bc9.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa07_00ba5b735fd84bc9.jpg",
+      "qa_id": 7,
+      "stem": "00ba5b735fd84bc9",
+      "width": 1024
+    },
+    {
+      "blur": 110.72,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "00f6a80e7f1a229a.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa08_00f6a80e7f1a229a.jpg",
+      "qa_id": 8,
+      "stem": "00f6a80e7f1a229a",
+      "width": 768
+    },
+    {
+      "blur": 836.85,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "015ab573c33fd679.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa09_015ab573c33fd679.jpg",
+      "qa_id": 9,
+      "stem": "015ab573c33fd679",
+      "width": 1024
+    },
+    {
+      "blur": 2545.44,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "03171ce7ffc7701a.jpg",
+      "height": 260,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa10_03171ce7ffc7701a.jpg",
+      "qa_id": 10,
+      "stem": "03171ce7ffc7701a",
+      "width": 1024
+    },
+    {
+      "blur": 386.95,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "03ab32a069121462.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa11_03ab32a069121462.jpg",
+      "qa_id": 11,
+      "stem": "03ab32a069121462",
+      "width": 1024
+    },
+    {
+      "blur": 750.97,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "044f4929b9cfd3de.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa12_044f4929b9cfd3de.jpg",
+      "qa_id": 12,
+      "stem": "044f4929b9cfd3de",
+      "width": 768
+    },
+    {
+      "blur": 11.13,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "056cdce1d45a75e9.jpg",
+      "height": 761,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa13_056cdce1d45a75e9.jpg",
+      "qa_id": 13,
+      "stem": "056cdce1d45a75e9",
+      "width": 1024
+    },
+    {
+      "blur": 20.47,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "068c13d84b12c6ca.jpg",
+      "height": 769,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa14_068c13d84b12c6ca.jpg",
+      "qa_id": 14,
+      "stem": "068c13d84b12c6ca",
+      "width": 1024
+    },
+    {
+      "blur": 423.17,
+      "box_count": 8,
+      "class_ids": [
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8
+      ],
+      "filename": "06e6c07c70c8f6e1.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa15_06e6c07c70c8f6e1.jpg",
+      "qa_id": 15,
+      "stem": "06e6c07c70c8f6e1",
+      "width": 1024
+    },
+    {
+      "blur": 810.35,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "085c51841fdfb29c.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa16_085c51841fdfb29c.jpg",
+      "qa_id": 16,
+      "stem": "085c51841fdfb29c",
+      "width": 1024
+    },
+    {
+      "blur": 63.95,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "0884b766756e4d6a.jpg",
+      "height": 996,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa17_0884b766756e4d6a.jpg",
+      "qa_id": 17,
+      "stem": "0884b766756e4d6a",
+      "width": 1024
+    },
+    {
+      "blur": 254.58,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "09dcf26a90a11b25.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa18_09dcf26a90a11b25.jpg",
+      "qa_id": 18,
+      "stem": "09dcf26a90a11b25",
+      "width": 1024
+    },
+    {
+      "blur": 1403.79,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "0a132889bcfeb8c4.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa19_0a132889bcfeb8c4.jpg",
+      "qa_id": 19,
+      "stem": "0a132889bcfeb8c4",
+      "width": 1024
+    },
+    {
+      "blur": 22.1,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "0a98e4fe3ec5592e.jpg",
+      "height": 761,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa20_0a98e4fe3ec5592e.jpg",
+      "qa_id": 20,
+      "stem": "0a98e4fe3ec5592e",
+      "width": 1024
+    },
+    {
+      "blur": 295.44,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "0a9aa4d14051d973.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa21_0a9aa4d14051d973.jpg",
+      "qa_id": 21,
+      "stem": "0a9aa4d14051d973",
+      "width": 1024
+    },
+    {
+      "blur": 278.04,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "0b5fd3f055c65da0.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa22_0b5fd3f055c65da0.jpg",
+      "qa_id": 22,
+      "stem": "0b5fd3f055c65da0",
+      "width": 768
+    },
+    {
+      "blur": 490.8,
+      "box_count": 2,
+      "class_ids": [
+        8,
+        8
+      ],
+      "filename": "0dccffb6489a262a.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa23_0dccffb6489a262a.jpg",
+      "qa_id": 23,
+      "stem": "0dccffb6489a262a",
+      "width": 1024
+    },
+    {
+      "blur": 422.27,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "0f1c7bc85f6f9195.jpg",
+      "height": 685,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa24_0f1c7bc85f6f9195.jpg",
+      "qa_id": 24,
+      "stem": "0f1c7bc85f6f9195",
+      "width": 1024
+    },
+    {
+      "blur": 185.6,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "1014e94f922325b5.jpg",
+      "height": 708,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa25_1014e94f922325b5.jpg",
+      "qa_id": 25,
+      "stem": "1014e94f922325b5",
+      "width": 1024
+    },
+    {
+      "blur": 237.52,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "11282ba954e3bf3f.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa26_11282ba954e3bf3f.jpg",
+      "qa_id": 26,
+      "stem": "11282ba954e3bf3f",
+      "width": 1024
+    },
+    {
+      "blur": 104.2,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "1157e219afc2b331.jpg",
+      "height": 853,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa27_1157e219afc2b331.jpg",
+      "qa_id": 27,
+      "stem": "1157e219afc2b331",
+      "width": 1024
+    },
+    {
+      "blur": 68.09,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "118f56bf63a9355a.jpg",
+      "height": 614,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa28_118f56bf63a9355a.jpg",
+      "qa_id": 28,
+      "stem": "118f56bf63a9355a",
+      "width": 1024
+    },
+    {
+      "blur": 1247.92,
+      "box_count": 2,
+      "class_ids": [
+        8,
+        8
+      ],
+      "filename": "1234a4b3443a07f0.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa29_1234a4b3443a07f0.jpg",
+      "qa_id": 29,
+      "stem": "1234a4b3443a07f0",
+      "width": 1024
+    },
+    {
+      "blur": 338.35,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "1362bfe6c18d8a25.jpg",
+      "height": 685,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa30_1362bfe6c18d8a25.jpg",
+      "qa_id": 30,
+      "stem": "1362bfe6c18d8a25",
+      "width": 1024
+    },
+    {
+      "blur": 360.12,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "14edf37c25bbeeaa.jpg",
+      "height": 576,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa31_14edf37c25bbeeaa.jpg",
+      "qa_id": 31,
+      "stem": "14edf37c25bbeeaa",
+      "width": 1024
+    },
+    {
+      "blur": 318.48,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "16d40346d98069b7.jpg",
+      "height": 773,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa32_16d40346d98069b7.jpg",
+      "qa_id": 32,
+      "stem": "16d40346d98069b7",
+      "width": 1024
+    },
+    {
+      "blur": 328.2,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "17d789b9220b88b4.jpg",
+      "height": 757,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa33_17d789b9220b88b4.jpg",
+      "qa_id": 33,
+      "stem": "17d789b9220b88b4",
+      "width": 1024
+    },
+    {
+      "blur": 575.38,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "183f70d709d98f27.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa34_183f70d709d98f27.jpg",
+      "qa_id": 34,
+      "stem": "183f70d709d98f27",
+      "width": 1024
+    },
+    {
+      "blur": 224.89,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "1841dcb9c721fd16.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa35_1841dcb9c721fd16.jpg",
+      "qa_id": 35,
+      "stem": "1841dcb9c721fd16",
+      "width": 1024
+    },
+    {
+      "blur": 381.76,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "18ffb6b932f2c36b.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa36_18ffb6b932f2c36b.jpg",
+      "qa_id": 36,
+      "stem": "18ffb6b932f2c36b",
+      "width": 1024
+    },
+    {
+      "blur": 714.04,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "1a18504327b1bc47.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa37_1a18504327b1bc47.jpg",
+      "qa_id": 37,
+      "stem": "1a18504327b1bc47",
+      "width": 681
+    },
+    {
+      "blur": 160.92,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "1ab17aee8b143f70.jpg",
+      "height": 681,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa38_1ab17aee8b143f70.jpg",
+      "qa_id": 38,
+      "stem": "1ab17aee8b143f70",
+      "width": 1024
+    },
+    {
+      "blur": 87.39,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "1af4bf3a599c6dc0.jpg",
+      "height": 768,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa39_1af4bf3a599c6dc0.jpg",
+      "qa_id": 39,
+      "stem": "1af4bf3a599c6dc0",
+      "width": 1024
+    },
+    {
+      "blur": 61.96,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "1b143307c6d4acc9.jpg",
+      "height": 1024,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa40_1b143307c6d4acc9.jpg",
+      "qa_id": 40,
+      "stem": "1b143307c6d4acc9",
+      "width": 1024
+    },
+    {
+      "blur": 289.36,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "1b5c18b616337dec.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa41_1b5c18b616337dec.jpg",
+      "qa_id": 41,
+      "stem": "1b5c18b616337dec",
+      "width": 1024
+    },
+    {
+      "blur": 266.94,
+      "box_count": 4,
+      "class_ids": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "filename": "1b992a57074cde6e.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa42_1b992a57074cde6e.jpg",
+      "qa_id": 42,
+      "stem": "1b992a57074cde6e",
+      "width": 1024
+    },
+    {
+      "blur": 318.23,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "1caf7d63ae4b9fa8.jpg",
+      "height": 681,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa43_1caf7d63ae4b9fa8.jpg",
+      "qa_id": 43,
+      "stem": "1caf7d63ae4b9fa8",
+      "width": 1024
+    },
+    {
+      "blur": 1023.26,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "1da839a4d217c55a.jpg",
+      "height": 681,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa44_1da839a4d217c55a.jpg",
+      "qa_id": 44,
+      "stem": "1da839a4d217c55a",
+      "width": 1024
+    },
+    {
+      "blur": 353.58,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "1dd40bc67e329f4b.jpg",
+      "height": 681,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa45_1dd40bc67e329f4b.jpg",
+      "qa_id": 45,
+      "stem": "1dd40bc67e329f4b",
+      "width": 1024
+    },
+    {
+      "blur": 530.25,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "1eda3d5634f8c7e2.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa46_1eda3d5634f8c7e2.jpg",
+      "qa_id": 46,
+      "stem": "1eda3d5634f8c7e2",
+      "width": 1024
+    },
+    {
+      "blur": 62.93,
+      "box_count": 2,
+      "class_ids": [
+        8,
+        8
+      ],
+      "filename": "1f1eeb90d0709868.jpg",
+      "height": 768,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa47_1f1eeb90d0709868.jpg",
+      "qa_id": 47,
+      "stem": "1f1eeb90d0709868",
+      "width": 1024
+    },
+    {
+      "blur": 122.44,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "1f59e830ab3cec52.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa48_1f59e830ab3cec52.jpg",
+      "qa_id": 48,
+      "stem": "1f59e830ab3cec52",
+      "width": 1024
+    },
+    {
+      "blur": 224.55,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "1f65f54da10ca393.jpg",
+      "height": 837,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa49_1f65f54da10ca393.jpg",
+      "qa_id": 49,
+      "stem": "1f65f54da10ca393",
+      "width": 1024
+    },
+    {
+      "blur": 49.27,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "1f970baf7576a117.jpg",
+      "height": 682,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa50_1f970baf7576a117.jpg",
+      "qa_id": 50,
+      "stem": "1f970baf7576a117",
+      "width": 1024
+    },
+    {
+      "blur": 352.2,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "1fc94360ac0149a6.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa51_1fc94360ac0149a6.jpg",
+      "qa_id": 51,
+      "stem": "1fc94360ac0149a6",
+      "width": 1024
+    },
+    {
+      "blur": 244.96,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "1fda937fa185c249.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa52_1fda937fa185c249.jpg",
+      "qa_id": 52,
+      "stem": "1fda937fa185c249",
+      "width": 1024
+    },
+    {
+      "blur": 415.03,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "202824dd5a119003.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa53_202824dd5a119003.jpg",
+      "qa_id": 53,
+      "stem": "202824dd5a119003",
+      "width": 1024
+    },
+    {
+      "blur": 55.65,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "2089c3c13bcb8e82.jpg",
+      "height": 768,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa54_2089c3c13bcb8e82.jpg",
+      "qa_id": 54,
+      "stem": "2089c3c13bcb8e82",
+      "width": 1024
+    },
+    {
+      "blur": 119.9,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "20902adb6d1208ad.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa55_20902adb6d1208ad.jpg",
+      "qa_id": 55,
+      "stem": "20902adb6d1208ad",
+      "width": 686
+    },
+    {
+      "blur": 132.94,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "2176527c2ff09ac8.jpg",
+      "height": 680,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa56_2176527c2ff09ac8.jpg",
+      "qa_id": 56,
+      "stem": "2176527c2ff09ac8",
+      "width": 1024
+    },
+    {
+      "blur": 199.04,
+      "box_count": 3,
+      "class_ids": [
+        8,
+        8,
+        8
+      ],
+      "filename": "2184d0cc1bab84fc.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa57_2184d0cc1bab84fc.jpg",
+      "qa_id": 57,
+      "stem": "2184d0cc1bab84fc",
+      "width": 1024
+    },
+    {
+      "blur": 411.9,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "219ac6d26c8fe2d4.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa58_219ac6d26c8fe2d4.jpg",
+      "qa_id": 58,
+      "stem": "219ac6d26c8fe2d4",
+      "width": 1024
+    },
+    {
+      "blur": 214.82,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "21cff9e322a73ac5.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa59_21cff9e322a73ac5.jpg",
+      "qa_id": 59,
+      "stem": "21cff9e322a73ac5",
+      "width": 1024
+    },
+    {
+      "blur": 222.18,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "23016a1438dc0153.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa60_23016a1438dc0153.jpg",
+      "qa_id": 60,
+      "stem": "23016a1438dc0153",
+      "width": 1024
+    },
+    {
+      "blur": 1347.01,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "271903fa5f7b545f.jpg",
+      "height": 685,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa61_271903fa5f7b545f.jpg",
+      "qa_id": 61,
+      "stem": "271903fa5f7b545f",
+      "width": 1024
+    },
+    {
+      "blur": 513.6,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "274f5e7fc5df2363.jpg",
+      "height": 680,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa62_274f5e7fc5df2363.jpg",
+      "qa_id": 62,
+      "stem": "274f5e7fc5df2363",
+      "width": 1024
+    },
+    {
+      "blur": 287.48,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "2872541ef867ee5e.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa63_2872541ef867ee5e.jpg",
+      "qa_id": 63,
+      "stem": "2872541ef867ee5e",
+      "width": 1024
+    },
+    {
+      "blur": 211.66,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "29ad8101f952d16a.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa64_29ad8101f952d16a.jpg",
+      "qa_id": 64,
+      "stem": "29ad8101f952d16a",
+      "width": 613
+    },
+    {
+      "blur": 326.63,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "29c134a06d3299ec.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa65_29c134a06d3299ec.jpg",
+      "qa_id": 65,
+      "stem": "29c134a06d3299ec",
+      "width": 768
+    },
+    {
+      "blur": 294.7,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "2aa7cc9abe3bfd66.jpg",
+      "height": 680,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa66_2aa7cc9abe3bfd66.jpg",
+      "qa_id": 66,
+      "stem": "2aa7cc9abe3bfd66",
+      "width": 1024
+    },
+    {
+      "blur": 1324.44,
+      "box_count": 2,
+      "class_ids": [
+        8,
+        8
+      ],
+      "filename": "2d0554105760a781.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa67_2d0554105760a781.jpg",
+      "qa_id": 67,
+      "stem": "2d0554105760a781",
+      "width": 1024
+    },
+    {
+      "blur": 214.49,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "2d88b60408799911.jpg",
+      "height": 681,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa68_2d88b60408799911.jpg",
+      "qa_id": 68,
+      "stem": "2d88b60408799911",
+      "width": 1024
+    },
+    {
+      "blur": 324.25,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "2ff3eab8f42224fe.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa69_2ff3eab8f42224fe.jpg",
+      "qa_id": 69,
+      "stem": "2ff3eab8f42224fe",
+      "width": 767
+    },
+    {
+      "blur": 189.28,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "3098fee105d44702.jpg",
+      "height": 576,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa70_3098fee105d44702.jpg",
+      "qa_id": 70,
+      "stem": "3098fee105d44702",
+      "width": 1024
+    },
+    {
+      "blur": 311.94,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "3112be8845136950.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa71_3112be8845136950.jpg",
+      "qa_id": 71,
+      "stem": "3112be8845136950",
+      "width": 556
+    },
+    {
+      "blur": 327.88,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "313e2337a4be1bf2.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa72_313e2337a4be1bf2.jpg",
+      "qa_id": 72,
+      "stem": "313e2337a4be1bf2",
+      "width": 1024
+    },
+    {
+      "blur": 15.11,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "31bb5cbb98c4842e.jpg",
+      "height": 761,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa73_31bb5cbb98c4842e.jpg",
+      "qa_id": 73,
+      "stem": "31bb5cbb98c4842e",
+      "width": 1024
+    },
+    {
+      "blur": 213.09,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "32701027e6cca4fa.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa74_32701027e6cca4fa.jpg",
+      "qa_id": 74,
+      "stem": "32701027e6cca4fa",
+      "width": 1024
+    },
+    {
+      "blur": 273.54,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "3283c52932b16a89.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa75_3283c52932b16a89.jpg",
+      "qa_id": 75,
+      "stem": "3283c52932b16a89",
+      "width": 1024
+    },
+    {
+      "blur": 517.2,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "32b7e66971427329.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa76_32b7e66971427329.jpg",
+      "qa_id": 76,
+      "stem": "32b7e66971427329",
+      "width": 768
+    },
+    {
+      "blur": 271.77,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "342a71612fc43f5c.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa77_342a71612fc43f5c.jpg",
+      "qa_id": 77,
+      "stem": "342a71612fc43f5c",
+      "width": 1024
+    },
+    {
+      "blur": 3311.36,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "35c5cdfacdbb5aba.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa78_35c5cdfacdbb5aba.jpg",
+      "qa_id": 78,
+      "stem": "35c5cdfacdbb5aba",
+      "width": 733
+    },
+    {
+      "blur": 229.79,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "3616b5a6f1483034.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa79_3616b5a6f1483034.jpg",
+      "qa_id": 79,
+      "stem": "3616b5a6f1483034",
+      "width": 1024
+    },
+    {
+      "blur": 217.53,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "38c37d148a7e3888.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa80_38c37d148a7e3888.jpg",
+      "qa_id": 80,
+      "stem": "38c37d148a7e3888",
+      "width": 681
+    },
+    {
+      "blur": 100.09,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "3a56b929eeeb3a02.jpg",
+      "height": 682,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa81_3a56b929eeeb3a02.jpg",
+      "qa_id": 81,
+      "stem": "3a56b929eeeb3a02",
+      "width": 1024
+    },
+    {
+      "blur": 1248.82,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "3a68c9f6f2b2aa65.jpg",
+      "height": 576,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa82_3a68c9f6f2b2aa65.jpg",
+      "qa_id": 82,
+      "stem": "3a68c9f6f2b2aa65",
+      "width": 1024
+    },
+    {
+      "blur": 462.9,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "3c1298df04c98e81.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa83_3c1298df04c98e81.jpg",
+      "qa_id": 83,
+      "stem": "3c1298df04c98e81",
+      "width": 768
+    },
+    {
+      "blur": 71.59,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "3d1ecfa36c026e27.jpg",
+      "height": 768,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa84_3d1ecfa36c026e27.jpg",
+      "qa_id": 84,
+      "stem": "3d1ecfa36c026e27",
+      "width": 1024
+    },
+    {
+      "blur": 417.62,
+      "box_count": 2,
+      "class_ids": [
+        8,
+        8
+      ],
+      "filename": "3e0b771b7ef094f9.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa85_3e0b771b7ef094f9.jpg",
+      "qa_id": 85,
+      "stem": "3e0b771b7ef094f9",
+      "width": 1024
+    },
+    {
+      "blur": 141.24,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "3e95efebbecbc9b2.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa86_3e95efebbecbc9b2.jpg",
+      "qa_id": 86,
+      "stem": "3e95efebbecbc9b2",
+      "width": 680
+    },
+    {
+      "blur": 246.63,
+      "box_count": 2,
+      "class_ids": [
+        8,
+        8
+      ],
+      "filename": "3efc6004f68cb3c9.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa87_3efc6004f68cb3c9.jpg",
+      "qa_id": 87,
+      "stem": "3efc6004f68cb3c9",
+      "width": 1024
+    },
+    {
+      "blur": 133.99,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "4063a08f2649aa02.jpg",
+      "height": 678,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa88_4063a08f2649aa02.jpg",
+      "qa_id": 88,
+      "stem": "4063a08f2649aa02",
+      "width": 1024
+    },
+    {
+      "blur": 26.59,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "4134f8344c902573.jpg",
+      "height": 768,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa89_4134f8344c902573.jpg",
+      "qa_id": 89,
+      "stem": "4134f8344c902573",
+      "width": 1024
+    },
+    {
+      "blur": 839.1,
+      "box_count": 2,
+      "class_ids": [
+        8,
+        8
+      ],
+      "filename": "427dda6f95d65b52.jpg",
+      "height": 630,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa90_427dda6f95d65b52.jpg",
+      "qa_id": 90,
+      "stem": "427dda6f95d65b52",
+      "width": 1024
+    },
+    {
+      "blur": 244.68,
+      "box_count": 6,
+      "class_ids": [
+        8,
+        8,
+        8,
+        8,
+        8,
+        8
+      ],
+      "filename": "4350ee1bf1b39e52.jpg",
+      "height": 682,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa91_4350ee1bf1b39e52.jpg",
+      "qa_id": 91,
+      "stem": "4350ee1bf1b39e52",
+      "width": 1024
+    },
+    {
+      "blur": 118.84,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "445b31f70a29f238.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa92_445b31f70a29f238.jpg",
+      "qa_id": 92,
+      "stem": "445b31f70a29f238",
+      "width": 1024
+    },
+    {
+      "blur": 292.32,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "47bfe4db84af0bdc.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa93_47bfe4db84af0bdc.jpg",
+      "qa_id": 93,
+      "stem": "47bfe4db84af0bdc",
+      "width": 1024
+    },
+    {
+      "blur": 265.19,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "48902a3226d8c00e.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa94_48902a3226d8c00e.jpg",
+      "qa_id": 94,
+      "stem": "48902a3226d8c00e",
+      "width": 1024
+    },
+    {
+      "blur": 182.57,
+      "box_count": 2,
+      "class_ids": [
+        8,
+        8
+      ],
+      "filename": "48b08f66338473d6.jpg",
+      "height": 682,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa95_48b08f66338473d6.jpg",
+      "qa_id": 95,
+      "stem": "48b08f66338473d6",
+      "width": 1024
+    },
+    {
+      "blur": 9.5,
+      "box_count": 1,
+      "class_ids": [
+        8
+      ],
+      "filename": "49d8f58e4b94132f.jpg",
+      "height": 1024,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/printer/previews/qa96_49d8f58e4b94132f.jpg",
+      "qa_id": 96,
+      "stem": "49d8f58e4b94132f",
+      "width": 1024
+    }
+  ],
+  "total_images": 96,
+  "total_objects": 121
+}

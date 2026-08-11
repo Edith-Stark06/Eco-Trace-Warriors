@@ -1,0 +1,90 @@
+{
+  "all_unchanged": true,
+  "classes": [
+    {
+      "ecotrace_class": "smartphone",
+      "source_diff": {
+        "added": [],
+        "modified": [],
+        "removed": []
+      },
+      "source_files_checked": 12,
+      "source_present": true,
+      "source_unchanged": true,
+      "staging_diff": {
+        "added": [],
+        "modified": [],
+        "removed": []
+      },
+      "staging_files_checked": 12,
+      "staging_unchanged": true
+    },
+    {
+      "ecotrace_class": "tablet",
+      "source_diff": {
+        "added": [],
+        "modified": [],
+        "removed": []
+      },
+      "source_files_checked": 200,
+      "source_present": true,
+      "source_unchanged": true,
+      "staging_diff": {
+        "added": [],
+        "modified": [],
+        "removed": []
+      },
+      "staging_files_checked": 200,
+      "staging_unchanged": true
+    },
+    {
+      "ecotrace_class": "monitor",
+      "source_diff": {
+        "added": [],
+        "modified": [],
+        "removed": []
+      },
+      "source_files_checked": 198,
+      "source_present": true,
+      "source_unchanged": true,
+      "staging_diff": {
+        "added": [],
+        "modified": [],
+        "removed": []
+      },
+      "staging_files_checked": 198,
+      "staging_unchanged": true
+    },
+    {
+      "ecotrace_class": "printer",
+      "source_diff": {
+        "added": [],
+        "modified": [],
+        "removed": []
+      },
+      "source_files_checked": 192,
+      "source_present": true,
+      "source_unchanged": true,
+      "staging_diff": {
+        "added": [],
+        "modified": [],
+        "removed": []
+      },
+      "staging_files_checked": 192,
+      "staging_unchanged": true
+    }
+  ],
+  "dataset_v1_released": false,
+  "generated_at": "2026-08-10T00:00:00+00:00",
+  "is_dataset_v1": false,
+  "is_released": false,
+  "no_human_decision_fabricated": true,
+  "package": "multiclass-human-qa",
+  "package_version": "p4-3-4-multiclass-human-qa-v1",
+  "part": "8-integrity-verification",
+  "source": "Open Images V7",
+  "source_unchanged": true,
+  "sprint": "P4.3.4",
+  "staging_unchanged": true,
+  "taxonomy_version": "1.0.0"
+}
