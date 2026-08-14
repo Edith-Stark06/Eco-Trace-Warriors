@@ -1,0 +1,196 @@
+{
+  "gate_states": {
+    "annotation_validation": "READY",
+    "coverage": "INCOMPLETE",
+    "data_presence": "READY",
+    "duplicates": "READY",
+    "image_validation": "READY",
+    "split": "READY",
+    "taxonomy": "READY"
+  },
+  "gates": [
+    {
+      "detail": {
+        "class_names": [
+          "laptop",
+          "smartphone",
+          "tablet",
+          "desktop",
+          "server",
+          "monitor",
+          "crt_monitor",
+          "television",
+          "printer",
+          "keyboard",
+          "mouse",
+          "router",
+          "power_supply",
+          "cable",
+          "camera",
+          "game_console",
+          "smartwatch",
+          "headphones",
+          "battery"
+        ],
+        "contiguous_ids_ok": true,
+        "count_ok": true,
+        "expected_num_classes": 19,
+        "expected_version": "1.0.0",
+        "num_classes": 19,
+        "version": "1.0.0",
+        "version_ok": true
+      },
+      "name": "taxonomy",
+      "state": "READY",
+      "summary": "taxonomy v1.0.0 with 19 classes (ids 0-18) verified",
+      "verdict": "pass"
+    },
+    {
+      "detail": {
+        "image_count": 252,
+        "images_root": "dataset_acquisition/candidate/p4_3_5_dataset_v1_candidate/images",
+        "label_file_count": 252,
+        "labels_root": "dataset_acquisition/candidate/p4_3_5_dataset_v1_candidate/labels"
+      },
+      "name": "data_presence",
+      "state": "READY",
+      "summary": "252 images and 252 label files present",
+      "verdict": "pass"
+    },
+    {
+      "detail": {
+        "is_valid": true,
+        "summary": {
+          "corrupted": 0,
+          "duplicate_filenames": 0,
+          "duplicate_hashes": 0,
+          "invalid_aspect_ratio": 0,
+          "oversized_files": 0,
+          "oversized_resolution": 0,
+          "total_issues": 0,
+          "undersized": 0,
+          "unsupported_extensions": 0
+        },
+        "total_files_scanned": 252,
+        "total_images": 252
+      },
+      "name": "image_validation",
+      "state": "READY",
+      "summary": "252 images passed structural validation",
+      "verdict": "pass"
+    },
+    {
+      "detail": {
+        "issue_counts_by_code": {},
+        "summary": {
+          "empty_labels": 0,
+          "images_without_labels": 0,
+          "is_valid": true,
+          "issue_count": 0,
+          "labels_without_images": 0,
+          "total_boxes": 358,
+          "total_labels": 252
+        }
+      },
+      "name": "annotation_validation",
+      "state": "READY",
+      "summary": "358 boxes across 252 labels valid",
+      "verdict": "pass"
+    },
+    {
+      "detail": {
+        "annotation_completeness": 1.0,
+        "images_without_labels": 0,
+        "missing_classes": [
+          "laptop",
+          "desktop",
+          "server",
+          "crt_monitor",
+          "television",
+          "keyboard",
+          "mouse",
+          "router",
+          "power_supply",
+          "cable",
+          "camera",
+          "game_console",
+          "smartwatch",
+          "headphones",
+          "battery"
+        ],
+        "total_boxes": 358,
+        "total_images": 252,
+        "total_labelled_images": 252
+      },
+      "name": "coverage",
+      "state": "INCOMPLETE",
+      "summary": "coverage incomplete: 15 class(es) missing",
+      "verdict": "fail"
+    },
+    {
+      "detail": {
+        "duplicate_paths": [],
+        "hamming_threshold": 5,
+        "num_duplicates": 0,
+        "total_images": 252
+      },
+      "name": "duplicates",
+      "state": "READY",
+      "summary": "no duplicates among 252 images",
+      "verdict": "pass"
+    },
+    {
+      "detail": {
+        "classes_absent_from_split": {},
+        "classes_per_split": {
+          "test": [
+            1,
+            2,
+            5,
+            8
+          ],
+          "train": [
+            1,
+            2,
+            5,
+            8
+          ],
+          "val": [
+            1,
+            2,
+            5,
+            8
+          ]
+        },
+        "classes_present": [
+          1,
+          2,
+          5,
+          8
+        ],
+        "counts": {
+          "test": 26,
+          "train": 176,
+          "val": 50
+        },
+        "leakage": [],
+        "ratios": [
+          0.7,
+          0.2,
+          0.1
+        ],
+        "seed": 42,
+        "uncovered": []
+      },
+      "name": "split",
+      "state": "READY",
+      "summary": "70/20/10 seed-42 split verified: no leakage, all classes per split",
+      "verdict": "pass"
+    }
+  ],
+  "images_root": "dataset_acquisition/candidate/p4_3_5_dataset_v1_candidate/images",
+  "is_ready": false,
+  "labels_root": "dataset_acquisition/candidate/p4_3_5_dataset_v1_candidate/labels",
+  "overall": "INCOMPLETE",
+  "sprint": "P4.2.3"
+}

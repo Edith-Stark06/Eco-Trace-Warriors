@@ -1,0 +1,291 @@
+{
+  "blur_threshold": 100.0,
+  "blurry_count": 5,
+  "contact_sheet": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/camera/contact_sheet.jpg",
+  "qa_status": "QA_PENDING",
+  "tiles": [
+    {
+      "blur": 303.88,
+      "box_count": 1,
+      "class_ids": [
+        14
+      ],
+      "filename": "00ce5a5ea4837634.jpg",
+      "height": 678,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/camera/previews/qa01_00ce5a5ea4837634.jpg",
+      "qa_id": 1,
+      "stem": "00ce5a5ea4837634",
+      "width": 1024
+    },
+    {
+      "blur": 2612.84,
+      "box_count": 1,
+      "class_ids": [
+        14
+      ],
+      "filename": "0ff8df5af194c762.jpg",
+      "height": 689,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/camera/previews/qa02_0ff8df5af194c762.jpg",
+      "qa_id": 2,
+      "stem": "0ff8df5af194c762",
+      "width": 1024
+    },
+    {
+      "blur": 486.89,
+      "box_count": 1,
+      "class_ids": [
+        14
+      ],
+      "filename": "2c8aa44265ff2999.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/camera/previews/qa03_2c8aa44265ff2999.jpg",
+      "qa_id": 3,
+      "stem": "2c8aa44265ff2999",
+      "width": 681
+    },
+    {
+      "blur": 764.59,
+      "box_count": 1,
+      "class_ids": [
+        14
+      ],
+      "filename": "2f2d6c102b578468.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/camera/previews/qa04_2f2d6c102b578468.jpg",
+      "qa_id": 4,
+      "stem": "2f2d6c102b578468",
+      "width": 1024
+    },
+    {
+      "blur": 250.2,
+      "box_count": 1,
+      "class_ids": [
+        14
+      ],
+      "filename": "32cc3656bbab3e67.jpg",
+      "height": 680,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/camera/previews/qa05_32cc3656bbab3e67.jpg",
+      "qa_id": 5,
+      "stem": "32cc3656bbab3e67",
+      "width": 1024
+    },
+    {
+      "blur": 765.0,
+      "box_count": 1,
+      "class_ids": [
+        14
+      ],
+      "filename": "50ef1255ee41604a.jpg",
+      "height": 576,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/camera/previews/qa06_50ef1255ee41604a.jpg",
+      "qa_id": 6,
+      "stem": "50ef1255ee41604a",
+      "width": 1024
+    },
+    {
+      "blur": 98.4,
+      "box_count": 1,
+      "class_ids": [
+        14
+      ],
+      "filename": "56e3fa15dd17341c.jpg",
+      "height": 681,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/camera/previews/qa07_56e3fa15dd17341c.jpg",
+      "qa_id": 7,
+      "stem": "56e3fa15dd17341c",
+      "width": 1024
+    },
+    {
+      "blur": 488.87,
+      "box_count": 1,
+      "class_ids": [
+        14
+      ],
+      "filename": "587f0c2c8953f51a.jpg",
+      "height": 678,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/camera/previews/qa08_587f0c2c8953f51a.jpg",
+      "qa_id": 8,
+      "stem": "587f0c2c8953f51a",
+      "width": 1024
+    },
+    {
+      "blur": 1156.11,
+      "box_count": 1,
+      "class_ids": [
+        14
+      ],
+      "filename": "62f04ce24af2325b.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/camera/previews/qa09_62f04ce24af2325b.jpg",
+      "qa_id": 9,
+      "stem": "62f04ce24af2325b",
+      "width": 1024
+    },
+    {
+      "blur": 119.0,
+      "box_count": 1,
+      "class_ids": [
+        14
+      ],
+      "filename": "66edaca7bff99323.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/camera/previews/qa10_66edaca7bff99323.jpg",
+      "qa_id": 10,
+      "stem": "66edaca7bff99323",
+      "width": 1024
+    },
+    {
+      "blur": 147.22,
+      "box_count": 1,
+      "class_ids": [
+        14
+      ],
+      "filename": "6a925f1385e2c081.jpg",
+      "height": 682,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/camera/previews/qa11_6a925f1385e2c081.jpg",
+      "qa_id": 11,
+      "stem": "6a925f1385e2c081",
+      "width": 1024
+    },
+    {
+      "blur": 660.31,
+      "box_count": 1,
+      "class_ids": [
+        14
+      ],
+      "filename": "9a07a578de148516.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/camera/previews/qa12_9a07a578de148516.jpg",
+      "qa_id": 12,
+      "stem": "9a07a578de148516",
+      "width": 1024
+    },
+    {
+      "blur": 71.68,
+      "box_count": 2,
+      "class_ids": [
+        14,
+        14
+      ],
+      "filename": "abd64befaf563521.jpg",
+      "height": 768,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/camera/previews/qa13_abd64befaf563521.jpg",
+      "qa_id": 13,
+      "stem": "abd64befaf563521",
+      "width": 1024
+    },
+    {
+      "blur": 122.99,
+      "box_count": 1,
+      "class_ids": [
+        14
+      ],
+      "filename": "c854b06cfa74390b.jpg",
+      "height": 711,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/camera/previews/qa14_c854b06cfa74390b.jpg",
+      "qa_id": 14,
+      "stem": "c854b06cfa74390b",
+      "width": 1024
+    },
+    {
+      "blur": 88.16,
+      "box_count": 1,
+      "class_ids": [
+        14
+      ],
+      "filename": "ccf81e11ab485354.jpg",
+      "height": 679,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/camera/previews/qa15_ccf81e11ab485354.jpg",
+      "qa_id": 15,
+      "stem": "ccf81e11ab485354",
+      "width": 1024
+    },
+    {
+      "blur": 83.89,
+      "box_count": 1,
+      "class_ids": [
+        14
+      ],
+      "filename": "d1f4bc82f53d01e0.jpg",
+      "height": 682,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/camera/previews/qa16_d1f4bc82f53d01e0.jpg",
+      "qa_id": 16,
+      "stem": "d1f4bc82f53d01e0",
+      "width": 1024
+    },
+    {
+      "blur": 496.65,
+      "box_count": 1,
+      "class_ids": [
+        14
+      ],
+      "filename": "d924533f790ccb69.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/camera/previews/qa17_d924533f790ccb69.jpg",
+      "qa_id": 17,
+      "stem": "d924533f790ccb69",
+      "width": 1024
+    },
+    {
+      "blur": 2596.95,
+      "box_count": 1,
+      "class_ids": [
+        14
+      ],
+      "filename": "e82e8e3dadc061ae.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/camera/previews/qa18_e82e8e3dadc061ae.jpg",
+      "qa_id": 18,
+      "stem": "e82e8e3dadc061ae",
+      "width": 730
+    },
+    {
+      "blur": 107.16,
+      "box_count": 1,
+      "class_ids": [
+        14
+      ],
+      "filename": "f3081a1ca53f57ab.jpg",
+      "height": 659,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/camera/previews/qa19_f3081a1ca53f57ab.jpg",
+      "qa_id": 19,
+      "stem": "f3081a1ca53f57ab",
+      "width": 1024
+    },
+    {
+      "blur": 45.95,
+      "box_count": 1,
+      "class_ids": [
+        14
+      ],
+      "filename": "f63214b1d0a7a840.jpg",
+      "height": 680,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/camera/previews/qa20_f63214b1d0a7a840.jpg",
+      "qa_id": 20,
+      "stem": "f63214b1d0a7a840",
+      "width": 1024
+    }
+  ],
+  "total_images": 20,
+  "total_objects": 21
+}
