@@ -22,3 +22,6 @@ __pycache__/
 # OS / editor
 .DS_Store
 Thumbs.db
+
+# Data / Datasets
+dataset_acquisition/candidate/

@@ -1,0 +1,25 @@
+{
+  "class_counts": {
+    "0": 34,
+    "10": 25,
+    "14": 21,
+    "17": 26,
+    "7": 44,
+    "9": 24
+  },
+  "images_root": "dataset_acquisition/staging/p4_3_6_expansion_v1/_validate/images",
+  "issue_counts_by_code": {},
+  "issues": [],
+  "labels_root": "dataset_acquisition/staging/p4_3_6_expansion_v1/_validate/labels",
+  "num_classes": 19,
+  "summary": {
+    "empty_labels": 0,
+    "images_without_labels": 0,
+    "is_valid": true,
+    "issue_count": 0,
+    "labels_without_images": 0,
+    "total_boxes": 174,
+    "total_labels": 119
+  },
+  "taxonomy_version": "1.0.0"
+}
