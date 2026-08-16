@@ -1,4 +1,4 @@
-"""Local ingestion — stage verified target-class boxes with full provenance.
+"""Local ingestion — stage verified router boxes with full provenance.
 
 This is the single code path every source funnels through: a remote adapter
 downloads to local disk, then ingestion runs identically for local and remote
@@ -8,12 +8,9 @@ Per source image:
 
 1. **Bbox presence** — an image with no boxes is rejected (``NO_BBOX``).
    Classification-only data never becomes detection data.
-2. **Per-box semantic gate** — every box's *source* label is evaluated for the
-   run's target class: ``router`` uses the frozen P4.3.7
-   :func:`device_ai.acquisition.semantics.evaluate_source_label`; any other
-   taxonomy class uses the generalized
-   :func:`device_ai.acquisition.semantics.evaluate_label`. Only boxes whose
-   label explicitly denotes the target class survive; the rest are dropped with
+2. **Per-box semantic gate** — every box's *source* label is evaluated by
+   :func:`device_ai.acquisition.semantics.evaluate_source_label`. Only boxes
+   whose label explicitly denotes ``router`` survive; the rest are dropped with
    their exact rejection category. An image left with no surviving box is
    rejected (``SEMANTIC_REJECTED``).
 3. **Image readability** — the file must exist and decode (``IMAGE_UNREADABLE``).
@@ -37,19 +34,13 @@ verifiable.
 from __future__ import annotations
 
 import shutil
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from .formats import DetectedFormat, SourceAnnotation, SourceBox
 from .licenses import LicenseDecision
 from .provenance_model import AcquisitionProvenanceRecord, compute_sha256, is_complete
-from .semantics import (
-    SemanticDecision,
-    build_target_semantics,
-    evaluate_label,
-    evaluate_source_label,
-)
+from .semantics import evaluate_source_label
 
 # Rejection codes (stable, machine-readable).
 REJECT_NO_BBOX = "NO_BBOX"
@@ -247,47 +238,23 @@ def _image_opens(path: Path) -> str:
     return ""
 
 
-def _image_size(path: Path) -> tuple[int, int]:
-    """Return the ``(width, height)`` of an image, or ``(0, 0)`` if unavailable.
-
-    Called only after :func:`_image_opens` has confirmed the file decodes, so a
-    failure here is defensive; dimensions are recorded on provenance for the
-    promotion gate and are never fabricated.
-    """
-    try:
-        from PIL import Image
-    except ImportError:  # pragma: no cover - Pillow is a project dependency
-        return (0, 0)
-    try:
-        with Image.open(path) as img:
-            width, height = img.size
-        return (int(width), int(height))
-    except Exception:  # noqa: BLE001 - defensive; unreadable already rejected
-        return (0, 0)
-
-
-def _staged_name(source_identifier: str, index: int, suffix: str, prefix: str) -> str:
+def _staged_name(source_identifier: str, index: int, suffix: str) -> str:
     """Return a flat, collision-free staged filename.
 
     The staged tree is intentionally flat (``images/<name>`` +
     ``labels/<name>.txt``) so the frozen validator's mirrored-path pairing is
     unambiguous. The index prefix keeps ordering deterministic and prevents two
-    source sub-directories with same-named files from colliding. ``prefix`` is
-    the target class name (``router`` preserves the P4.3.7 filenames).
+    source sub-directories with same-named files from colliding.
     """
     stem = Path(source_identifier).stem or "image"
     safe = "".join(ch if (ch.isalnum() or ch in "-_") else "_" for ch in stem)
-    safe_prefix = "".join(
-        ch if (ch.isalnum() or ch in "-_") else "_" for ch in (prefix or "image")
-    )
-    return f"{safe_prefix}_{index:05d}_{safe}{suffix.lower()}"
+    return f"router_{index:05d}_{safe}{suffix.lower()}"
 
 
 def _gate_boxes(
     annotation: SourceAnnotation,
-    evaluator: Callable[[str], SemanticDecision],
 ) -> tuple[list[SourceBox], list[dict[str, object]], int]:
-    """Apply the per-box semantic gate using the target-class evaluator.
+    """Apply the per-box semantic gate.
 
     Returns:
         ``(surviving_boxes, rejected_decisions, rejected_count)``.
@@ -295,7 +262,7 @@ def _gate_boxes(
     surviving: list[SourceBox] = []
     rejected: list[dict[str, object]] = []
     for box in annotation.boxes:
-        decision = evaluator(box.source_class_name)
+        decision = evaluate_source_label(box.source_class_name)
         if decision.accepted:
             surviving.append(box)
         else:
@@ -316,7 +283,6 @@ def ingest_source(
     taxonomy_class: str,
     taxonomy_id: int,
     import_timestamp: str,
-    source_version: str = "",
     dry_run: bool = False,
 ) -> IngestOutcome:
     """Stage every image whose boxes explicitly denote the target class.
@@ -331,13 +297,9 @@ def ingest_source(
         publisher: Source publisher/contributor, if known.
         license_decision: The **accepted** license decision for this source. Its
             normalised id is recorded on every provenance record.
-        taxonomy_class: Canonical EcoTrace class name. Selects the per-box
-            semantic evaluator: ``router`` uses the frozen P4.3.7 gate; any other
-            class uses the generalized, taxonomy-derived gate.
+        taxonomy_class: Canonical EcoTrace class name.
         taxonomy_id: Taxonomy id resolved at runtime from ``load_taxonomy``.
         import_timestamp: ISO-8601 UTC timestamp for the batch.
-        source_version: Source dataset version, if the source declares one
-            (recorded verbatim on provenance; never inferred).
         dry_run: When ``True`` nothing is written; counts and rejections are
             still computed so a dry run reports the real shape of the work.
 
@@ -353,14 +315,6 @@ def ingest_source(
             "refusing to ingest under a non-accepted license "
             f"({license_decision.verdict}: {license_decision.reason})"
         )
-
-    if taxonomy_class == "router":
-        box_evaluator: Callable[[str], SemanticDecision] = evaluate_source_label
-    else:
-        _target = build_target_semantics(taxonomy_class)
-
-        def box_evaluator(label: str) -> SemanticDecision:
-            return evaluate_label(label, _target)
 
     staged: list[StagedImage] = []
     provenance: list[AcquisitionProvenanceRecord] = []
@@ -392,9 +346,7 @@ def ingest_source(
             )
             continue
 
-        surviving, rejected_decisions, rejected_count = _gate_boxes(
-            annotation, box_evaluator
-        )
+        surviving, rejected_decisions, rejected_count = _gate_boxes(annotation)
         boxes_semantic_rejected += rejected_count
         if not surviving:
             rejections.append(
@@ -435,15 +387,13 @@ def ingest_source(
                 Rejection(
                     source_identifier=identifier,
                     code=REJECT_INVALID_GEOMETRY,
-                    reason="every target-class box failed geometry validation",
+                    reason="every router box failed geometry validation",
                     detail={"failures": geometry_failures},
                 )
             )
             continue
 
-        name = _staged_name(
-            identifier, index, annotation.image_path.suffix or ".jpg", taxonomy_class
-        )
+        name = _staged_name(identifier, index, annotation.image_path.suffix or ".jpg")
         if name in used_names:
             rejections.append(
                 Rejection(
@@ -484,7 +434,6 @@ def ingest_source(
                 ),
             )
         )
-        image_width, image_height = _image_size(annotation.image_path)
         provenance.append(
             AcquisitionProvenanceRecord(
                 relative_path=name,
@@ -503,10 +452,6 @@ def ingest_source(
                 import_timestamp=import_timestamp,
                 publisher=publisher,
                 source_url=source_url,
-                source_version=source_version,
-                image_width=image_width,
-                image_height=image_height,
-                object_count=len(valid_boxes),
             )
         )
         boxes_staged += len(valid_boxes)

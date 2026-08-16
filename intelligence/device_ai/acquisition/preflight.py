@@ -31,7 +31,6 @@ from .config import (
     EXPECTED_SPLIT_RATIOS,
     EXPECTED_SPLIT_SEED,
     EXPECTED_TAXONOMY_VERSION,
-    TARGET_CLASS_NAME,
     AcquisitionConfig,
 )
 from .provenance_model import compute_sha256
@@ -202,17 +201,8 @@ def fingerprint_tree(label: str, root: Path) -> TreeFingerprint:
     )
 
 
-def _taxonomy_checks(
-    target_class_name: str = TARGET_CLASS_NAME,
-) -> tuple[list[Check], dict[str, object]]:
-    """Verify the frozen taxonomy contract and the target class id.
-
-    Args:
-        target_class_name: The canonical class this run acquires. For ``router``
-            the frozen ``== 11`` guard is enforced; for any other class the check
-            passes when the name resolves in the frozen taxonomy (the version and
-            class-count guards above still detect taxonomy drift).
-    """
+def _taxonomy_checks() -> tuple[list[Check], dict[str, object]]:
+    """Verify the frozen taxonomy contract and the target class id."""
     checks: list[Check] = []
     values: dict[str, object] = {}
     try:
@@ -261,35 +251,22 @@ def _taxonomy_checks(
         )
     )
 
-    resolved = taxonomy.class_id_for(target_class_name)
-    values["target_class_name"] = target_class_name
-    values["target_class_id"] = resolved
-    if target_class_name == TARGET_CLASS_NAME:
-        # Back-compat key consumed by the P4.3.7 router report.
-        values["router_class_id"] = resolved
-        ok = resolved == EXPECTED_CLASS_ID
-        expected = f"{target_class_name} == {EXPECTED_CLASS_ID}"
-        fail_detail = (
-            "the taxonomy id for 'router' is not the expected 11; refusing "
-            "to acquire against a changed taxonomy"
-        )
-    else:
-        ok = resolved is not None
-        expected = (
-            f"'{target_class_name}' resolvable in the frozen "
-            f"{EXPECTED_NUM_CLASSES}-class taxonomy"
-        )
-        fail_detail = (
-            f"class '{target_class_name}' is not present in the frozen taxonomy; "
-            "refusing to acquire against an unknown class"
-        )
+    resolved = taxonomy.class_id_for("router")
+    values["router_class_id"] = resolved
     checks.append(
         Check(
             name="target_class_id",
-            verdict=OK if ok else MISMATCH,
-            expected=expected,
-            actual=f"{target_class_name} == {resolved}",
-            detail="" if ok else fail_detail,
+            verdict=OK if resolved == EXPECTED_CLASS_ID else MISMATCH,
+            expected=f"router == {EXPECTED_CLASS_ID}",
+            actual=f"router == {resolved}",
+            detail=(
+                ""
+                if resolved == EXPECTED_CLASS_ID
+                else (
+                    "the taxonomy id for 'router' is not the expected 11; refusing "
+                    "to acquire against a changed taxonomy"
+                )
+            ),
         )
     )
     return checks, values
@@ -484,7 +461,7 @@ def run_preflight(
     checks: list[Check] = []
     values: dict[str, object] = {}
 
-    taxonomy_checks, taxonomy_values = _taxonomy_checks(config.target_class)
+    taxonomy_checks, taxonomy_values = _taxonomy_checks()
     checks.extend(taxonomy_checks)
     values.update(taxonomy_values)
 
