@@ -3,3 +3,7 @@ OIDv4_ToolKit/
 staging/
 __pycache__/
 *.pyc
+
+# Temporary review scratch dirs and timestamped backups (never commit)
+review/tmp_*/
+review/**/*.backup_*.json

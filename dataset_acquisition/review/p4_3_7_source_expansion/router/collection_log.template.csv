@@ -1,0 +1,10 @@
+# P4.3.7 Router Wave 1 — collection log TEMPLATE (header only; NO data rows).
+# Fill one row per SELF-COLLECTED router image, then rename to collection_log.csv.
+# Columns mirror the code-owned ProvenanceRecord (relative_path, source, license,
+# contributor, collection_date, checksum) plus this wave's provenance fields and
+# the acquisition-plan §4 verification gate. Do NOT fabricate rows: a row exists
+# only when a real image exists. License must permit ML training + redistribution
+# (CC-BY / CC0 / CC-BY-SA / Apache-2.0 / public_domain / team-owned); unclear => exclude.
+# bbox_available refers to whether the image has an annotation yet (self-collected
+# images are annotated in-house, so this becomes TRUE after Stage 5).
+relative_path,taxonomy_id,ecotrace_class,source,source_class_description,source_identifier,location,collection_date,license_permission_basis,contributor,checksum_sha256,bbox_available,semantic_match_note

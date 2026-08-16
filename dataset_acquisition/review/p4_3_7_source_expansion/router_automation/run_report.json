@@ -1,0 +1,327 @@
+{
+  "blockers": [
+    "no local source supplied (--source); offline acquisition needs a local dataset directory or archive",
+    "network: SKIPPED_OFFLINE - offline mode requested; no network probe attempted",
+    "huggingface: huggingface unavailable: missing network; fail closed (no guessing, no fabrication)",
+    "kaggle: kaggle unavailable: missing network, KAGGLE_USERNAME, KAGGLE_KEY; fail closed (no guessing, no fabrication)",
+    "roboflow: roboflow unavailable: missing network, ROBOFLOW_API_KEY; fail closed (no guessing, no fabrication)"
+  ],
+  "dry_run": false,
+  "git_status_short": "?? dataset_acquisition/review/p4_3_4_multiclass_qa_v1/automated_acceptance_log.json\n?? dataset_acquisition/review/p4_3_4_multiclass_qa_v1/human_review_log.jsonl\n?? dataset_acquisition/review/p4_3_4_multiclass_qa_v1/signoff_template.backup_20260811_225544.json\n?? dataset_acquisition/review/p4_3_4_multiclass_qa_v1/signoff_template.before_auto_accept.json\n?? dataset_acquisition/review/p4_3_6_expansion_qa_v1/P4_3_6_COUNT_RECONCILIATION.md\n?? dataset_acquisition/review/p4_3_7_source_expansion/\n?? dataset_acquisition/review/tmp_duplicate_review_p435/\n?? intelligence/device_ai/acquisition/\n?? intelligence/device_ai/tests/test_acquisition_p437.py\n?? scripts/_build_p435_labels.py\n?? scripts/acquire_router_p437.py\n?? scripts/auto_accept_multiclass_qa_p434.py\n?? scripts/review_multiclass_qa_p434.py\n?? tmp_run_router_p437_offline.py\n?? tmp_settings.py\n?? tmp_splitter.py\n",
+  "mode_effective": "offline",
+  "mode_requested": "offline",
+  "paths": {
+    "evidence_dir": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/review/p4_3_7_source_expansion/router_automation",
+    "images_root": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/staging/p4_3_7_expansion_v1/router/images",
+    "labels_root": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/staging/p4_3_7_expansion_v1/router/labels",
+    "report_path": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/review/p4_3_7_source_expansion/P4_3_7_ROUTER_AUTOMATION_REPORT.md",
+    "staging_root": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/staging/p4_3_7_expansion_v1/router"
+  },
+  "sprint": "P4.3.7",
+  "stage_status": {
+    "credentials": "OK",
+    "discover": "BLOCKED",
+    "network": "SKIPPED",
+    "preflight": "OK",
+    "protected_state": "OK"
+  },
+  "stages": [
+    {
+      "detail": {
+        "checks": [
+          {
+            "actual": "1.0.0",
+            "detail": "",
+            "expected": "1.0.0",
+            "name": "taxonomy_version",
+            "verdict": "OK"
+          },
+          {
+            "actual": "19",
+            "detail": "",
+            "expected": "19",
+            "name": "taxonomy_num_classes",
+            "verdict": "OK"
+          },
+          {
+            "actual": "router == 11",
+            "detail": "",
+            "expected": "router == 11",
+            "name": "target_class_id",
+            "verdict": "OK"
+          },
+          {
+            "actual": "[0.7, 0.2, 0.1]",
+            "detail": "",
+            "expected": "[0.7, 0.2, 0.1]",
+            "name": "split_ratios",
+            "verdict": "OK"
+          },
+          {
+            "actual": "42",
+            "detail": "",
+            "expected": "42",
+            "name": "split_seed",
+            "verdict": "OK"
+          },
+          {
+            "actual": "5",
+            "detail": "",
+            "expected": "5",
+            "name": "duplicate_hamming_threshold",
+            "verdict": "OK"
+          },
+          {
+            "actual": "MetadataGenerator",
+            "detail": "",
+            "expected": "dataset.metadata.MetadataGenerator",
+            "name": "component_metadata_generator",
+            "verdict": "OK"
+          },
+          {
+            "actual": "ImageValidator",
+            "detail": "",
+            "expected": "dataset.image_validation.ImageValidator",
+            "name": "component_image_validator",
+            "verdict": "OK"
+          },
+          {
+            "actual": "AnnotationValidator",
+            "detail": "",
+            "expected": "dataset.validator.AnnotationValidator",
+            "name": "component_annotation_validator",
+            "verdict": "OK"
+          },
+          {
+            "actual": "DuplicateDetector",
+            "detail": "",
+            "expected": "dataset.duplicates.DuplicateDetector",
+            "name": "component_duplicate_detector",
+            "verdict": "OK"
+          },
+          {
+            "actual": "DatasetSplitter",
+            "detail": "",
+            "expected": "dataset.splitter.DatasetSplitter",
+            "name": "component_dataset_splitter",
+            "verdict": "OK"
+          },
+          {
+            "actual": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/staging/p4_3_7_expansion_v1/router",
+            "detail": "nearest existing parent: D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/staging/p4_3_7_expansion_v1",
+            "expected": "creatable path outside protected data",
+            "name": "path_staging_root",
+            "verdict": "OK"
+          },
+          {
+            "actual": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/review/p4_3_7_source_expansion/router_automation",
+            "detail": "nearest existing parent: D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/review/p4_3_7_source_expansion/router_automation",
+            "expected": "creatable path outside protected data",
+            "name": "path_evidence_dir",
+            "verdict": "OK"
+          },
+          {
+            "actual": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/staging/p4_3_7_expansion_v1/_work",
+            "detail": "nearest existing parent: D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/staging/p4_3_7_expansion_v1/_work",
+            "expected": "creatable path outside protected data",
+            "name": "path_work_dir",
+            "verdict": "OK"
+          },
+          {
+            "actual": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/review/p4_3_7_source_expansion",
+            "detail": "nearest existing parent: D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/review/p4_3_7_source_expansion",
+            "expected": "creatable path outside protected data",
+            "name": "path_report",
+            "verdict": "OK"
+          }
+        ],
+        "failures": [],
+        "frozen_values": {
+          "class_names": [
+            "laptop",
+            "smartphone",
+            "tablet",
+            "desktop",
+            "server",
+            "monitor",
+            "crt_monitor",
+            "television",
+            "printer",
+            "keyboard",
+            "mouse",
+            "router",
+            "power_supply",
+            "cable",
+            "camera",
+            "game_console",
+            "smartwatch",
+            "headphones",
+            "battery"
+          ],
+          "duplicate_hamming_threshold": 5,
+          "num_classes": 19,
+          "router_class_id": 11,
+          "split_ratios": [
+            0.7,
+            0.2,
+            0.1
+          ],
+          "split_seed": 42,
+          "taxonomy_version": "1.0.0"
+        },
+        "passed": true,
+        "protected_fingerprints": [
+          {
+            "content_hash": "567cdd455fcd25d162877472d1a4b06431b54efee932a0746e0b6a3fb15bced1",
+            "exists": true,
+            "file_count": 505,
+            "image_count": 252,
+            "label": "p4_3_5_candidate",
+            "label_count": 252,
+            "path": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/candidate/p4_3_5_dataset_v1_candidate"
+          },
+          {
+            "content_hash": "e12ab28e63d2db9d44e3d96230d78d4fa11d56fbf6deac1bbb39baf22397e461",
+            "exists": true,
+            "file_count": 736,
+            "image_count": 359,
+            "label": "p4_3_6_expansion",
+            "label_count": 359,
+            "path": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/staging/p4_3_6_expansion_v1"
+          }
+        ]
+      },
+      "name": "preflight",
+      "status": "OK",
+      "summary": "frozen taxonomy, split ratios/seed, duplicate threshold and every frozen component verified"
+    },
+    {
+      "detail": {
+        "detail": "offline mode requested; no network probe attempted",
+        "probed": false,
+        "status": "SKIPPED_OFFLINE",
+        "target": ""
+      },
+      "name": "network",
+      "status": "SKIPPED",
+      "summary": "network status: SKIPPED_OFFLINE (single probe, never retried)"
+    },
+    {
+      "detail": {
+        "adapters": {
+          "huggingface": {
+            "missing": [],
+            "present": [],
+            "required": [],
+            "satisfied": true
+          },
+          "kaggle": {
+            "missing": [
+              "KAGGLE_KEY",
+              "KAGGLE_USERNAME"
+            ],
+            "present": [],
+            "required": [
+              "KAGGLE_KEY",
+              "KAGGLE_USERNAME"
+            ],
+            "satisfied": false
+          },
+          "roboflow": {
+            "missing": [
+              "ROBOFLOW_API_KEY"
+            ],
+            "present": [],
+            "required": [
+              "ROBOFLOW_API_KEY"
+            ],
+            "satisfied": false
+          }
+        },
+        "note": "credential names only; no secret value is ever read out or stored",
+        "optional_present": []
+      },
+      "name": "credentials",
+      "status": "OK",
+      "summary": "credential presence recorded by name only (no secret is ever read out)"
+    },
+    {
+      "detail": {
+        "adapters": {
+          "huggingface": {
+            "available": false,
+            "candidates": 0,
+            "missing_requirements": [
+              "network"
+            ],
+            "reason": "huggingface unavailable: missing network; fail closed (no guessing, no fabrication)"
+          },
+          "kaggle": {
+            "available": false,
+            "candidates": 0,
+            "missing_requirements": [
+              "KAGGLE_KEY",
+              "KAGGLE_USERNAME",
+              "network"
+            ],
+            "reason": "kaggle unavailable: missing network, KAGGLE_USERNAME, KAGGLE_KEY; fail closed (no guessing, no fabrication)"
+          },
+          "roboflow": {
+            "available": false,
+            "candidates": 0,
+            "missing_requirements": [
+              "ROBOFLOW_API_KEY",
+              "network"
+            ],
+            "reason": "roboflow unavailable: missing network, ROBOFLOW_API_KEY; fail closed (no guessing, no fabrication)"
+          }
+        },
+        "candidate_count": 0,
+        "candidates": []
+      },
+      "name": "discover",
+      "status": "BLOCKED",
+      "summary": "0 candidate source(s) discovered across 3 adapter(s)"
+    },
+    {
+      "detail": {
+        "all_unchanged": true,
+        "trees": [
+          {
+            "content_hash_after": "567cdd455fcd25d162877472d1a4b06431b54efee932a0746e0b6a3fb15bced1",
+            "content_hash_before": "567cdd455fcd25d162877472d1a4b06431b54efee932a0746e0b6a3fb15bced1",
+            "detail": "byte-identical (content hash and file count match)",
+            "exists": true,
+            "file_count_after": 505,
+            "file_count_before": 505,
+            "image_count": 252,
+            "label": "p4_3_5_candidate",
+            "label_count": 252,
+            "path": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/candidate/p4_3_5_dataset_v1_candidate",
+            "unchanged": true
+          },
+          {
+            "content_hash_after": "e12ab28e63d2db9d44e3d96230d78d4fa11d56fbf6deac1bbb39baf22397e461",
+            "content_hash_before": "e12ab28e63d2db9d44e3d96230d78d4fa11d56fbf6deac1bbb39baf22397e461",
+            "detail": "byte-identical (content hash and file count match)",
+            "exists": true,
+            "file_count_after": 736,
+            "file_count_before": 736,
+            "image_count": 359,
+            "label": "p4_3_6_expansion",
+            "label_count": 359,
+            "path": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/staging/p4_3_6_expansion_v1",
+            "unchanged": true
+          }
+        ]
+      },
+      "name": "protected_state",
+      "status": "OK",
+      "summary": "protected P4.3.5 / P4.3.6 trees byte-identical before and after"
+    }
+  ],
+  "started_at": "2026-08-16T06:49:16.483333+00:00",
+  "status": "BLOCKED_NO_SOURCE",
+  "target_class": "router",
+  "wave_id": "p4_3_7_expansion_v1"
+}

@@ -25,3 +25,6 @@ Thumbs.db
 
 # Data / Datasets
 dataset_acquisition/candidate/
+
+# Temporary scratch scripts at repo root (never commit)
+/tmp_*.py
