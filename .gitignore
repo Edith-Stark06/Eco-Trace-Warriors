@@ -14,6 +14,17 @@ coverage/
 # Logs
 *.log
 
+# Python build artifacts
+__pycache__/
+*.pyc
+*.pyo
+
 # OS / editor
 .DS_Store
 Thumbs.db
+
+# Data / Datasets
+dataset_acquisition/candidate/
+
+# Temporary scratch scripts at repo root (never commit)
+/tmp_*.py
