@@ -1,0 +1,28 @@
+{
+  "analysis": {
+    "strongest_classes": ["laptop", "camera", "mouse"],
+    "weakest_classes": ["tablet", "monitor", "headphones"],
+    "low_recall_classes": ["tablet", "monitor", "mouse"],
+    "low_precision_classes": ["smartphone", "printer", "headphones"],
+    "class_confusion_evidence": "Tablet GT boxes show zero recall but perfect precision, suggesting detections are either missing or mislocalized (low IoU). Monitor shows moderate precision but low recall, indicating missed detections. Headphones shows balanced precision/recall but modest AP50, suggesting some confusion with similar-shaped objects (e.g., mouse, speaker-like items).",
+    "most_important_confusion_pairs": [
+      {"pair": "tablet <-> laptop/monitor", "evidence": "Tablet AP50 0.3991 despite zero recall at default threshold indicates some detections occur but fail IoU threshold; likely confused with laptop/monitor due to similar rectangular shapes."},
+      {"pair": "headphones <-> mouse", "evidence": "Both have moderate precision/recall and overlapping AP50 values (headphones 0.4828, mouse 0.6392); shape similarity may cause swaps."},
+      {"pair": "smartphone <-> tablet", "evidence": "Smartphone recall 0.6, precision 0.55; tablet zero recall; possible confusion due to both being handheld flat objects."}
+    ],
+    "localization_issue": "Moderate. Overall mAP50-95 is 0.3805 vs mAP50 0.5710 (ratio ~0.67). Per-class ratios: laptop 0.73, camera 0.60, monitor 0.64, tablet 0.54, indicating that bounding box localization accuracy is a notable contributor to missed detections, especially for tablet and monitor.",
+    "confidence_calibration_issue": "Unclear from available metrics. Precision-recall trade-offs vary by class; tablet shows high precision but zero recall, suggesting either extreme confidence threshold misalignment or systematic missed detections. No direct evidence of over/under-confidence from curves.",
+    "small_object_issue": "Cannot be determined from provided metrics alone. No size distribution data in evaluation artifacts.",
+    "domain_variation_evidence": "Evaluation is same-distribution (real-world Open Images) but not identical to training distribution (P4.4.2 bulk balance). Drop in mAP50 from P4.4.2 test (0.6642) to P4.5 (0.5710) suggests some distribution shift, likely due to real-world variation in viewpoint, occlusion, or background clutter.",
+    "more_training_data_justified": "YES for tablet, monitor, and headphones classes, which show low recall and/or low AP50, indicating insufficient representative examples in training data. However, per instructions, no new image downloads are permitted; this conclusion is for future planning.",
+    "change_training_strategy_justified": "YES. Consider class-weighted loss to boost recall for low-recall classes (tablet, monitor, mouse) and/or augmentation that improves scale/viewpoint invariance.",
+    "more_evaluation_data_needed": "YES. To draw firm per-class conclusions, especially for confusion pairs, a larger evaluation set with varied poses and contexts would help disambiguate localization vs classification errors.",
+    "next_experiment": "Run ablation with class-balanced loss (e.g., inverse instance frequency) on the existing p4_4_2_bulk_balance_v1 training configuration without adding new data, then re-evaluate on P4.5 to isolate impact of loss weighting."
+  },
+  "summary_scores": {
+    "P": 0.7103,
+    "R": 0.4738,
+    "mAP50": 0.5710,
+    "mAP50_95": 0.3805
+  }
+}

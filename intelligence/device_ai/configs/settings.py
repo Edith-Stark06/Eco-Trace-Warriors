@@ -108,6 +108,14 @@ FingerprintBackend = Literal["memory", "json"]
 # mock backend (useful in the base environment and tests).
 OCRBackendName = Literal["easyocr", "mock"]
 
+# Inference mode for the P5.0 production inference engine. 'single_model'
+# uses the P4.4.2 YOLO11n reference; 'ensemble' fuses P4.11 + P4.12 via
+# Weighted Box Fusion (P4.13 configuration).
+InferenceMode = Literal["single_model", "ensemble"]
+
+# Persistence backends for device registration records (P5.2 & P5.4).
+DeviceBackend = Literal["memory", "json", "postgres"]
+
 
 class Settings(BaseSettings):
     """Strongly-typed application configuration.
@@ -472,6 +480,136 @@ class Settings(BaseSettings):
             "aggregating the environmental savings, as too unlikely to count "
             "toward the avoided burden."
         ),
+    )
+
+    # --- P5.0 inference engine (final ML integration) ---------------------
+    inference_mode: InferenceMode = Field(
+        default="single_model",
+        description=(
+            "Detector strategy: 'single_model' uses the P4.4.2 YOLO11n "
+            "reference checkpoint; 'ensemble' fuses P4.11 YOLO11n + P4.12 "
+            "YOLO11s via Weighted Box Fusion (P4.13 E4 configuration)."
+        ),
+    )
+    ensemble_model_a_weights: str = Field(
+        default=(
+            "dataset_acquisition/training/"
+            "p4_11_multisource_targeted_aug_v1/runs/"
+            "p411_yolo11n_targeted_aug/weights/best.pt"
+        ),
+        description=(
+            "P4.11 YOLO11n checkpoint for ensemble Model A. Resolved "
+            "relative to the repository root when not absolute."
+        ),
+    )
+    ensemble_model_b_weights: str = Field(
+        default=(
+            "dataset_acquisition/training/"
+            "p4_12_model_scale_v1/runs/"
+            "p412_yolo11s/weights/best.pt"
+        ),
+        description=(
+            "P4.12 YOLO11s checkpoint for ensemble Model B. Resolved "
+            "relative to the repository root when not absolute."
+        ),
+    )
+    ensemble_weights_a: float = Field(
+        default=0.5,
+        ge=0.0,
+        le=1.0,
+        description="WBF fusion weight for Model A (P4.11).",
+    )
+    ensemble_weights_b: float = Field(
+        default=0.5,
+        ge=0.0,
+        le=1.0,
+        description="WBF fusion weight for Model B (P4.12).",
+    )
+    ensemble_use_tta: bool = Field(
+        default=True,
+        description="Enable Test-Time Augmentation for ensemble models.",
+    )
+    ensemble_iou_threshold: float = Field(
+        default=0.55,
+        ge=0.0,
+        le=1.0,
+        description="IoU threshold for WBF clustering.",
+    )
+    ensemble_image_size: int = Field(
+        default=512,
+        ge=32,
+        le=4096,
+        description="Inference image size (pixels) for ensemble models.",
+    )
+    ensemble_confidence_threshold: float = Field(
+        default=0.25,
+        ge=0.0,
+        le=1.0,
+        description="Minimum fused confidence for ensemble detections.",
+    )
+
+    # --- Device registration & workflow (P5.2) ----------------------------
+    device_backend: DeviceBackend = Field(
+        default="memory",
+        description="Persistence backend for device records: 'memory' or 'json'.",
+    )
+    device_store_dir: Path = Field(
+        default=Path("devices"),
+        description="Directory for JSON device record persistence.",
+    )
+    confidence_high_threshold: float = Field(
+        default=0.75,
+        ge=0.0,
+        le=1.0,
+        description="Confidence threshold at or above which a detection is HIGH_CONFIDENCE.",
+    )
+    confidence_review_threshold: float = Field(
+        default=0.40,
+        ge=0.0,
+        le=1.0,
+        description="Confidence threshold at or above which a detection is REVIEW_REQUIRED (below is LOW_CONFIDENCE).",
+    )
+
+    # --- Device intelligence enrichment (P5.3) ---------------------------
+    material_profile_version: str = Field(
+        default="v1.0.0",
+        description="Version tag for the deterministic material profile catalogue.",
+    )
+    carbon_model_version: str = Field(
+        default="v1.0.0",
+        description="Version tag for the avoided-burden carbon scoring model.",
+    )
+    carbon_calculation_methodology: str = Field(
+        default="avoided_burden_co2e",
+        description="Methodological basis for carbon scoring calculation.",
+    )
+
+    # --- PostgreSQL Persistence (P5.4) ------------------------------------
+    database_url: str | None = Field(
+        default=None,
+        description="Database connection URL (e.g. postgresql+psycopg://user:pass@host:5432/db).",
+    )
+    db_pool_size: int = Field(
+        default=5,
+        ge=1,
+        le=50,
+        description="SQLAlchemy connection pool size.",
+    )
+    db_max_overflow: int = Field(
+        default=10,
+        ge=0,
+        le=100,
+        description="SQLAlchemy max overflow connections.",
+    )
+    db_pool_timeout: int = Field(
+        default=30,
+        ge=1,
+        le=300,
+        description="SQLAlchemy pool acquisition timeout in seconds.",
+    )
+    db_echo: bool = Field(
+        default=False,
+        description="Enable SQLAlchemy query logging.",
     )
 
     @field_validator("min_images")

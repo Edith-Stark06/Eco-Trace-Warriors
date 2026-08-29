@@ -16,6 +16,7 @@ from loguru import logger
 from . import __version__
 from .api.dataset_routes import router as dataset_router
 from .api.dependencies import get_pipeline, get_registry
+from .api.device_routes import router as device_router
 from .api.errors import register_exception_handlers
 from .api.fingerprint_routes import router as fingerprint_router
 from .api.middleware import RequestContextMiddleware
@@ -76,5 +77,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(dataset_router)
     app.include_router(fingerprint_router)
     app.include_router(ocr_router)
+    app.include_router(device_router)
 
     return app

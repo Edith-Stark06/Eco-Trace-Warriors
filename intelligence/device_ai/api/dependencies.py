@@ -26,6 +26,16 @@ from ..fingerprint.repository import (
 )
 from ..fingerprint.service import FingerprintService
 from ..fingerprint.verification import VerificationEngine
+from ..devices.repository import (
+    DeviceRepository,
+    InMemoryDeviceRepository,
+    JsonFileDeviceRepository,
+)
+from ..devices.postgres_repository import PostgresDeviceRepository
+from ..devices.service import DeviceRegistrationService
+from ..devices.enrichment_service import DeviceIntelligenceService
+from ..database.database import dispose_engines, get_engine
+from ..database.session import get_session_factory
 from ..inference.clip_encoder import CLIPEncoder
 from ..inference.ecoid import EcoIDGenerator
 from ..inference.pipeline import (
@@ -35,6 +45,7 @@ from ..inference.pipeline import (
 )
 from ..inference.predictor import EmbeddingEncoder, MockEmbeddingEncoder
 from ..inference.registry import ModelRegistry
+from ..inference.ensemble_detector import EnsembleDetector
 from ..inference.yolo_detector import YOLODetector
 from ..ocr.backends import EasyOCRBackend, MockOCRBackend, OCRBackend
 from ..ocr.barcode import BarcodeReader, MockBarcodeReader, OpenCVBarcodeReader
@@ -47,21 +58,31 @@ from ..preprocessing.validator import ImageValidator
 def get_pipeline() -> PredictionPipeline:
     """Return the process-wide prediction pipeline singleton.
 
-    A real :class:`~device_ai.inference.yolo_detector.YOLODetector` is wired in
-    when its artifact resolves and the Ultralytics backend is available;
-    otherwise the service degrades to the all-mock pipeline. Either way the API
-    response schema is identical, so swapping models is transparent to clients.
+    Selects the detector implementation based on ``INFERENCE_MODE``:
+
+    * ``single_model`` — :class:`YOLODetector` backed by the P4.4.2 reference.
+    * ``ensemble`` — :class:`EnsembleDetector` fusing P4.11 + P4.12 via WBF.
+
+    Either way the API response schema is identical, so switching modes is
+    transparent to clients.
 
     Returns:
         The shared :class:`PredictionPipeline`.
     """
     settings = get_settings()
-    # Year is fixed from configuration/service version context rather than
-    # read from the wall clock inside request handling, keeping predictions
-    # reproducible in tests. The EcoID generator embeds it.
-    detector = _build_detector(settings)
+
+    if settings.inference_mode == "ensemble":
+        detector = _build_ensemble_detector(settings)
+    else:
+        detector = _build_detector(settings)
+
     if detector is not None and detector.is_ready:
-        logger.info("Serving predictions with the real YOLO detector.")
+        mode_label = (
+            "WBF ensemble (P4.11 + P4.12)"
+            if settings.inference_mode == "ensemble"
+            else "single YOLO detector"
+        )
+        logger.info("Serving predictions with the {}.", mode_label)
         return build_detection_pipeline(
             detector=detector,
             model_version=settings.model_version,
@@ -100,6 +121,45 @@ def _build_detector(settings: Settings) -> YOLODetector | None:
         )
     except Exception as exc:  # noqa: BLE001 - degrade to mock on any error
         logger.warning("Could not construct YOLO detector: {}", exc)
+        return None
+
+
+def _build_ensemble_detector(settings: Settings) -> EnsembleDetector | None:
+    """Build an :class:`EnsembleDetector` from settings, or ``None`` on failure.
+
+    Model A (P4.11) and Model B (P4.12) weight paths are resolved relative to
+    the **repository root** (one level above ``device_ai``) when not absolute.
+
+    Args:
+        settings: The active application settings.
+
+    Returns:
+        A (possibly not-ready) :class:`EnsembleDetector`, or ``None`` if
+        construction failed.
+    """
+    # Resolve relative paths from the repository root.
+    repo_root = Path(__file__).resolve().parents[3]
+
+    model_a_path = Path(settings.ensemble_model_a_weights)
+    if not model_a_path.is_absolute():
+        model_a_path = repo_root / model_a_path
+
+    model_b_path = Path(settings.ensemble_model_b_weights)
+    if not model_b_path.is_absolute():
+        model_b_path = repo_root / model_b_path
+
+    try:
+        return EnsembleDetector(
+            model_a_path=model_a_path,
+            model_b_path=model_b_path,
+            weights=(settings.ensemble_weights_a, settings.ensemble_weights_b),
+            use_tta=settings.ensemble_use_tta,
+            iou_threshold=settings.ensemble_iou_threshold,
+            image_size=settings.ensemble_image_size,
+            confidence_threshold=settings.ensemble_confidence_threshold,
+        )
+    except Exception as exc:  # noqa: BLE001 - degrade to mock on any error
+        logger.warning("Could not construct ensemble detector: {}", exc)
         return None
 
 
@@ -358,6 +418,92 @@ def get_ocr_service(
     )
 
 
+def build_device_repository(settings: Settings) -> DeviceRepository:
+    """Construct a :class:`DeviceRepository` from the provided settings.
+
+    Args:
+        settings: Application settings.
+
+    Returns:
+        The configured :class:`DeviceRepository`.
+    """
+    if settings.device_backend == "postgres":
+        db_url = settings.database_url or "postgresql+psycopg://ecotrace:ecotrace123@localhost:5432/ecotrace"
+        engine = get_engine(
+            db_url,
+            pool_size=settings.db_pool_size,
+            max_overflow=settings.db_max_overflow,
+            pool_timeout=settings.db_pool_timeout,
+            echo=settings.db_echo,
+        )
+        session_factory = get_session_factory(engine)
+        return PostgresDeviceRepository(session_factory)
+
+    if settings.device_backend == "json":
+        store_dir = settings.device_store_dir
+        if not store_dir.is_absolute():
+            store_dir = Path(__file__).resolve().parents[1] / store_dir
+        return JsonFileDeviceRepository(store_dir)
+
+    return InMemoryDeviceRepository()
+
+
+@lru_cache(maxsize=1)
+def get_device_repository() -> DeviceRepository:
+    """Return the process-wide :class:`DeviceRepository` singleton.
+
+    Selects the backend from ``device_backend``:
+    - ``memory``: Process-local dict store (default, test friendly).
+    - ``json``: Durable filesystem store under ``device_store_dir``.
+    - ``postgres``: Production PostgreSQL relational store via SQLAlchemy.
+
+    Returns:
+        The configured :class:`DeviceRepository`.
+    """
+    return build_device_repository(get_settings())
+
+
+def get_device_service(
+    repository: Annotated[DeviceRepository, Depends(get_device_repository)],
+    pipeline: Annotated[PredictionPipeline, Depends(get_pipeline)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> DeviceRegistrationService:
+    """Return a :class:`DeviceRegistrationService` wired with dependencies.
+
+    Args:
+        repository: Injected device repository.
+        pipeline: Injected prediction pipeline.
+        settings: Injected active application settings.
+
+    Returns:
+        A configured :class:`DeviceRegistrationService`.
+    """
+    return DeviceRegistrationService(
+        repository=repository,
+        pipeline=pipeline,
+        settings=settings,
+    )
+
+
+def get_device_intelligence_service(
+    repository: Annotated[DeviceRepository, Depends(get_device_repository)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> DeviceIntelligenceService:
+    """Return a :class:`DeviceIntelligenceService` wired with repository and settings.
+
+    Args:
+        repository: Injected device repository.
+        settings: Injected active application settings.
+
+    Returns:
+        A configured :class:`DeviceIntelligenceService`.
+    """
+    return DeviceIntelligenceService(
+        repository=repository,
+        settings=settings,
+    )
+
+
 def _current_year() -> int:
     """Return the current four-digit year.
 
@@ -376,12 +522,14 @@ def reset_dependency_caches() -> None:
     """Clear cached singletons.
 
     Intended for tests that override settings and need the pipeline/registry/
-    encoder/repository/OCR singletons rebuilt against the new configuration.
+    encoder/repository/OCR/device singletons rebuilt against the new configuration.
     """
     get_pipeline.cache_clear()
     get_registry.cache_clear()
     get_fingerprint_encoder.cache_clear()
     get_fingerprint_repository.cache_clear()
+    get_device_repository.cache_clear()
     get_ocr_backend.cache_clear()
     get_barcode_reader.cache_clear()
     get_settings.cache_clear()
+    dispose_engines()

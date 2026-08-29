@@ -181,12 +181,20 @@ def render_markdown(result: RunResult, *, git_status: str = "") -> str:
     protected = _stage_detail(result, "protected_state")
     frozen = _get(preflight, "frozen_values", default={})
     frozen_map = frozen if isinstance(frozen, dict) else {}
+    header_class_id = frozen_map.get(
+        "target_class_id", frozen_map.get("router_class_id", "UNVERIFIED")
+    )
+    observed_class_id = frozen_map.get(
+        "target_class_id", frozen_map.get("router_class_id", _NOT_RUN)
+    )
 
     lines: list[str] = [
         "# P4.3.7 — Router Automation Report",
         "",
-        f"**Sprint:** P4.3.7 — automated single-class acquisition ({result.config.target_class}, "
-        f"taxonomy id {frozen_map.get('router_class_id', 'UNVERIFIED')})",
+        (
+            f"**Sprint:** P4.3.7 — automated single-class acquisition "
+            f"({result.config.target_class}, taxonomy id {header_class_id})"
+        ),
         "**Component:** Device Intelligence Engine (DIE) — YOLO Detector (M1.4)",
         f"**Run started:** {result.started_at}",
         f"**Wave id:** `{result.config.wave_id}`",
@@ -455,8 +463,7 @@ def render_markdown(result: RunResult, *, git_status: str = "") -> str:
             "| --- | --- |",
             f"| taxonomy version | {frozen_map.get('taxonomy_version', _NOT_RUN)} |",
             f"| taxonomy classes | {frozen_map.get('num_classes', _NOT_RUN)} |",
-            f"| `{result.config.target_class}` class id | "
-            f"{frozen_map.get('router_class_id', _NOT_RUN)} |",
+            f"| `{result.config.target_class}` class id | {observed_class_id} |",
             f"| split ratios | {frozen_map.get('split_ratios', _NOT_RUN)} |",
             f"| split seed | {frozen_map.get('split_seed', _NOT_RUN)} |",
             f"| duplicate Hamming threshold | "

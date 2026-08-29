@@ -390,3 +390,57 @@ class EnvironmentalFactorError(EnvironmentalError):
 
     code = "ENVIRONMENTAL_FACTOR_ERROR"
     http_status = HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+# ---------------------------------------------------------------------------
+# Device registration & lifecycle workflow errors (P5.2)
+# ---------------------------------------------------------------------------
+
+
+class DeviceRegistrationError(DeviceAIError):
+    """Base class for device registration and workflow errors."""
+
+    code = "DEVICE_REGISTRATION_ERROR"
+    http_status = HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+class DeviceNotFoundError(DeviceRegistrationError):
+    """Raised when a requested device ID does not exist."""
+
+    code = "DEVICE_NOT_FOUND"
+    http_status = HTTPStatus.NOT_FOUND
+
+
+class DuplicateDeviceError(DeviceRegistrationError):
+    """Raised when attempting to create a device record with an existing ID."""
+
+    code = "DUPLICATE_DEVICE"
+    http_status = HTTPStatus.CONFLICT
+
+
+class InvalidStateTransitionError(DeviceRegistrationError):
+    """Raised when an invalid lifecycle state transition is requested."""
+
+    code = "INVALID_STATE_TRANSITION"
+    http_status = HTTPStatus.BAD_REQUEST
+
+
+class NoDetectionsForRegistrationError(DeviceRegistrationError):
+    """Raised when device registration is requested on an image with zero detections."""
+
+    code = "NO_DETECTIONS_FOUND"
+    http_status = HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+class InvalidDeviceClassError(DeviceRegistrationError):
+    """Raised when an unrecognized or unsupported device class is encountered."""
+
+    code = "INVALID_DEVICE_CLASS"
+    http_status = HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+class DevicePersistenceError(DeviceRegistrationError):
+    """Raised when device record persistence fails."""
+
+    code = "DEVICE_PERSISTENCE_ERROR"
+    http_status = HTTPStatus.INTERNAL_SERVER_ERROR

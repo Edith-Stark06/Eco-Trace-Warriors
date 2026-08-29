@@ -32,11 +32,17 @@ so a mixed-label source contributes only its explicit router boxes.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from .adapters.base import SourceCandidate
 from .licenses import LicenseDecision, evaluate_license
-from .semantics import SemanticDecision, evaluate_source_label
+from .semantics import (
+    SemanticDecision,
+    build_target_semantics,
+    evaluate_label,
+    evaluate_source_label,
+)
 
 # Verdicts (stable, machine-readable).
 ACCEPTED = "ACCEPTED"
@@ -116,12 +122,16 @@ def _bbox_gate(candidate: SourceCandidate) -> tuple[str, str]:
 
 def _semantic_gate(
     labels: list[str] | None,
+    target_class_name: str = "router",
 ) -> tuple[str, tuple[SemanticDecision, ...], tuple[str, ...], tuple[str, ...], str]:
-    """Evaluate every declared source label for the router class.
+    """Evaluate every declared source label for the target class.
 
     Args:
         labels: The source's own class labels, or ``None`` when they are not yet
             known (a local archive before ingestion).
+        target_class_name: The canonical class being acquired. ``router`` uses the
+            frozen P4.3.7 gate unchanged; any other class uses the generalized,
+            taxonomy-derived gate.
 
     Returns:
         ``(verdict, decisions, accepted, rejected, reason)``.
@@ -138,7 +148,15 @@ def _semantic_gate(
             ),
         )
 
-    decisions = tuple(evaluate_source_label(label) for label in labels)
+    if target_class_name == "router":
+        evaluator: Callable[[str], SemanticDecision] = evaluate_source_label
+    else:
+        target = build_target_semantics(target_class_name)
+
+        def evaluator(label: str) -> SemanticDecision:
+            return evaluate_label(label, target)
+
+    decisions = tuple(evaluator(label) for label in labels)
     accepted = tuple(d.raw_label for d in decisions if d.accepted)
     rejected = tuple(d.raw_label for d in decisions if not d.accepted)
     if accepted:
@@ -147,7 +165,7 @@ def _semantic_gate(
             decisions,
             accepted,
             rejected,
-            f"{len(accepted)} source label(s) explicitly denote 'router'",
+            f"{len(accepted)} source label(s) explicitly denote '{target_class_name}'",
         )
     if not decisions:
         return (
@@ -155,7 +173,10 @@ def _semantic_gate(
             decisions,
             accepted,
             rejected,
-            "source declares no class labels; 'router' cannot be established",
+            (
+                f"source declares no class labels; '{target_class_name}' "
+                "cannot be established"
+            ),
         )
     categories = sorted({d.category for d in decisions})
     return (
@@ -164,14 +185,17 @@ def _semantic_gate(
         accepted,
         rejected,
         (
-            "no source label explicitly denotes 'router' "
+            f"no source label explicitly denotes '{target_class_name}' "
             f"(categories: {', '.join(categories)})"
         ),
     )
 
 
 def verify_source(
-    candidate: SourceCandidate, *, labels: list[str] | None = None
+    candidate: SourceCandidate,
+    *,
+    labels: list[str] | None = None,
+    target_class_name: str = "router",
 ) -> SourceVerdict:
     """Run the license, bbox and semantic gates over one candidate source.
 
@@ -179,6 +203,8 @@ def verify_source(
         candidate: The discovered source metadata.
         labels: The source's declared class labels. ``None`` defers the semantic
             decision to per-box evaluation at ingest time (a local archive).
+        target_class_name: The canonical class being acquired (defaults to
+            ``router`` for exact P4.3.7 compatibility).
 
     Returns:
         A :class:`SourceVerdict`. The verdict is ``REJECTED`` when any gate
@@ -196,7 +222,7 @@ def verify_source(
         accepted_labels,
         rejected_labels,
         semantic_reason,
-    ) = _semantic_gate(labels)
+    ) = _semantic_gate(labels, target_class_name)
 
     reasons: list[str] = [
         f"license: {license_decision.reason}",
