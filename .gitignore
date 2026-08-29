@@ -1,10 +1,15 @@
 # Dependencies
 node_modules/
+.venv/
+venv/
 
-# Builds
+# Builds & Caches
 dist/
 build/
 coverage/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # Environment
 .env
@@ -18,13 +23,38 @@ coverage/
 __pycache__/
 *.pyc
 *.pyo
+*.egg-info/
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
 
 # OS / editor
 .DS_Store
 Thumbs.db
 
-# Data / Datasets
-dataset_acquisition/candidate/
+# Large Model Binaries & Weights (never commit)
+*.pt
+*.pth
+*.onnx
+*.bin
+*.safetensors
+weights/
+owlvit_local/
 
-# Temporary scratch scripts at repo root (never commit)
+# ML Experiment Outputs & Runs (never commit)
+runs/
+mlruns/
+
+# Large Datasets & Intermediate Images (never commit)
+dataset_acquisition/candidate/
+dataset_acquisition/staging/
+dataset_acquisition/training/
+dataset_acquisition/evaluation/
+
+# Temporary scratch scripts and debug files at repo root (never commit)
 /tmp_*.py
+/check_model_attrs.py
+/test_class_weights.py
+/verify_output.json

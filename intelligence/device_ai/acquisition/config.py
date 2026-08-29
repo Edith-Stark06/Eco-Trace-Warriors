@@ -1,10 +1,10 @@
-"""Static configuration for the router-acquisition pipeline.
+"""Static configuration for the multi-class acquisition pipeline.
 
 This module holds:
 
-* The **target class** identity (``router``) and the *expected* frozen values
-  used only as fail-closed guards — the authoritative values are always read at
-  runtime from :func:`~device_ai.dataset.taxonomy.load_taxonomy` and
+* The **default target class** identity (``router``) and the *expected* frozen
+  values used only as fail-closed guards — the authoritative values are always
+  read at runtime from :func:`~device_ai.dataset.taxonomy.load_taxonomy` and
   :class:`~device_ai.configs.settings.Settings`. If the live values ever drift
   from these expectations the preflight refuses to run rather than silently
   operating on a changed taxonomy/threshold.
@@ -63,6 +63,105 @@ PROTECTED_ROOTS: tuple[tuple[str, str], ...] = (
     ("p4_3_5_candidate", "candidate/p4_3_5_dataset_v1_candidate"),
     ("p4_3_6_expansion", "staging/p4_3_6_expansion_v1"),
 )
+
+
+@dataclass(frozen=True, slots=True)
+class TargetClass:
+    """A validated acquisition target resolved against the frozen taxonomy.
+
+    The taxonomy in ``components/data/components.yaml`` is the single source of
+    truth; this value object never duplicates the class list. Construct instances
+    via :meth:`resolve` (by name and/or id) or :meth:`parse` (a CLI token) so
+    invalid classes fail cleanly instead of silently acquiring the wrong data.
+
+    Attributes:
+        name: Canonical taxonomy class name (e.g. ``laptop``).
+        class_id: The class's frozen taxonomy id.
+    """
+
+    name: str
+    class_id: int
+
+    @classmethod
+    def resolve(
+        cls,
+        *,
+        name: str | None = None,
+        class_id: int | None = None,
+        taxonomy: object | None = None,
+    ) -> TargetClass:
+        """Resolve and validate a target class against the frozen taxonomy.
+
+        Args:
+            name: Canonical class name, if known.
+            class_id: Class id, if known.
+            taxonomy: Optional pre-loaded taxonomy (defaults to ``load_taxonomy``).
+
+        Returns:
+            A validated :class:`TargetClass`.
+
+        Raises:
+            ValueError: If neither identifier is given, the name is unknown, the
+                id is out of range, or the two disagree.
+        """
+        if taxonomy is None:
+            from ..dataset.taxonomy import load_taxonomy
+
+            taxonomy = load_taxonomy()
+        class_names = tuple(getattr(taxonomy, "class_names", ()))
+        n = len(class_names)
+
+        if name is None and class_id is None:
+            raise ValueError("target class requires a name or a class id")
+
+        resolved_name: str | None = None
+        resolved_id: int | None = None
+        if name is not None:
+            if name not in class_names:
+                raise ValueError(
+                    f"unknown target class name '{name}': not in the frozen "
+                    f"{n}-class taxonomy"
+                )
+            resolved_name = name
+            resolved_id = class_names.index(name)
+        if class_id is not None:
+            if not 0 <= class_id < n:
+                raise ValueError(
+                    f"target class id {class_id} out of range for the frozen "
+                    f"{n}-class taxonomy (0..{n - 1})"
+                )
+            id_name = class_names[class_id]
+            if resolved_name is not None and id_name != resolved_name:
+                raise ValueError(
+                    f"inconsistent target class: name '{resolved_name}' is id "
+                    f"{resolved_id}, not {class_id}"
+                )
+            resolved_name = id_name
+            resolved_id = class_id
+
+        assert resolved_name is not None and resolved_id is not None
+        return cls(name=resolved_name, class_id=int(resolved_id))
+
+    @classmethod
+    def parse(cls, token: str, *, taxonomy: object | None = None) -> TargetClass:
+        """Resolve a CLI token that is either a class name or an integer id.
+
+        Args:
+            token: A class name (``laptop``) or a stringified id (``0``).
+            taxonomy: Optional pre-loaded taxonomy.
+
+        Returns:
+            A validated :class:`TargetClass`.
+
+        Raises:
+            ValueError: If the token is empty or does not resolve.
+        """
+        text = (token or "").strip()
+        if not text:
+            raise ValueError("empty target class")
+        if text.isdigit():
+            return cls.resolve(class_id=int(text), taxonomy=taxonomy)
+        return cls.resolve(name=text, taxonomy=taxonomy)
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,6 +228,50 @@ class AcquisitionConfig:
             report_path=review / "P4_3_7_ROUTER_AUTOMATION_REPORT.md",
             json_report_path=review / "router_automation" / "run_report.json",
             work_dir=acq / "staging" / WAVE_ID / "_work",
+            protected_roots=tuple(
+                (label, acq / relative) for label, relative in PROTECTED_ROOTS
+            ),
+        )
+
+    @classmethod
+    def for_target(
+        cls,
+        target: TargetClass,
+        *,
+        root: Path | None = None,
+        wave_id: str | None = None,
+    ) -> AcquisitionConfig:
+        """Build a layout for an arbitrary taxonomy target class (P4.3.8).
+
+        The ``router`` target on the default wave delegates to :meth:`default`
+        so the P4.3.7 router layout is preserved byte-for-byte. Any other class
+        gets a parallel layout under the git-ignored staging tree and a
+        per-class review directory. Protected roots are unchanged, and no output
+        path is ever placed beneath them.
+
+        Args:
+            target: The validated target class.
+            root: Repository root override (defaults to the detected root).
+            wave_id: Staging sub-tree name (defaults to :data:`WAVE_ID`).
+
+        Returns:
+            A fully-populated :class:`AcquisitionConfig`.
+        """
+        wave = wave_id or WAVE_ID
+        if target.name == TARGET_CLASS_NAME and wave == WAVE_ID:
+            return cls.default(root=root)
+
+        base = root or repo_root()
+        acq = base / "dataset_acquisition"
+        review = acq / "review" / "p4_3_8_multiclass_acquisition" / target.name
+        return cls(
+            target_class=target.name,
+            wave_id=wave,
+            staging_root=acq / "staging" / wave / target.name,
+            evidence_dir=review / "automation",
+            report_path=review / f"P4_3_8_{target.name.upper()}_ACQUISITION_REPORT.md",
+            json_report_path=review / "automation" / "run_report.json",
+            work_dir=acq / "staging" / wave / "_work",
             protected_roots=tuple(
                 (label, acq / relative) for label, relative in PROTECTED_ROOTS
             ),

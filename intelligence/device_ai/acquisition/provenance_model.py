@@ -67,6 +67,10 @@ class AcquisitionProvenanceRecord:
         import_timestamp: ISO-8601 UTC timestamp of the import operation.
         publisher: Source publisher/contributor, if known.
         source_url: Source URL, if known.
+        source_version: Source dataset version, if the source declares one.
+        image_width: Pixel width of the staged image (0 when not measured).
+        image_height: Pixel height of the staged image (0 when not measured).
+        object_count: Number of accepted bounding boxes written to the label.
     """
 
     relative_path: str
@@ -83,6 +87,10 @@ class AcquisitionProvenanceRecord:
     import_timestamp: str
     publisher: str = ""
     source_url: str = ""
+    source_version: str = ""
+    image_width: int = 0
+    image_height: int = 0
+    object_count: int = 0
 
     def to_dict(self) -> dict[str, object]:
         """Return a primitive-only, JSON-serialisable mapping (superset)."""
@@ -101,6 +109,10 @@ class AcquisitionProvenanceRecord:
             "import_timestamp": self.import_timestamp,
             "publisher": self.publisher,
             "source_url": self.source_url,
+            "source_version": self.source_version,
+            "image_width": self.image_width,
+            "image_height": self.image_height,
+            "object_count": self.object_count,
         }
 
     def to_frozen_record_dict(self) -> dict[str, str]:

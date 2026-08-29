@@ -1,0 +1,2270 @@
+{
+  "objective": "Data-centric OOD robustness & final model selection for EcoTrace India",
+  "git_head": "48b4217fca2a9f619fb7ff6abb3c818a17daeeb0",
+  "baseline_reference": {
+    "model": "P4.4.2 YOLO11n Baseline (Bulk-Balanced)",
+    "sha256": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p45_in_domain": {
+      "mAP50": 0.571,
+      "mAP50_95": 0.3805,
+      "precision": 0.7103,
+      "recall": 0.4738
+    },
+    "p47_ood": {
+      "mAP50": 0.3438,
+      "mAP50_95": 0.2027,
+      "precision": 0.4646,
+      "recall": 0.3121
+    }
+  },
+  "p46_class_balanced": {
+    "model": "P4.6 Class-Balanced YOLO11n",
+    "sha256": "f82128422b0c02b93ed912cf05e43cea5d43a74cec2b786dfe082c33db11388a",
+    "p45_in_domain": {
+      "mAP50": 0.5627,
+      "mAP50_95": 0.3452,
+      "precision": 0.5261,
+      "recall": 0.5314
+    },
+    "p47_ood": {
+      "mAP50": 0.3005,
+      "mAP50_95": 0.1966,
+      "precision": 0.3737,
+      "recall": 0.3151
+    }
+  },
+  "p414_candidates": {
+    "p45": {
+      "P411_base": {
+        "overall": {
+          "precision": 0.63,
+          "recall": 0.6364,
+          "mAP50": 0.6302,
+          "mAP50_95": 0.4043
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.8182,
+            "recall": 0.6923,
+            "mAP50": 0.7356,
+            "mAP50_95": 0.5599,
+            "gt_instances": 13
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.55,
+            "recall": 0.7333,
+            "mAP50": 0.6768,
+            "mAP50_95": 0.507,
+            "gt_instances": 15
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 1.0,
+            "recall": 0.2727,
+            "mAP50": 0.3636,
+            "mAP50_95": 0.2955,
+            "gt_instances": 11
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.6471,
+            "recall": 0.5789,
+            "mAP50": 0.6743,
+            "mAP50_95": 0.4444,
+            "gt_instances": 19
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.6667,
+            "recall": 0.8,
+            "mAP50": 0.7126,
+            "mAP50_95": 0.4267,
+            "gt_instances": 10
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.7273,
+            "recall": 0.8,
+            "mAP50": 0.6934,
+            "mAP50_95": 0.3909,
+            "gt_instances": 10
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.6,
+            "recall": 0.6,
+            "mAP50": 0.6816,
+            "mAP50_95": 0.338,
+            "gt_instances": 10
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.4375,
+            "recall": 0.6364,
+            "mAP50": 0.5036,
+            "mAP50_95": 0.2723,
+            "gt_instances": 11
+          }
+        }
+      },
+      "P411_tta": {
+        "overall": {
+          "precision": 0.5308,
+          "recall": 0.697,
+          "mAP50": 0.6545,
+          "mAP50_95": 0.4505
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.5882,
+            "recall": 0.7692,
+            "mAP50": 0.806,
+            "mAP50_95": 0.6538,
+            "gt_instances": 13
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.5652,
+            "recall": 0.8667,
+            "mAP50": 0.704,
+            "mAP50_95": 0.5178,
+            "gt_instances": 15
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 1.0,
+            "recall": 0.4545,
+            "mAP50": 0.4965,
+            "mAP50_95": 0.3774,
+            "gt_instances": 11
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.5455,
+            "recall": 0.6316,
+            "mAP50": 0.6259,
+            "mAP50_95": 0.416,
+            "gt_instances": 19
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.5,
+            "recall": 0.7,
+            "mAP50": 0.7281,
+            "mAP50_95": 0.4957,
+            "gt_instances": 10
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.7778,
+            "recall": 0.7,
+            "mAP50": 0.6492,
+            "mAP50_95": 0.4193,
+            "gt_instances": 10
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.5,
+            "recall": 0.7,
+            "mAP50": 0.6092,
+            "mAP50_95": 0.3772,
+            "gt_instances": 10
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.3077,
+            "recall": 0.7273,
+            "mAP50": 0.6169,
+            "mAP50_95": 0.3468,
+            "gt_instances": 11
+          }
+        }
+      },
+      "P412_base": {
+        "overall": {
+          "precision": 0.6095,
+          "recall": 0.6465,
+          "mAP50": 0.6353,
+          "mAP50_95": 0.4259
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.75,
+            "recall": 0.6923,
+            "mAP50": 0.7827,
+            "mAP50_95": 0.6242,
+            "gt_instances": 13
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.6,
+            "recall": 0.8,
+            "mAP50": 0.7555,
+            "mAP50_95": 0.5731,
+            "gt_instances": 15
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 1.0,
+            "recall": 0.2727,
+            "mAP50": 0.2727,
+            "mAP50_95": 0.1727,
+            "gt_instances": 11
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.7692,
+            "recall": 0.5263,
+            "mAP50": 0.5804,
+            "mAP50_95": 0.4111,
+            "gt_instances": 19
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.5714,
+            "recall": 0.8,
+            "mAP50": 0.7409,
+            "mAP50_95": 0.5231,
+            "gt_instances": 10
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.5263,
+            "recall": 1.0,
+            "mAP50": 0.9233,
+            "mAP50_95": 0.4746,
+            "gt_instances": 10
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.6,
+            "recall": 0.6,
+            "mAP50": 0.5857,
+            "mAP50_95": 0.3292,
+            "gt_instances": 10
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.4286,
+            "recall": 0.5455,
+            "mAP50": 0.4412,
+            "mAP50_95": 0.2991,
+            "gt_instances": 11
+          }
+        }
+      },
+      "P412_tta": {
+        "overall": {
+          "precision": 0.5,
+          "recall": 0.6465,
+          "mAP50": 0.6543,
+          "mAP50_95": 0.4661
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.6,
+            "recall": 0.6923,
+            "mAP50": 0.7726,
+            "mAP50_95": 0.6141,
+            "gt_instances": 13
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.48,
+            "recall": 0.8,
+            "mAP50": 0.7613,
+            "mAP50_95": 0.638,
+            "gt_instances": 15
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 1.0,
+            "recall": 0.1818,
+            "mAP50": 0.5091,
+            "mAP50_95": 0.3341,
+            "gt_instances": 11
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.6667,
+            "recall": 0.6316,
+            "mAP50": 0.5886,
+            "mAP50_95": 0.3964,
+            "gt_instances": 19
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.4444,
+            "recall": 0.8,
+            "mAP50": 0.6987,
+            "mAP50_95": 0.4759,
+            "gt_instances": 10
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.5294,
+            "recall": 0.9,
+            "mAP50": 0.821,
+            "mAP50_95": 0.5925,
+            "gt_instances": 10
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.5455,
+            "recall": 0.6,
+            "mAP50": 0.6931,
+            "mAP50_95": 0.4312,
+            "gt_instances": 10
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.2727,
+            "recall": 0.5455,
+            "mAP50": 0.3902,
+            "mAP50_95": 0.2465,
+            "gt_instances": 11
+          }
+        }
+      },
+      "P413_Ens50_50": {
+        "overall": {
+          "precision": 0.6111,
+          "recall": 0.6667,
+          "mAP50": 0.7009,
+          "mAP50_95": 0.4572
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.7692,
+            "recall": 0.7692,
+            "mAP50": 0.7897,
+            "mAP50_95": 0.6021,
+            "gt_instances": 13
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.5455,
+            "recall": 0.8,
+            "mAP50": 0.7303,
+            "mAP50_95": 0.5579,
+            "gt_instances": 15
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 1.0,
+            "recall": 0.1818,
+            "mAP50": 0.5227,
+            "mAP50_95": 0.3967,
+            "gt_instances": 11
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.6471,
+            "recall": 0.5789,
+            "mAP50": 0.7081,
+            "mAP50_95": 0.4701,
+            "gt_instances": 19
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.6667,
+            "recall": 0.8,
+            "mAP50": 0.7178,
+            "mAP50_95": 0.4357,
+            "gt_instances": 10
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.625,
+            "recall": 1.0,
+            "mAP50": 0.9714,
+            "mAP50_95": 0.5282,
+            "gt_instances": 10
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.6,
+            "recall": 0.6,
+            "mAP50": 0.6301,
+            "mAP50_95": 0.3623,
+            "gt_instances": 10
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.4375,
+            "recall": 0.6364,
+            "mAP50": 0.5366,
+            "mAP50_95": 0.3041,
+            "gt_instances": 11
+          }
+        }
+      },
+      "P413_EnsTTA_50_50": {
+        "overall": {
+          "precision": 0.5455,
+          "recall": 0.7273,
+          "mAP50": 0.7353,
+          "mAP50_95": 0.4971
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.625,
+            "recall": 0.7692,
+            "mAP50": 0.812,
+            "mAP50_95": 0.6442,
+            "gt_instances": 13
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.5652,
+            "recall": 0.8667,
+            "mAP50": 0.7881,
+            "mAP50_95": 0.62,
+            "gt_instances": 15
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 1.0,
+            "recall": 0.2727,
+            "mAP50": 0.7172,
+            "mAP50_95": 0.5264,
+            "gt_instances": 11
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.5909,
+            "recall": 0.6842,
+            "mAP50": 0.6961,
+            "mAP50_95": 0.4639,
+            "gt_instances": 19
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.5714,
+            "recall": 0.8,
+            "mAP50": 0.762,
+            "mAP50_95": 0.4847,
+            "gt_instances": 10
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.6429,
+            "recall": 0.9,
+            "mAP50": 0.8956,
+            "mAP50_95": 0.5826,
+            "gt_instances": 10
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.6154,
+            "recall": 0.8,
+            "mAP50": 0.6601,
+            "mAP50_95": 0.3597,
+            "gt_instances": 10
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.2963,
+            "recall": 0.7273,
+            "mAP50": 0.5516,
+            "mAP50_95": 0.2953,
+            "gt_instances": 11
+          }
+        }
+      },
+      "P414_base": {
+        "overall": {
+          "precision": 0.3582,
+          "recall": 0.4848,
+          "mAP50": 0.5216,
+          "mAP50_95": 0.3153
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.2821,
+            "recall": 0.8462,
+            "mAP50": 0.6231,
+            "mAP50_95": 0.4495,
+            "gt_instances": 13
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.5882,
+            "recall": 0.6667,
+            "mAP50": 0.7107,
+            "mAP50_95": 0.5437,
+            "gt_instances": 15
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 0.4286,
+            "recall": 0.5455,
+            "mAP50": 0.489,
+            "mAP50_95": 0.3287,
+            "gt_instances": 11
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.3333,
+            "recall": 0.0526,
+            "mAP50": 0.3343,
+            "mAP50_95": 0.1798,
+            "gt_instances": 19
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 1.0,
+            "recall": 0.4,
+            "mAP50": 0.5947,
+            "mAP50_95": 0.3356,
+            "gt_instances": 10
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.2941,
+            "recall": 1.0,
+            "mAP50": 0.8141,
+            "mAP50_95": 0.4077,
+            "gt_instances": 10
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.3333,
+            "recall": 0.3,
+            "mAP50": 0.3671,
+            "mAP50_95": 0.163,
+            "gt_instances": 10
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.2143,
+            "recall": 0.2727,
+            "mAP50": 0.2394,
+            "mAP50_95": 0.1147,
+            "gt_instances": 11
+          }
+        }
+      },
+      "P414_tta": {
+        "overall": {
+          "precision": 0.3929,
+          "recall": 0.5556,
+          "mAP50": 0.5771,
+          "mAP50_95": 0.3735
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.3333,
+            "recall": 0.8462,
+            "mAP50": 0.6738,
+            "mAP50_95": 0.5037,
+            "gt_instances": 13
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.5,
+            "recall": 0.6,
+            "mAP50": 0.688,
+            "mAP50_95": 0.495,
+            "gt_instances": 15
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 0.4444,
+            "recall": 0.7273,
+            "mAP50": 0.64,
+            "mAP50_95": 0.5071,
+            "gt_instances": 11
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.4286,
+            "recall": 0.1579,
+            "mAP50": 0.3695,
+            "mAP50_95": 0.2223,
+            "gt_instances": 19
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.6667,
+            "recall": 0.4,
+            "mAP50": 0.5272,
+            "mAP50_95": 0.3626,
+            "gt_instances": 10
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.3448,
+            "recall": 1.0,
+            "mAP50": 0.86,
+            "mAP50_95": 0.4375,
+            "gt_instances": 10
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.3125,
+            "recall": 0.5,
+            "mAP50": 0.4879,
+            "mAP50_95": 0.2516,
+            "gt_instances": 10
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.3846,
+            "recall": 0.4545,
+            "mAP50": 0.3703,
+            "mAP50_95": 0.2085,
+            "gt_instances": 11
+          }
+        }
+      },
+      "P414_P412_Ens50_50": {
+        "overall": {
+          "precision": 0.5752,
+          "recall": 0.6566,
+          "mAP50": 0.6888,
+          "mAP50_95": 0.4275
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.6111,
+            "recall": 0.8462,
+            "mAP50": 0.8061,
+            "mAP50_95": 0.5266,
+            "gt_instances": 13
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.6316,
+            "recall": 0.8,
+            "mAP50": 0.7481,
+            "mAP50_95": 0.5796,
+            "gt_instances": 15
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 1.0,
+            "recall": 0.3636,
+            "mAP50": 0.5467,
+            "mAP50_95": 0.3371,
+            "gt_instances": 11
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.8333,
+            "recall": 0.5263,
+            "mAP50": 0.6641,
+            "mAP50_95": 0.4304,
+            "gt_instances": 19
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.7,
+            "recall": 0.7,
+            "mAP50": 0.8088,
+            "mAP50_95": 0.4627,
+            "gt_instances": 10
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.3846,
+            "recall": 1.0,
+            "mAP50": 0.9909,
+            "mAP50_95": 0.5432,
+            "gt_instances": 10
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.5,
+            "recall": 0.5,
+            "mAP50": 0.4733,
+            "mAP50_95": 0.2751,
+            "gt_instances": 10
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.4286,
+            "recall": 0.5455,
+            "mAP50": 0.4722,
+            "mAP50_95": 0.2651,
+            "gt_instances": 11
+          }
+        }
+      },
+      "P414_P412_EnsTTA_50_50": {
+        "overall": {
+          "precision": 0.5373,
+          "recall": 0.7273,
+          "mAP50": 0.7184,
+          "mAP50_95": 0.4572
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.5,
+            "recall": 0.9231,
+            "mAP50": 0.8444,
+            "mAP50_95": 0.596,
+            "gt_instances": 13
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.5238,
+            "recall": 0.7333,
+            "mAP50": 0.7592,
+            "mAP50_95": 0.6106,
+            "gt_instances": 15
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 0.8,
+            "recall": 0.7273,
+            "mAP50": 0.7643,
+            "mAP50_95": 0.5426,
+            "gt_instances": 11
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.6875,
+            "recall": 0.5789,
+            "mAP50": 0.5803,
+            "mAP50_95": 0.3598,
+            "gt_instances": 19
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.7,
+            "recall": 0.7,
+            "mAP50": 0.7522,
+            "mAP50_95": 0.4404,
+            "gt_instances": 10
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.4545,
+            "recall": 1.0,
+            "mAP50": 0.9818,
+            "mAP50_95": 0.5234,
+            "gt_instances": 10
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.5833,
+            "recall": 0.7,
+            "mAP50": 0.5492,
+            "mAP50_95": 0.3163,
+            "gt_instances": 10
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.3158,
+            "recall": 0.5455,
+            "mAP50": 0.5156,
+            "mAP50_95": 0.2683,
+            "gt_instances": 11
+          }
+        }
+      }
+    },
+    "p47": {
+      "P411_base": {
+        "overall": {
+          "precision": 0.4696,
+          "recall": 0.2621,
+          "mAP50": 0.285,
+          "mAP50_95": 0.1929
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.5385,
+            "recall": 0.4118,
+            "mAP50": 0.4184,
+            "mAP50_95": 0.2446,
+            "gt_instances": 34
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.4375,
+            "recall": 0.35,
+            "mAP50": 0.2472,
+            "mAP50_95": 0.1669,
+            "gt_instances": 20
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 1.0,
+            "recall": 0.0278,
+            "mAP50": 0.037,
+            "mAP50_95": 0.0296,
+            "gt_instances": 36
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.4103,
+            "recall": 0.2623,
+            "mAP50": 0.3159,
+            "mAP50_95": 0.208,
+            "gt_instances": 61
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.7273,
+            "recall": 0.4211,
+            "mAP50": 0.513,
+            "mAP50_95": 0.3141,
+            "gt_instances": 19
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.0,
+            "recall": 0.0,
+            "mAP50": 0.0311,
+            "mAP50_95": 0.0173,
+            "gt_instances": 15
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.5556,
+            "recall": 0.3571,
+            "mAP50": 0.3998,
+            "mAP50_95": 0.3139,
+            "gt_instances": 14
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.3333,
+            "recall": 0.4286,
+            "mAP50": 0.3177,
+            "mAP50_95": 0.2487,
+            "gt_instances": 7
+          }
+        }
+      },
+      "P411_tta": {
+        "overall": {
+          "precision": 0.4183,
+          "recall": 0.3107,
+          "mAP50": 0.3136,
+          "mAP50_95": 0.2205
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.4706,
+            "recall": 0.4706,
+            "mAP50": 0.4261,
+            "mAP50_95": 0.2691,
+            "gt_instances": 34
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.4545,
+            "recall": 0.5,
+            "mAP50": 0.3904,
+            "mAP50_95": 0.2399,
+            "gt_instances": 20
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 0.5,
+            "recall": 0.0278,
+            "mAP50": 0.083,
+            "mAP50_95": 0.045,
+            "gt_instances": 36
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.3922,
+            "recall": 0.3279,
+            "mAP50": 0.3491,
+            "mAP50_95": 0.226,
+            "gt_instances": 61
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.5294,
+            "recall": 0.4737,
+            "mAP50": 0.4685,
+            "mAP50_95": 0.3245,
+            "gt_instances": 19
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.0,
+            "recall": 0.0,
+            "mAP50": 0.034,
+            "mAP50_95": 0.0167,
+            "gt_instances": 15
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.4167,
+            "recall": 0.3571,
+            "mAP50": 0.4136,
+            "mAP50_95": 0.3583,
+            "gt_instances": 14
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.2727,
+            "recall": 0.4286,
+            "mAP50": 0.3441,
+            "mAP50_95": 0.2848,
+            "gt_instances": 7
+          }
+        }
+      },
+      "P412_base": {
+        "overall": {
+          "precision": 0.4341,
+          "recall": 0.2718,
+          "mAP50": 0.2741,
+          "mAP50_95": 0.1914
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.5714,
+            "recall": 0.4706,
+            "mAP50": 0.4847,
+            "mAP50_95": 0.2804,
+            "gt_instances": 34
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.3846,
+            "recall": 0.5,
+            "mAP50": 0.3669,
+            "mAP50_95": 0.2902,
+            "gt_instances": 20
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "mAP50": 0.0077,
+            "mAP50_95": 0.0037,
+            "gt_instances": 36
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.4545,
+            "recall": 0.2459,
+            "mAP50": 0.3101,
+            "mAP50_95": 0.2117,
+            "gt_instances": 61
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.6,
+            "recall": 0.3158,
+            "mAP50": 0.3175,
+            "mAP50_95": 0.2394,
+            "gt_instances": 19
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.1,
+            "recall": 0.0667,
+            "mAP50": 0.0326,
+            "mAP50_95": 0.0196,
+            "gt_instances": 15
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.5,
+            "recall": 0.2857,
+            "mAP50": 0.3179,
+            "mAP50_95": 0.2442,
+            "gt_instances": 14
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.3077,
+            "recall": 0.5714,
+            "mAP50": 0.355,
+            "mAP50_95": 0.2418,
+            "gt_instances": 7
+          }
+        }
+      },
+      "P412_tta": {
+        "overall": {
+          "precision": 0.3895,
+          "recall": 0.3252,
+          "mAP50": 0.3282,
+          "mAP50_95": 0.2372
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.4872,
+            "recall": 0.5588,
+            "mAP50": 0.4924,
+            "mAP50_95": 0.2928,
+            "gt_instances": 34
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.3125,
+            "recall": 0.5,
+            "mAP50": 0.386,
+            "mAP50_95": 0.3163,
+            "gt_instances": 20
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 0.6667,
+            "recall": 0.0556,
+            "mAP50": 0.097,
+            "mAP50_95": 0.086,
+            "gt_instances": 36
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.3953,
+            "recall": 0.2787,
+            "mAP50": 0.3127,
+            "mAP50_95": 0.2182,
+            "gt_instances": 61
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.5,
+            "recall": 0.4737,
+            "mAP50": 0.4226,
+            "mAP50_95": 0.3046,
+            "gt_instances": 19
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.1,
+            "recall": 0.0667,
+            "mAP50": 0.0329,
+            "mAP50_95": 0.0184,
+            "gt_instances": 15
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.5,
+            "recall": 0.3571,
+            "mAP50": 0.4067,
+            "mAP50_95": 0.292,
+            "gt_instances": 14
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.2353,
+            "recall": 0.5714,
+            "mAP50": 0.4754,
+            "mAP50_95": 0.369,
+            "gt_instances": 7
+          }
+        }
+      },
+      "P413_Ens50_50": {
+        "overall": {
+          "precision": 0.5,
+          "recall": 0.2864,
+          "mAP50": 0.3187,
+          "mAP50_95": 0.2077
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.5862,
+            "recall": 0.5,
+            "mAP50": 0.553,
+            "mAP50_95": 0.3146,
+            "gt_instances": 34
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.45,
+            "recall": 0.45,
+            "mAP50": 0.3549,
+            "mAP50_95": 0.2689,
+            "gt_instances": 20
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "mAP50": 0.0215,
+            "mAP50_95": 0.0157,
+            "gt_instances": 36
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.4444,
+            "recall": 0.2623,
+            "mAP50": 0.3419,
+            "mAP50_95": 0.2317,
+            "gt_instances": 61
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.8,
+            "recall": 0.4211,
+            "mAP50": 0.5095,
+            "mAP50_95": 0.2915,
+            "gt_instances": 19
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.1429,
+            "recall": 0.0667,
+            "mAP50": 0.027,
+            "mAP50_95": 0.0153,
+            "gt_instances": 15
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.7143,
+            "recall": 0.3571,
+            "mAP50": 0.3704,
+            "mAP50_95": 0.272,
+            "gt_instances": 14
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.3333,
+            "recall": 0.4286,
+            "mAP50": 0.3714,
+            "mAP50_95": 0.2521,
+            "gt_instances": 7
+          }
+        }
+      },
+      "P413_EnsTTA_50_50": {
+        "overall": {
+          "precision": 0.4224,
+          "recall": 0.3301,
+          "mAP50": 0.3381,
+          "mAP50_95": 0.2262
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.4737,
+            "recall": 0.5294,
+            "mAP50": 0.5254,
+            "mAP50_95": 0.2878,
+            "gt_instances": 34
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.4348,
+            "recall": 0.5,
+            "mAP50": 0.386,
+            "mAP50_95": 0.2781,
+            "gt_instances": 20
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 1.0,
+            "recall": 0.0278,
+            "mAP50": 0.1297,
+            "mAP50_95": 0.0898,
+            "gt_instances": 36
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.42,
+            "recall": 0.3443,
+            "mAP50": 0.3319,
+            "mAP50_95": 0.2211,
+            "gt_instances": 61
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.5,
+            "recall": 0.4211,
+            "mAP50": 0.4896,
+            "mAP50_95": 0.2998,
+            "gt_instances": 19
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.1111,
+            "recall": 0.0667,
+            "mAP50": 0.0355,
+            "mAP50_95": 0.0209,
+            "gt_instances": 15
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.4545,
+            "recall": 0.3571,
+            "mAP50": 0.4006,
+            "mAP50_95": 0.314,
+            "gt_instances": 14
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.3077,
+            "recall": 0.5714,
+            "mAP50": 0.4059,
+            "mAP50_95": 0.2981,
+            "gt_instances": 7
+          }
+        }
+      },
+      "P414_base": {
+        "overall": {
+          "precision": 0.2462,
+          "recall": 0.1553,
+          "mAP50": 0.1929,
+          "mAP50_95": 0.1125
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.2121,
+            "recall": 0.4118,
+            "mAP50": 0.332,
+            "mAP50_95": 0.1701,
+            "gt_instances": 34
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.3333,
+            "recall": 0.15,
+            "mAP50": 0.1496,
+            "mAP50_95": 0.0886,
+            "gt_instances": 20
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 0.5,
+            "recall": 0.0278,
+            "mAP50": 0.0538,
+            "mAP50_95": 0.0396,
+            "gt_instances": 36
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.5,
+            "recall": 0.0656,
+            "mAP50": 0.2821,
+            "mAP50_95": 0.1425,
+            "gt_instances": 61
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.5714,
+            "recall": 0.2105,
+            "mAP50": 0.2944,
+            "mAP50_95": 0.1614,
+            "gt_instances": 19
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.0,
+            "recall": 0.0,
+            "mAP50": 0.0095,
+            "mAP50_95": 0.0046,
+            "gt_instances": 15
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.4,
+            "recall": 0.4286,
+            "mAP50": 0.2983,
+            "mAP50_95": 0.2257,
+            "gt_instances": 14
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.0,
+            "recall": 0.0,
+            "mAP50": 0.1232,
+            "mAP50_95": 0.0671,
+            "gt_instances": 7
+          }
+        }
+      },
+      "P414_tta": {
+        "overall": {
+          "precision": 0.2601,
+          "recall": 0.2184,
+          "mAP50": 0.2276,
+          "mAP50_95": 0.1368
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.191,
+            "recall": 0.5,
+            "mAP50": 0.3684,
+            "mAP50_95": 0.2169,
+            "gt_instances": 34
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.3846,
+            "recall": 0.25,
+            "mAP50": 0.2026,
+            "mAP50_95": 0.1219,
+            "gt_instances": 20
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 0.6,
+            "recall": 0.0833,
+            "mAP50": 0.1313,
+            "mAP50_95": 0.0874,
+            "gt_instances": 36
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.5455,
+            "recall": 0.0984,
+            "mAP50": 0.2639,
+            "mAP50_95": 0.1374,
+            "gt_instances": 61
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.6,
+            "recall": 0.3158,
+            "mAP50": 0.345,
+            "mAP50_95": 0.1797,
+            "gt_instances": 19
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.0,
+            "recall": 0.0,
+            "mAP50": 0.0147,
+            "mAP50_95": 0.0082,
+            "gt_instances": 15
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.3158,
+            "recall": 0.4286,
+            "mAP50": 0.3555,
+            "mAP50_95": 0.252,
+            "gt_instances": 14
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.1818,
+            "recall": 0.2857,
+            "mAP50": 0.1393,
+            "mAP50_95": 0.0908,
+            "gt_instances": 7
+          }
+        }
+      },
+      "P414_P412_Ens50_50": {
+        "overall": {
+          "precision": 0.4242,
+          "recall": 0.2718,
+          "mAP50": 0.2983,
+          "mAP50_95": 0.184
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.4043,
+            "recall": 0.5588,
+            "mAP50": 0.5432,
+            "mAP50_95": 0.2735,
+            "gt_instances": 34
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.45,
+            "recall": 0.45,
+            "mAP50": 0.3495,
+            "mAP50_95": 0.2708,
+            "gt_instances": 20
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 0.5,
+            "recall": 0.0278,
+            "mAP50": 0.0648,
+            "mAP50_95": 0.0439,
+            "gt_instances": 36
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.5217,
+            "recall": 0.1967,
+            "mAP50": 0.3525,
+            "mAP50_95": 0.2183,
+            "gt_instances": 61
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.75,
+            "recall": 0.3158,
+            "mAP50": 0.3961,
+            "mAP50_95": 0.2277,
+            "gt_instances": 19
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.0769,
+            "recall": 0.0667,
+            "mAP50": 0.0186,
+            "mAP50_95": 0.0097,
+            "gt_instances": 15
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.5,
+            "recall": 0.3571,
+            "mAP50": 0.3357,
+            "mAP50_95": 0.2342,
+            "gt_instances": 14
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.3333,
+            "recall": 0.4286,
+            "mAP50": 0.3257,
+            "mAP50_95": 0.1941,
+            "gt_instances": 7
+          }
+        }
+      },
+      "P414_P412_EnsTTA_50_50": {
+        "overall": {
+          "precision": 0.3873,
+          "recall": 0.3252,
+          "mAP50": 0.332,
+          "mAP50_95": 0.2154
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.3387,
+            "recall": 0.6176,
+            "mAP50": 0.529,
+            "mAP50_95": 0.2951,
+            "gt_instances": 34
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.4167,
+            "recall": 0.5,
+            "mAP50": 0.379,
+            "mAP50_95": 0.2872,
+            "gt_instances": 20
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 0.6667,
+            "recall": 0.0556,
+            "mAP50": 0.1643,
+            "mAP50_95": 0.1109,
+            "gt_instances": 36
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.4545,
+            "recall": 0.2459,
+            "mAP50": 0.3589,
+            "mAP50_95": 0.2117,
+            "gt_instances": 61
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.5,
+            "recall": 0.3684,
+            "mAP50": 0.4572,
+            "mAP50_95": 0.2681,
+            "gt_instances": 19
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.0909,
+            "recall": 0.0667,
+            "mAP50": 0.0264,
+            "mAP50_95": 0.0163,
+            "gt_instances": 15
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.4,
+            "recall": 0.4286,
+            "mAP50": 0.3956,
+            "mAP50_95": 0.2867,
+            "gt_instances": 14
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.4545,
+            "recall": 0.7143,
+            "mAP50": 0.3456,
+            "mAP50_95": 0.2469,
+            "gt_instances": 7
+          }
+        }
+      }
+    },
+    "p412_test": {
+      "P411_base": {
+        "overall": {
+          "precision": 0.6,
+          "recall": 0.6562,
+          "mAP50": 0.6004,
+          "mAP50_95": 0.405
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.5714,
+            "recall": 0.4444,
+            "mAP50": 0.4129,
+            "mAP50_95": 0.2783,
+            "gt_instances": 18
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.4,
+            "recall": 0.6667,
+            "mAP50": 0.518,
+            "mAP50_95": 0.4439,
+            "gt_instances": 6
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 0.3333,
+            "recall": 0.25,
+            "mAP50": 0.325,
+            "mAP50_95": 0.25,
+            "gt_instances": 4
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.45,
+            "recall": 0.6,
+            "mAP50": 0.6176,
+            "mAP50_95": 0.4479,
+            "gt_instances": 15
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.6667,
+            "recall": 1.0,
+            "mAP50": 0.9286,
+            "mAP50_95": 0.6248,
+            "gt_instances": 6
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.25,
+            "recall": 0.6667,
+            "mAP50": 0.5,
+            "mAP50_95": 0.3333,
+            "gt_instances": 3
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.7037,
+            "recall": 0.7308,
+            "mAP50": 0.7478,
+            "mAP50_95": 0.4461,
+            "gt_instances": 26
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.7143,
+            "recall": 0.7,
+            "mAP50": 0.7536,
+            "mAP50_95": 0.4153,
+            "gt_instances": 50
+          }
+        }
+      },
+      "P411_tta": {
+        "overall": {
+          "precision": 0.5444,
+          "recall": 0.7188,
+          "mAP50": 0.622,
+          "mAP50_95": 0.4234
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.5,
+            "recall": 0.4444,
+            "mAP50": 0.4805,
+            "mAP50_95": 0.3135,
+            "gt_instances": 18
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.2632,
+            "recall": 0.8333,
+            "mAP50": 0.5854,
+            "mAP50_95": 0.4726,
+            "gt_instances": 6
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 0.4,
+            "recall": 0.5,
+            "mAP50": 0.25,
+            "mAP50_95": 0.2333,
+            "gt_instances": 4
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.55,
+            "recall": 0.7333,
+            "mAP50": 0.7426,
+            "mAP50_95": 0.5329,
+            "gt_instances": 15
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.6,
+            "recall": 1.0,
+            "mAP50": 0.8708,
+            "mAP50_95": 0.5252,
+            "gt_instances": 6
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.4,
+            "recall": 0.6667,
+            "mAP50": 0.5556,
+            "mAP50_95": 0.3778,
+            "gt_instances": 3
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.5758,
+            "recall": 0.7308,
+            "mAP50": 0.7498,
+            "mAP50_95": 0.5044,
+            "gt_instances": 26
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.6393,
+            "recall": 0.78,
+            "mAP50": 0.7413,
+            "mAP50_95": 0.4273,
+            "gt_instances": 50
+          }
+        }
+      },
+      "P412_base": {
+        "overall": {
+          "precision": 0.5263,
+          "recall": 0.625,
+          "mAP50": 0.5603,
+          "mAP50_95": 0.3973
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.5,
+            "recall": 0.3889,
+            "mAP50": 0.4676,
+            "mAP50_95": 0.3451,
+            "gt_instances": 18
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.375,
+            "recall": 1.0,
+            "mAP50": 0.5132,
+            "mAP50_95": 0.436,
+            "gt_instances": 6
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "mAP50": 0.0417,
+            "mAP50_95": 0.0417,
+            "gt_instances": 4
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.5625,
+            "recall": 0.6,
+            "mAP50": 0.7017,
+            "mAP50_95": 0.5443,
+            "gt_instances": 15
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.625,
+            "recall": 0.8333,
+            "mAP50": 0.7108,
+            "mAP50_95": 0.4889,
+            "gt_instances": 6
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.15,
+            "recall": 1.0,
+            "mAP50": 0.7381,
+            "mAP50_95": 0.569,
+            "gt_instances": 3
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.5625,
+            "recall": 0.6923,
+            "mAP50": 0.6324,
+            "mAP50_95": 0.3893,
+            "gt_instances": 26
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.7111,
+            "recall": 0.64,
+            "mAP50": 0.677,
+            "mAP50_95": 0.3642,
+            "gt_instances": 50
+          }
+        }
+      },
+      "P412_tta": {
+        "overall": {
+          "precision": 0.4787,
+          "recall": 0.7031,
+          "mAP50": 0.5932,
+          "mAP50_95": 0.4086
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.381,
+            "recall": 0.4444,
+            "mAP50": 0.3976,
+            "mAP50_95": 0.2975,
+            "gt_instances": 18
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.3,
+            "recall": 1.0,
+            "mAP50": 0.619,
+            "mAP50_95": 0.5474,
+            "gt_instances": 6
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 0.3333,
+            "recall": 0.25,
+            "mAP50": 0.0833,
+            "mAP50_95": 0.0833,
+            "gt_instances": 4
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.5,
+            "recall": 0.6667,
+            "mAP50": 0.7374,
+            "mAP50_95": 0.5664,
+            "gt_instances": 15
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.4167,
+            "recall": 0.8333,
+            "mAP50": 0.5903,
+            "mAP50_95": 0.3556,
+            "gt_instances": 6
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.2143,
+            "recall": 1.0,
+            "mAP50": 0.8667,
+            "mAP50_95": 0.5667,
+            "gt_instances": 3
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.5263,
+            "recall": 0.7692,
+            "mAP50": 0.7163,
+            "mAP50_95": 0.4658,
+            "gt_instances": 26
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.6167,
+            "recall": 0.74,
+            "mAP50": 0.7349,
+            "mAP50_95": 0.3864,
+            "gt_instances": 50
+          }
+        }
+      },
+      "P413_Ens50_50": {
+        "overall": {
+          "precision": 0.5705,
+          "recall": 0.6953,
+          "mAP50": 0.6499,
+          "mAP50_95": 0.4388
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.5714,
+            "recall": 0.4444,
+            "mAP50": 0.4663,
+            "mAP50_95": 0.3243,
+            "gt_instances": 18
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.4167,
+            "recall": 0.8333,
+            "mAP50": 0.6202,
+            "mAP50_95": 0.5565,
+            "gt_instances": 6
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "mAP50": 0.2938,
+            "mAP50_95": 0.2231,
+            "gt_instances": 4
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.5238,
+            "recall": 0.7333,
+            "mAP50": 0.7456,
+            "mAP50_95": 0.539,
+            "gt_instances": 15
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.6,
+            "recall": 1.0,
+            "mAP50": 1.0,
+            "mAP50_95": 0.6708,
+            "gt_instances": 6
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.1818,
+            "recall": 0.6667,
+            "mAP50": 0.5278,
+            "mAP50_95": 0.3306,
+            "gt_instances": 3
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.5938,
+            "recall": 0.7308,
+            "mAP50": 0.7626,
+            "mAP50_95": 0.4476,
+            "gt_instances": 26
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.7037,
+            "recall": 0.76,
+            "mAP50": 0.7832,
+            "mAP50_95": 0.4183,
+            "gt_instances": 50
+          }
+        }
+      },
+      "P413_EnsTTA_50_50": {
+        "overall": {
+          "precision": 0.546,
+          "recall": 0.7422,
+          "mAP50": 0.6303,
+          "mAP50_95": 0.4096
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.5,
+            "recall": 0.4444,
+            "mAP50": 0.4286,
+            "mAP50_95": 0.2977,
+            "gt_instances": 18
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.3,
+            "recall": 1.0,
+            "mAP50": 0.632,
+            "mAP50_95": 0.5438,
+            "gt_instances": 6
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 0.25,
+            "recall": 0.25,
+            "mAP50": 0.2083,
+            "mAP50_95": 0.2,
+            "gt_instances": 4
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.5789,
+            "recall": 0.7333,
+            "mAP50": 0.789,
+            "mAP50_95": 0.5786,
+            "gt_instances": 15
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.4545,
+            "recall": 0.8333,
+            "mAP50": 0.7619,
+            "mAP50_95": 0.4198,
+            "gt_instances": 6
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.3333,
+            "recall": 1.0,
+            "mAP50": 0.6444,
+            "mAP50_95": 0.3889,
+            "gt_instances": 3
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.5714,
+            "recall": 0.7692,
+            "mAP50": 0.7844,
+            "mAP50_95": 0.4609,
+            "gt_instances": 26
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.6833,
+            "recall": 0.82,
+            "mAP50": 0.7937,
+            "mAP50_95": 0.3874,
+            "gt_instances": 50
+          }
+        }
+      },
+      "P414_base": {
+        "overall": {
+          "precision": 0.309,
+          "recall": 0.4297,
+          "mAP50": 0.4908,
+          "mAP50_95": 0.2933
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.1538,
+            "recall": 0.5556,
+            "mAP50": 0.2029,
+            "mAP50_95": 0.13,
+            "gt_instances": 18
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.2667,
+            "recall": 0.6667,
+            "mAP50": 0.4213,
+            "mAP50_95": 0.35,
+            "gt_instances": 6
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 0.25,
+            "recall": 0.25,
+            "mAP50": 0.2745,
+            "mAP50_95": 0.2291,
+            "gt_instances": 4
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 1.0,
+            "recall": 0.2,
+            "mAP50": 0.6352,
+            "mAP50_95": 0.337,
+            "gt_instances": 15
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.5,
+            "recall": 0.3333,
+            "mAP50": 0.5345,
+            "mAP50_95": 0.2853,
+            "gt_instances": 6
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.15,
+            "recall": 1.0,
+            "mAP50": 0.9167,
+            "mAP50_95": 0.5333,
+            "gt_instances": 3
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.4242,
+            "recall": 0.5385,
+            "mAP50": 0.4807,
+            "mAP50_95": 0.2329,
+            "gt_instances": 26
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.5294,
+            "recall": 0.36,
+            "mAP50": 0.4609,
+            "mAP50_95": 0.2487,
+            "gt_instances": 50
+          }
+        }
+      },
+      "P414_tta": {
+        "overall": {
+          "precision": 0.2698,
+          "recall": 0.5312,
+          "mAP50": 0.491,
+          "mAP50_95": 0.2983
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.1304,
+            "recall": 0.5,
+            "mAP50": 0.1832,
+            "mAP50_95": 0.1281,
+            "gt_instances": 18
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.2857,
+            "recall": 0.6667,
+            "mAP50": 0.4687,
+            "mAP50_95": 0.3739,
+            "gt_instances": 6
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 0.1667,
+            "recall": 0.25,
+            "mAP50": 0.175,
+            "mAP50_95": 0.1667,
+            "gt_instances": 4
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.6364,
+            "recall": 0.4667,
+            "mAP50": 0.7494,
+            "mAP50_95": 0.4518,
+            "gt_instances": 15
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.3333,
+            "recall": 0.3333,
+            "mAP50": 0.4424,
+            "mAP50_95": 0.2809,
+            "gt_instances": 6
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.0968,
+            "recall": 1.0,
+            "mAP50": 1.0,
+            "mAP50_95": 0.5,
+            "gt_instances": 3
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.2466,
+            "recall": 0.6923,
+            "mAP50": 0.4283,
+            "mAP50_95": 0.2309,
+            "gt_instances": 26
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.5714,
+            "recall": 0.48,
+            "mAP50": 0.481,
+            "mAP50_95": 0.2537,
+            "gt_instances": 50
+          }
+        }
+      },
+      "P414_P412_Ens50_50": {
+        "overall": {
+          "precision": 0.5174,
+          "recall": 0.6953,
+          "mAP50": 0.5543,
+          "mAP50_95": 0.3653
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.2857,
+            "recall": 0.5556,
+            "mAP50": 0.3009,
+            "mAP50_95": 0.1608,
+            "gt_instances": 18
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.4167,
+            "recall": 0.8333,
+            "mAP50": 0.4679,
+            "mAP50_95": 0.4085,
+            "gt_instances": 6
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 0.25,
+            "recall": 0.25,
+            "mAP50": 0.2298,
+            "mAP50_95": 0.1833,
+            "gt_instances": 4
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.8182,
+            "recall": 0.6,
+            "mAP50": 0.7149,
+            "mAP50_95": 0.5453,
+            "gt_instances": 15
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.8,
+            "recall": 0.6667,
+            "mAP50": 0.8079,
+            "mAP50_95": 0.5728,
+            "gt_instances": 6
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.15,
+            "recall": 1.0,
+            "mAP50": 0.5873,
+            "mAP50_95": 0.3437,
+            "gt_instances": 3
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.5556,
+            "recall": 0.7692,
+            "mAP50": 0.6445,
+            "mAP50_95": 0.3495,
+            "gt_instances": 26
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.7551,
+            "recall": 0.74,
+            "mAP50": 0.6812,
+            "mAP50_95": 0.3581,
+            "gt_instances": 50
+          }
+        }
+      },
+      "P414_P412_EnsTTA_50_50": {
+        "overall": {
+          "precision": 0.4381,
+          "recall": 0.7188,
+          "mAP50": 0.5989,
+          "mAP50_95": 0.3816
+        },
+        "per_class": {
+          "laptop": {
+            "class_id": 0,
+            "precision": 0.2308,
+            "recall": 0.5,
+            "mAP50": 0.3192,
+            "mAP50_95": 0.1808,
+            "gt_instances": 18
+          },
+          "smartphone": {
+            "class_id": 1,
+            "precision": 0.3333,
+            "recall": 1.0,
+            "mAP50": 0.6275,
+            "mAP50_95": 0.5172,
+            "gt_instances": 6
+          },
+          "tablet": {
+            "class_id": 2,
+            "precision": 0.2,
+            "recall": 0.25,
+            "mAP50": 0.2969,
+            "mAP50_95": 0.2859,
+            "gt_instances": 4
+          },
+          "monitor": {
+            "class_id": 3,
+            "precision": 0.7692,
+            "recall": 0.6667,
+            "mAP50": 0.7643,
+            "mAP50_95": 0.5387,
+            "gt_instances": 15
+          },
+          "printer": {
+            "class_id": 4,
+            "precision": 0.5556,
+            "recall": 0.8333,
+            "mAP50": 0.7101,
+            "mAP50_95": 0.3961,
+            "gt_instances": 6
+          },
+          "mouse": {
+            "class_id": 5,
+            "precision": 0.1429,
+            "recall": 1.0,
+            "mAP50": 0.75,
+            "mAP50_95": 0.4,
+            "gt_instances": 3
+          },
+          "camera": {
+            "class_id": 6,
+            "precision": 0.4255,
+            "recall": 0.7692,
+            "mAP50": 0.6174,
+            "mAP50_95": 0.3704,
+            "gt_instances": 26
+          },
+          "headphones": {
+            "class_id": 7,
+            "precision": 0.6552,
+            "recall": 0.76,
+            "mAP50": 0.7062,
+            "mAP50_95": 0.3633,
+            "gt_instances": 50
+          }
+        }
+      }
+    }
+  },
+  "final_model_selection": {
+    "selected_model": "P4.4.2 Baseline / P4.13 Multi-Model Ensemble (Freeze Option)",
+    "single_model_edge_candidate": "P4.11 / P4.14 YOLO11n (2.6M parameters)",
+    "high_precision_cloud_candidate": "P4.13 Dual-Model WBF Ensemble + TTA (Peak mAP50=0.7353)",
+    "ml_stopping_condition": "SATISFIED - ML PHASE COMPLETE"
+  }
+}

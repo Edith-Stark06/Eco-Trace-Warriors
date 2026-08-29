@@ -13,8 +13,10 @@ backend (``docs/engineering/08_AI.md``).
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 
+from ..exceptions import DeviceAIError, InferenceError, ModelNotLoadedError
 from ..preprocessing.image_loader import LoadedImage
 from .ecoid import EcoIDGenerator
 from .predictor import (
@@ -121,16 +123,47 @@ class PredictionPipeline:
     def predict(self, images: list[LoadedImage]) -> PredictionResult:
         """Run the full prediction pipeline over validated images.
 
-        The order mirrors the documented service pipeline: detect → embed →
-        assess condition → OCR → estimate materials → generate EcoID.
-
         Args:
             images: Validated, decoded images for a single request.
 
         Returns:
             A :class:`PredictionResult` aggregating every component output.
         """
-        detection = self._detector.detect(images)
+        result, _ = self.predict_with_timing(images)
+        return result
+
+    def predict_with_timing(
+        self, images: list[LoadedImage]
+    ) -> tuple[PredictionResult, dict[str, float]]:
+        """Run the prediction pipeline and measure per-stage execution latency.
+
+        Separates detector forward pass from downstream parsing and aggregation.
+
+        Args:
+            images: Validated, decoded images for a single request.
+
+        Returns:
+            A tuple of ``(PredictionResult, timing_dict)`` where timing_dict
+            contains ``inference_ms`` and ``postprocessing_ms``.
+
+        Raises:
+            ModelNotLoadedError: If the detector is not ready to serve.
+            InferenceError: If an unexpected error occurs during inference.
+        """
+        t_inf_start = time.perf_counter()
+        try:
+            detection = self._detector.detect(images)
+        except DeviceAIError:
+            raise
+        except Exception as exc:
+            raise InferenceError(
+                f"Model detector inference failed: {exc}",
+                details={"error": str(exc), "detector": self._detector.name},
+            ) from exc
+        t_inf_end = time.perf_counter()
+        inference_ms = round((t_inf_end - t_inf_start) * 1000, 2)
+
+        t_post_start = time.perf_counter()
         embedding = self._embedding.encode(images)
         condition = self._condition.assess(images)
         ocr = self._ocr.extract(images)
@@ -138,8 +171,10 @@ class PredictionPipeline:
 
         carbon_score = self._carbon_score(condition, materials)
         eco_id = self._ecoid.generate()
+        t_post_end = time.perf_counter()
+        postprocessing_ms = round((t_post_end - t_post_start) * 1000, 2)
 
-        return PredictionResult(
+        result = PredictionResult(
             eco_id=eco_id,
             detection=detection,
             condition=condition,
@@ -149,6 +184,11 @@ class PredictionPipeline:
             carbon_score=carbon_score,
             model_version=self._model_version,
         )
+        timing = {
+            "inference_ms": inference_ms,
+            "postprocessing_ms": postprocessing_ms,
+        }
+        return result, timing
 
     def health(self) -> dict[str, bool]:
         """Report readiness of each underlying component.
@@ -164,6 +204,11 @@ class PredictionPipeline:
             self._embedding,
         )
         return {component.name: component.is_ready for component in components}
+
+    @property
+    def detector(self) -> Detector:
+        """Return the underlying detector component."""
+        return self._detector
 
     @staticmethod
     def _carbon_score(

@@ -49,7 +49,7 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from .config import AcquisitionConfig, repo_root
+from .config import AcquisitionConfig, TargetClass, repo_root
 from .gates import summarize_verdicts, verify_source
 from .network import check_connectivity
 from .pipeline import (
@@ -186,11 +186,28 @@ def _local_spec(args: argparse.Namespace) -> LocalSourceSpec | None:
     )
 
 
+def _resolve_target(args: argparse.Namespace) -> TargetClass | None:
+    """Resolve ``--target-class`` (name or id) against the frozen taxonomy.
+
+    Returns ``None`` when the flag was not supplied (the router default applies).
+
+    Raises:
+        ValueError: When the supplied class name/id does not resolve.
+    """
+    token = getattr(args, "target_class", None)
+    if token is None:
+        return None
+    return TargetClass.parse(str(token))
+
+
 def _config(args: argparse.Namespace) -> AcquisitionConfig:
-    """Build the run layout, honouring path overrides."""
-    config = AcquisitionConfig.default(
-        root=Path(args.repo_root) if args.repo_root else None
-    )
+    """Build the run layout, honouring the target class and path overrides."""
+    root = Path(args.repo_root) if args.repo_root else None
+    target = _resolve_target(args)
+    if target is None:
+        config = AcquisitionConfig.default(root=root)
+    else:
+        config = AcquisitionConfig.for_target(target, root=root)
     if args.report_out or args.json_out or args.staging_root:
         from dataclasses import replace
 
@@ -216,6 +233,15 @@ def _add_common_arguments(parser: argparse.ArgumentParser) -> None:
         help=(
             "auto (default): one connectivity probe decides; online: require "
             "egress; offline: never probe, ingest --source only."
+        ),
+    )
+    parser.add_argument(
+        "--target-class",
+        default=None,
+        help=(
+            "Taxonomy class to acquire, by name (e.g. laptop) or id (e.g. 0). "
+            "Defaults to 'router'. Validated against components.yaml; an unknown "
+            "name or out-of-range id fails cleanly without acquiring anything."
         ),
     )
     parser.add_argument(
@@ -431,6 +457,12 @@ def acquire_main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     command = _resolve_command(args)
+
+    try:
+        _resolve_target(args)
+    except ValueError as exc:
+        print(f"error: invalid --target-class: {exc}", file=sys.stderr)
+        return _EXIT_USAGE
 
     if command == "discover":
         return _discover_only(args, verify=False)

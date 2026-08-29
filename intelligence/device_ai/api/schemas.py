@@ -39,6 +39,9 @@ class HealthResponse(BaseModel):
     model_dir_available: bool = Field(
         description="Whether the configured model directory exists."
     )
+    inference_mode: str = Field(
+        default="single_model", description="Active inference mode (single_model | ensemble)."
+    )
 
 
 class VersionResponse(BaseModel):
@@ -64,11 +67,32 @@ class OCRPayload(BaseModel):
     model: str = Field(default="", description="Extracted model identifier.")
 
 
+class DetectionPayload(BaseModel):
+    """A single detected device/object with canonical taxonomy mapping."""
+
+    class_id: int = Field(description="Canonical class index (0..7) or -1 if unmapped.")
+    class_name: str = Field(description="Canonical class label (e.g. 'laptop').")
+    confidence: float = Field(ge=0.0, le=1.0, description="Detection confidence score.")
+    bounding_box: tuple[int, int, int, int] = Field(
+        description="(x1, y1, x2, y2) pixel bounding box coordinates."
+    )
+
+
+class TimingPayload(BaseModel):
+    """Per-stage execution latency breakdown in milliseconds."""
+
+    preprocessing_ms: float = Field(ge=0.0, description="Image validation and decoding time.")
+    inference_ms: float = Field(ge=0.0, description="Model forward pass latency.")
+    postprocessing_ms: float = Field(ge=0.0, description="WBF, OCR, condition and EcoID derivation time.")
+    total_ms: float = Field(ge=0.0, description="Total end-to-end request processing time.")
+
+
 class PredictionResponse(BaseModel):
     """Response body for ``POST /predict``.
 
     Mirrors the milestone reference payload exactly so the backend can rely
-    on a stable shape across the mock → real-model transition.
+    on a stable shape across the mock → real-model transition, augmented with
+    P5.1 production metadata (request_id, inference_mode, detections, timing).
     """
 
     # ``model_version``/``model_*`` fields would collide with Pydantic's
@@ -88,6 +112,41 @@ class PredictionResponse(BaseModel):
         ge=0.0, le=100.0, description="Derived carbon-recovery score."
     )
     embedding_id: str = Field(description="Reference to the visual embedding.")
+    model_version: str = Field(description="Model/service version tag.")
+    request_id: str | None = Field(
+        default=None, description="Unique correlation request ID."
+    )
+    inference_mode: str = Field(
+        default="single_model",
+        description="Active inference mode (single_model | ensemble).",
+    )
+    detections: list[DetectionPayload] = Field(
+        default_factory=list,
+        description="All detected objects with canonical taxonomy & bounding boxes.",
+    )
+    timing: TimingPayload | None = Field(
+        default=None, description="Stage latency breakdown (ms)."
+    )
+
+
+class DetectorInfo(BaseModel):
+    """Metadata about the active detector."""
+
+    name: str = Field(description="Human-readable detector name.")
+    version: str = Field(description="Detector artifact/implementation version.")
+    ready: bool = Field(description="Whether the detector is loaded and serving.")
+
+
+class ModelInfoResponse(BaseModel):
+    """Response body for ``GET /model``."""
+
+    # ``model_version``/``model_*`` fields would collide with Pydantic's
+    # protected ``model_`` namespace; disable the protection explicitly.
+    model_config = ConfigDict(protected_namespaces=())
+
+    inference_mode: str = Field(description="Active inference mode (single_model | ensemble).")
+    detector: DetectorInfo = Field(description="Active detector metadata.")
+    class_map: dict[int, str] = Field(description="Canonical class ID to label mapping.")
     model_version: str = Field(description="Model/service version tag.")
 
 
