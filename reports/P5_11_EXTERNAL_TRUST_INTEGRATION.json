@@ -1,0 +1,64 @@
+{
+  "phase": "P5.11",
+  "title": "External / Blockchain Trust Integration",
+  "status": "COMPLETE",
+  "timestamp": "2026-08-30T12:32:45Z",
+  "git": {
+    "branch": "develop",
+    "head": "fb9b084e727ef14a4bff9b0e7814c884b7b7157f"
+  },
+  "blockchain_infrastructure_discovered": {
+    "chaincode": "blockchain/chaincode/ecotrace-lifecycle",
+    "backend_fabric_client": "backend/src/infrastructure/fabric/fabric.client.ts (TypeScript interface placeholder for Phase 7)",
+    "documentation": "docs/engineering/09_BLOCKCHAIN.md (IEEE YESIST 2026 specification: ecotrace-channel, EcoTraceOrg, on-chain EcoID/hash link)",
+    "live_network_status": "NOT RUNNING (Adapter implemented with explicit UNAVAILABLE status when offline)"
+  },
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "domain_models": {
+    "external_trust_anchor": "ExternalTrustAnchor (immutable dataclass)",
+    "external_trust_verification_result": "ExternalTrustVerificationResult (immutable dataclass)",
+    "full_trust_comparison_result": "FullTrustComparisonResult (immutable dataclass)",
+    "external_trust_status_enum": [
+      "NOT_ANCHORED",
+      "VERIFIED",
+      "MISMATCH",
+      "UNAVAILABLE",
+      "ERROR"
+    ]
+  },
+  "ledger_providers": {
+    "protocol": "ExternalTrustLedger (anchor, get_anchor, verify_anchor, is_available)",
+    "reference_provider": "InMemoryExternalTrustLedger (deterministic development/test store)",
+    "fabric_adapter": "FabricExternalTrustLedger (translates to gateway client; safely returns UNAVAILABLE when offline)"
+  },
+  "persistence": {
+    "orm_model": "ExternalTrustAnchorModel (table: external_trust_anchors)",
+    "repository": "PostgresExternalTrustAnchorRepository",
+    "migration": "003_add_p511_external_trust_anchors"
+  },
+  "api_endpoints": {
+    "post_external_anchor": "POST /devices/{device_id}/passport/external-anchor (HTTP 201/200)",
+    "get_external_anchor": "GET /devices/{device_id}/passport/external-anchor (HTTP 200)",
+    "get_external_verify": "GET /devices/{device_id}/passport/external-anchor/verify (Strictly Read-Only, HTTP 200)",
+    "get_full_trust": "GET /devices/{device_id}/trust/full (Strictly Read-Only Aggregate, HTTP 200)"
+  },
+  "read_only_guarantees": {
+    "verify_writes": 0,
+    "verify_mutations": 0,
+    "verify_events_emitted": 0
+  },
+  "test_metrics": {
+    "p511_tests_passed": 19,
+    "p57_p511_trust_suite_passed": 93,
+    "core_regression_suite_passed": 187,
+    "full_active_suite_passed": 992,
+    "failures": 0
+  }
+}

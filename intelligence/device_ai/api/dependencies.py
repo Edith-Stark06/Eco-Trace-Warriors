@@ -32,8 +32,21 @@ from ..devices.repository import (
     JsonFileDeviceRepository,
 )
 from ..devices.postgres_repository import PostgresDeviceRepository
+from ..devices.postgres_trust_anchor_repository import PostgresTrustAnchorRepository
+from ..devices.postgres_external_trust_repository import PostgresExternalTrustAnchorRepository
+from ..devices.external_trust import (
+    ExternalTrustLedger,
+    FabricExternalTrustLedger,
+    InMemoryExternalTrustLedger,
+)
 from ..devices.service import DeviceRegistrationService
 from ..devices.enrichment_service import DeviceIntelligenceService
+from ..devices.trust_anchor import (
+    DevicePassportTrustService,
+    InMemoryTrustAnchorRepository,
+    TrustAnchorPolicy,
+    TrustAnchorRepository,
+)
 from ..database.database import dispose_engines, get_engine
 from ..database.session import get_session_factory
 from ..inference.clip_encoder import CLIPEncoder
@@ -504,6 +517,119 @@ def get_device_intelligence_service(
     )
 
 
+def build_trust_anchor_repository(settings: Settings) -> TrustAnchorRepository:
+    """Construct a :class:`TrustAnchorRepository` from the provided settings.
+
+    Args:
+        settings: Application settings.
+
+    Returns:
+        The configured :class:`TrustAnchorRepository`.
+    """
+    if settings.trust_anchor_backend == "postgres":
+        db_url = settings.database_url or "postgresql+psycopg://ecotrace:ecotrace123@localhost:5432/ecotrace"
+        engine = get_engine(
+            db_url,
+            pool_size=settings.db_pool_size,
+            max_overflow=settings.db_max_overflow,
+            pool_timeout=settings.db_pool_timeout,
+            echo=settings.db_echo,
+        )
+        session_factory = get_session_factory(engine)
+        return PostgresTrustAnchorRepository(session_factory)
+
+    return InMemoryTrustAnchorRepository()
+
+
+@lru_cache(maxsize=1)
+def get_trust_anchor_repository() -> TrustAnchorRepository:
+    """Return the process-wide :class:`TrustAnchorRepository` singleton.
+
+    Selects the backend from ``trust_anchor_backend``:
+    - ``memory``: Process-local dict store (default, test friendly).
+    - ``postgres``: Production PostgreSQL relational store via SQLAlchemy.
+
+    Returns:
+        The configured :class:`TrustAnchorRepository`.
+    """
+    return build_trust_anchor_repository(get_settings())
+
+
+def build_external_trust_ledger(settings: Settings) -> ExternalTrustLedger:
+    """Construct an :class:`ExternalTrustLedger` based on application settings.
+
+    Args:
+        settings: Active application configuration.
+
+    Returns:
+        An instantiated :class:`ExternalTrustLedger`.
+    """
+    backend = settings.external_trust_backend
+    if backend == "fabric":
+        logger.info(
+            "Configuring FabricExternalTrustLedger (channel='{}', chaincode='{}').",
+            settings.external_trust_channel,
+            settings.external_trust_chaincode,
+        )
+        return FabricExternalTrustLedger(
+            channel=settings.external_trust_channel,
+            chaincode=settings.external_trust_chaincode,
+            network=settings.external_trust_network,
+            provider=settings.external_trust_provider,
+        )
+
+    logger.info("Configuring InMemoryExternalTrustLedger (network='{}').", settings.external_trust_network)
+    return InMemoryExternalTrustLedger(
+        network=settings.external_trust_network,
+        provider=settings.external_trust_backend,
+    )
+
+
+@lru_cache(maxsize=1)
+def get_external_trust_ledger() -> ExternalTrustLedger:
+    """Return the process-wide :class:`ExternalTrustLedger` singleton."""
+    return build_external_trust_ledger(get_settings())
+
+
+@lru_cache(maxsize=1)
+def get_external_trust_repository() -> PostgresExternalTrustAnchorRepository | None:
+    """Return the process-wide :class:`PostgresExternalTrustAnchorRepository` singleton if postgres is configured."""
+    settings = get_settings()
+    if settings.device_backend == "postgres" or settings.trust_anchor_backend == "postgres":
+        session_factory = get_session_factory(settings)
+        return PostgresExternalTrustAnchorRepository(session_factory)
+    return None
+
+
+def get_trust_service(
+    device_service: Annotated[DeviceRegistrationService, Depends(get_device_service)],
+    anchor_repository: Annotated[TrustAnchorRepository, Depends(get_trust_anchor_repository)],
+    external_ledger: Annotated[ExternalTrustLedger, Depends(get_external_trust_ledger)],
+    external_repository: Annotated[PostgresExternalTrustAnchorRepository | None, Depends(get_external_trust_repository)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> DevicePassportTrustService:
+    """Return a :class:`DevicePassportTrustService` wired with dependencies.
+
+    Args:
+        device_service: Injected device registration & lifecycle service.
+        anchor_repository: Injected local trust anchor repository.
+        external_ledger: Injected external blockchain trust ledger provider.
+        external_repository: Injected PostgreSQL external anchor repository (if active).
+        settings: Injected application settings.
+
+    Returns:
+        A configured :class:`DevicePassportTrustService`.
+    """
+    return DevicePassportTrustService(
+        device_service=device_service,
+        anchor_repository=anchor_repository,
+        policy=TrustAnchorPolicy.STRICT,
+        settings=settings,
+        external_ledger=external_ledger,
+        external_repository=external_repository,
+    )
+
+
 def _current_year() -> int:
     """Return the current four-digit year.
 
@@ -522,13 +648,16 @@ def reset_dependency_caches() -> None:
     """Clear cached singletons.
 
     Intended for tests that override settings and need the pipeline/registry/
-    encoder/repository/OCR/device singletons rebuilt against the new configuration.
+    encoder/repository/OCR/device/trust singletons rebuilt against the new configuration.
     """
     get_pipeline.cache_clear()
     get_registry.cache_clear()
     get_fingerprint_encoder.cache_clear()
     get_fingerprint_repository.cache_clear()
     get_device_repository.cache_clear()
+    get_trust_anchor_repository.cache_clear()
+    get_external_trust_ledger.cache_clear()
+    get_external_trust_repository.cache_clear()
     get_ocr_backend.cache_clear()
     get_barcode_reader.cache_clear()
     get_settings.cache_clear()

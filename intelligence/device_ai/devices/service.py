@@ -33,9 +33,13 @@ from ..preprocessing.image_loader import LoadedImage
 from .models import (
     ConfidenceState,
     DeviceCandidate,
+    DeviceEvent,
+    DeviceEventType,
     DeviceRecord,
     RegistrationState,
 )
+from .passport import DevicePassport, build_device_passport
+from .passport_verification import PassportVerificationResult, verify_passport
 from .repository import DeviceRepository
 
 
@@ -157,14 +161,21 @@ class DeviceRegistrationService:
                 },
             )
 
-            self._repository.save(record)
-            if hasattr(self._repository, "record_event"):
-                self._repository.record_event(
-                    event_type="DEVICE_DETECTED",
-                    device_id=record.device_id,
-                    capture_id=record.capture_id,
-                    metadata={"confidence": record.confidence, "device_type": record.device_type},
-                )
+            detect_event = DeviceEvent(
+                event_id=f"evt-{uuid.uuid4().hex[:12]}",
+                device_id=record.device_id,
+                event_type=DeviceEventType.DEVICE_DETECTED,
+                timestamp=_utc_now(),
+                capture_id=record.capture_id,
+                metadata={"confidence": record.confidence, "device_type": record.device_type},
+            )
+
+            if hasattr(self._repository, "save_with_event"):
+                self._repository.save_with_event(record, detect_event)
+            else:
+                self._repository.save(record)
+                self._repository.append_event(detect_event)
+
             created_records.append(record)
 
         logger.bind(
@@ -206,6 +217,9 @@ class DeviceRegistrationService:
     def confirm_device(self, device_id: str) -> DeviceRecord:
         """Transition a device from DETECTED to CONFIRMED.
 
+        Idempotent: if already CONFIRMED, returns the current record without
+        emitting duplicate events.
+
         Args:
             device_id: Public device identifier.
 
@@ -217,6 +231,10 @@ class DeviceRegistrationService:
             InvalidStateTransitionError: If the transition is not allowed.
         """
         record = self.get_device(device_id)
+        if record.registration_state == RegistrationState.CONFIRMED:
+            logger.bind(device_id=device_id).info("Device already confirmed; returning existing state")
+            return record
+
         try:
             record.transition_to(RegistrationState.CONFIRMED)
         except ValueError as exc:
@@ -229,14 +247,21 @@ class DeviceRegistrationService:
                 },
             ) from exc
 
-        self._repository.save(record)
-        if hasattr(self._repository, "record_event"):
-            self._repository.record_event(
-                event_type="DEVICE_CONFIRMED",
-                device_id=record.device_id,
-                capture_id=record.capture_id,
-                metadata={"state": record.registration_state.value},
-            )
+        event = DeviceEvent(
+            event_id=f"evt-{uuid.uuid4().hex[:12]}",
+            device_id=record.device_id,
+            event_type=DeviceEventType.DEVICE_CONFIRMED,
+            timestamp=_utc_now(),
+            capture_id=record.capture_id,
+            metadata={"state": record.registration_state.value},
+        )
+
+        if hasattr(self._repository, "save_with_event"):
+            self._repository.save_with_event(record, event)
+        else:
+            self._repository.save(record)
+            self._repository.append_event(event)
+
         logger.bind(device_id=device_id, state=record.registration_state.value).info(
             "Device confirmed by user"
         )
@@ -244,6 +269,9 @@ class DeviceRegistrationService:
 
     def finalize_registration(self, device_id: str) -> DeviceRecord:
         """Transition a device from CONFIRMED to REGISTERED.
+
+        Idempotent: if already REGISTERED, returns the current record without
+        emitting duplicate events.
 
         Args:
             device_id: Public device identifier.
@@ -256,6 +284,10 @@ class DeviceRegistrationService:
             InvalidStateTransitionError: If the transition is not allowed.
         """
         record = self.get_device(device_id)
+        if record.registration_state == RegistrationState.REGISTERED:
+            logger.bind(device_id=device_id).info("Device already registered; returning existing state")
+            return record
+
         try:
             record.transition_to(RegistrationState.REGISTERED)
         except ValueError as exc:
@@ -268,15 +300,74 @@ class DeviceRegistrationService:
                 },
             ) from exc
 
-        self._repository.save(record)
-        if hasattr(self._repository, "record_event"):
-            self._repository.record_event(
-                event_type="DEVICE_REGISTERED",
-                device_id=record.device_id,
-                capture_id=record.capture_id,
-                metadata={"state": record.registration_state.value},
-            )
+        event = DeviceEvent(
+            event_id=f"evt-{uuid.uuid4().hex[:12]}",
+            device_id=record.device_id,
+            event_type=DeviceEventType.DEVICE_REGISTERED,
+            timestamp=_utc_now(),
+            capture_id=record.capture_id,
+            metadata={"state": record.registration_state.value},
+        )
+
+        if hasattr(self._repository, "save_with_event"):
+            self._repository.save_with_event(record, event)
+        else:
+            self._repository.save(record)
+            self._repository.append_event(event)
+
         logger.bind(device_id=device_id, state=record.registration_state.value).info(
             "Device finalized and registered"
         )
         return record
+
+    def get_device_events(self, device_id: str) -> list[DeviceEvent]:
+        """Retrieve all chronological audit events for a device.
+
+        Args:
+            device_id: Public device identifier.
+
+        Returns:
+            List of :class:`DeviceEvent` objects ordered oldest -> newest.
+
+        Raises:
+            DeviceNotFoundError: If the device does not exist.
+        """
+        self.get_device(device_id)  # Validate existence
+        return self._repository.list_events(device_id)
+
+    def get_device_passport(self, device_id: str) -> DevicePassport:
+        """Construct and return the aggregated DevicePassport read model.
+
+        Strictly read-only: does not mutate DeviceRecord, write to storage, or emit audit events.
+
+        Args:
+            device_id: Public device identifier.
+
+        Returns:
+            The aggregated :class:`DevicePassport`.
+
+        Raises:
+            DeviceNotFoundError: If the device does not exist.
+        """
+        record = self.get_device(device_id)
+        events = self._repository.list_events(device_id)
+        return build_device_passport(record, events)
+
+    def verify_device_passport(self, device_id: str) -> PassportVerificationResult:
+        """Verify integrity, lifecycle consistency, and provenance of a device passport.
+
+        Strictly read-only: does not mutate DeviceRecord, write to storage, or emit audit events.
+
+        Args:
+            device_id: Public device identifier.
+
+        Returns:
+            A :class:`PassportVerificationResult`.
+
+        Raises:
+            DeviceNotFoundError: If the device does not exist.
+        """
+        record = self.get_device(device_id)
+        events = self._repository.list_events(device_id)
+        passport = build_device_passport(record, events)
+        return verify_passport(record=record, events=events, passport=passport)

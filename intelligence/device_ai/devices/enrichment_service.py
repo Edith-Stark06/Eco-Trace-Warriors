@@ -12,6 +12,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
+import uuid
+
 from loguru import logger
 
 from ..configs.settings import Settings
@@ -27,7 +29,7 @@ from .enrichment_models import (
     MaterialAssessment,
 )
 from .material import MaterialIntelligence, ProfileBasedMaterialIntelligence
-from .models import DeviceRecord
+from .models import DeviceEvent, DeviceEventType, DeviceRecord
 from .repository import DeviceRepository
 
 
@@ -127,22 +129,27 @@ class DeviceIntelligenceService:
         record.updated_at = _utc_now()
 
         # 7. Persist Updated Record
-        self._repository.save(record)
+        enrich_event = DeviceEvent(
+            event_id=f"evt-{uuid.uuid4().hex[:12]}",
+            device_id=record.device_id,
+            event_type=DeviceEventType.DEVICE_ENRICHED,
+            timestamp=_utc_now(),
+            capture_id=record.capture_id,
+            metadata={
+                "brand": brand_assessment.value,
+                "condition": condition_assessment.value,
+                "carbon_score": carbon_assessment.carbon_score,
+            },
+        )
+
+        if hasattr(self._repository, "save_with_event"):
+            self._repository.save_with_event(record, enrich_event)
+        else:
+            self._repository.save(record)
+            self._repository.append_event(enrich_event)
 
         if hasattr(self._repository, "save_enrichment"):
             self._repository.save_enrichment(enrichment)
-
-        if hasattr(self._repository, "record_event"):
-            self._repository.record_event(
-                event_type="DEVICE_ENRICHED",
-                device_id=record.device_id,
-                capture_id=record.capture_id,
-                metadata={
-                    "brand": brand_assessment.value,
-                    "condition": condition_assessment.value,
-                    "carbon_score": carbon_assessment.carbon_score,
-                },
-            )
 
         logger.bind(
             device_id=device_id,
