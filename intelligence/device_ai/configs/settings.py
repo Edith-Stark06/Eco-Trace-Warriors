@@ -116,6 +116,12 @@ InferenceMode = Literal["single_model", "ensemble"]
 # Persistence backends for device registration records (P5.2 & P5.4).
 DeviceBackend = Literal["memory", "json", "postgres"]
 
+# Persistence backends for Trust Anchors (P5.8 & P5.9).
+TrustAnchorBackend = Literal["memory", "postgres"]
+
+# External trust ledger backends (P5.11).
+ExternalTrustBackend = Literal["memory", "fabric", "disabled"]
+
 
 class Settings(BaseSettings):
     """Strongly-typed application configuration.
@@ -610,6 +616,40 @@ class Settings(BaseSettings):
     db_echo: bool = Field(
         default=False,
         description="Enable SQLAlchemy query logging.",
+    )
+    trust_anchor_backend: TrustAnchorBackend = Field(
+        default="memory",
+        description="Persistence backend for Trust Anchors: 'memory' or 'postgres'.",
+    )
+    trust_anchor_max_age_days: int | None = Field(
+        default=90,
+        description="Maximum age in days before an anchor is considered STALE (None or <= 0 disables expiration).",
+    )
+
+    # --- External / Blockchain Trust Ledger (P5.11) -----------------------
+    external_trust_backend: ExternalTrustBackend = Field(
+        default="memory",
+        description="Backend provider for external / blockchain trust anchors ('memory', 'fabric', 'disabled').",
+    )
+    external_trust_enabled: bool = Field(
+        default=True,
+        description="Enable external trust ledger operations.",
+    )
+    external_trust_network: str = Field(
+        default="ecotrace-channel",
+        description="External blockchain network/channel identifier.",
+    )
+    external_trust_provider: str = Field(
+        default="hyperledger_fabric",
+        description="Underlying external ledger provider name.",
+    )
+    external_trust_chaincode: str = Field(
+        default="ecotrace-lifecycle",
+        description="Chaincode/smart contract name for device passport lifecycle on Fabric.",
+    )
+    external_trust_channel: str = Field(
+        default="ecotrace-channel",
+        description="Fabric channel name.",
     )
 
     @field_validator("min_images")

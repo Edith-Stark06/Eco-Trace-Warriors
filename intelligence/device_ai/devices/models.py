@@ -178,3 +178,59 @@ class DeviceRecord:
             created_at=datetime.fromisoformat(data["created_at"]),
             updated_at=datetime.fromisoformat(data["updated_at"]),
         )
+
+
+class DeviceEventType(str, Enum):
+    """Supported domain event types for the device audit trail."""
+
+    DEVICE_DETECTED = "DEVICE_DETECTED"
+    DEVICE_CONFIRMED = "DEVICE_CONFIRMED"
+    DEVICE_REGISTERED = "DEVICE_REGISTERED"
+    DEVICE_ENRICHED = "DEVICE_ENRICHED"
+    DEVICE_EXTERNALLY_ANCHORED = "DEVICE_EXTERNALLY_ANCHORED"
+
+
+@dataclass(frozen=True, slots=True)
+class DeviceEvent:
+    """Immutable domain representation of a device lifecycle/audit event.
+
+    Attributes:
+        event_id: Unique event identifier (e.g. 'evt-...').
+        device_id: Identifier of the device this event belongs to.
+        event_type: Type of the lifecycle/audit event.
+        timestamp: Time at which the event occurred (UTC).
+        capture_id: Optional correlation ID for the capture session.
+        metadata: Additional contextual structured details.
+    """
+
+    event_id: str
+    device_id: str
+    event_type: DeviceEventType
+    timestamp: datetime = field(default_factory=_utc_now)
+    capture_id: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert event to a JSON-serializable dictionary."""
+        return {
+            "event_id": self.event_id,
+            "device_id": self.device_id,
+            "event_type": self.event_type.value if isinstance(self.event_type, DeviceEventType) else str(self.event_type),
+            "timestamp": self.timestamp.isoformat(),
+            "capture_id": self.capture_id,
+            "metadata": self.metadata,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> DeviceEvent:
+        """Construct a DeviceEvent from a serialized dictionary."""
+        raw_ts = data["timestamp"]
+        ts = datetime.fromisoformat(raw_ts) if isinstance(raw_ts, str) else raw_ts
+        return cls(
+            event_id=data["event_id"],
+            device_id=data["device_id"],
+            event_type=DeviceEventType(data["event_type"]),
+            timestamp=ts,
+            capture_id=data.get("capture_id"),
+            metadata=dict(data.get("metadata", {})),
+        )

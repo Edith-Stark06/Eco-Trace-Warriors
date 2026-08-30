@@ -15,33 +15,69 @@ from __future__ import annotations
 import time
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, File, Form, Query, Request, UploadFile
+from fastapi import APIRouter, Body, Depends, File, Form, Query, Request, Response, UploadFile, status
 from loguru import logger
 
 from ..configs.settings import Settings, get_settings
 from ..devices.enrichment_models import DeviceEnrichment
 from ..devices.enrichment_service import DeviceIntelligenceService
-from ..devices.models import DeviceRecord
+from ..devices.models import DeviceEventType, DeviceRecord
+from ..devices.passport import DevicePassport
+from ..devices.passport_verification import PassportVerificationResult
 from ..devices.service import DeviceRegistrationService
+from ..devices.trust_anchor import (
+    DevicePassportTrustService,
+    TrustAnchor,
+    TrustAnchorVerification,
+)
 from ..preprocessing.validator import ImageValidator, RawUpload
 from .dependencies import (
     get_device_intelligence_service,
     get_device_service,
+    get_trust_service,
     get_validator,
 )
 from .device_schemas import (
+    AnchorPassportRequest,
+    AuditFacetPayload,
     BrandAssessmentPayload,
+    BrandFacetPayload,
     CarbonAssessmentPayload,
+    CarbonFacetPayload,
     ConditionAssessmentPayload,
+    ConditionFacetPayload,
+    DetectionFacetPayload,
     DeviceEnrichmentRequest,
     DeviceEnrichmentResponse,
+    DeviceEventPayload,
+    DeviceHistoryResponse,
+    DeviceIdentityPayload,
     DeviceIntelligencePayload,
     DeviceListResponse,
+    DevicePassportPayload,
+    DevicePassportResponse,
+    DevicePassportVerificationResponse,
     DeviceRecordPayload,
     DeviceRegistrationResponse,
     DeviceStateUpdateResponse,
+    DeviceTrustStatusResponse,
+    ExternalTrustAnchorPayload,
+    ExternalTrustAnchorResponse,
+    ExternalTrustVerificationPayload,
+    ExternalTrustVerificationResponse,
+    FullDeviceTrustStatusResponse,
+    FullTrustComparisonPayload,
+    LifecycleFacetPayload,
     MaterialAssessmentPayload,
+    MaterialFacetPayload,
     MaterialItemPayload,
+    PassportVerificationPayload,
+    TrustAnchorPayload,
+    TrustAnchorResponse,
+    TrustAnchorVerificationPayload,
+    TrustAnchorVerificationResponse,
+    TrustStatusPayload,
+    VerificationCheckDetailPayload,
 )
 from .schemas import TimingPayload
 
@@ -321,4 +357,603 @@ def list_devices(
         devices=[_to_payload(r) for r in paged],
         limit=limit,
         offset=offset,
+    )
+
+
+@router.get("/{device_id}/events", response_model=DeviceHistoryResponse)
+@router.get("/{device_id}/history", response_model=DeviceHistoryResponse)
+def get_device_history(
+    request: Request,
+    device_id: str,
+    service: Annotated[DeviceRegistrationService, Depends(get_device_service)],
+) -> DeviceHistoryResponse:
+    """Retrieve chronological audit event history for a device record.
+
+    Args:
+        request: Active HTTP request.
+        device_id: Public device identifier.
+        service: Injected DeviceRegistrationService.
+
+    Returns:
+        A :class:`DeviceHistoryResponse` containing ordered audit events.
+    """
+    req_id = request.headers.get("X-Request-ID")
+    record = service.get_device(device_id)
+    events = service.get_device_events(device_id)
+
+    event_payloads = [
+        DeviceEventPayload(
+            event_id=e.event_id,
+            device_id=e.device_id,
+            event_type=e.event_type.value if isinstance(e.event_type, DeviceEventType) else str(e.event_type),
+            timestamp=e.timestamp.isoformat(),
+            capture_id=e.capture_id,
+            metadata=e.metadata,
+        )
+        for e in events
+    ]
+
+    return DeviceHistoryResponse(
+        success=True,
+        device_id=record.device_id,
+        current_state=record.registration_state.value,
+        events=event_payloads,
+        total_events=len(event_payloads),
+        request_id=req_id,
+    )
+
+
+def _to_passport_payload(passport: DevicePassport) -> DevicePassportPayload:
+    """Convert a domain DevicePassport into an API payload."""
+    return DevicePassportPayload(
+        device_id=passport.device_id,
+        eco_id=passport.eco_id,
+        identity=DeviceIdentityPayload(
+            device_id=passport.identity.device_id,
+            eco_id=passport.identity.eco_id,
+            device_type=passport.identity.device_type,
+            class_id=passport.identity.class_id,
+            capture_id=passport.identity.capture_id,
+            registration_timestamp=passport.identity.registration_timestamp,
+            created_at=passport.identity.created_at,
+            updated_at=passport.identity.updated_at,
+        ),
+        detection=DetectionFacetPayload(
+            confidence=passport.detection.confidence,
+            confidence_state=passport.detection.confidence_state,
+            bounding_box=passport.detection.bounding_box,
+            inference_mode=passport.detection.inference_mode,
+            model_version=passport.detection.model_version,
+        ),
+        brand=BrandFacetPayload(
+            brand=passport.brand.brand,
+            status=passport.brand.status,
+            source=passport.brand.source,
+            confidence=passport.brand.confidence,
+            raw_text=passport.brand.raw_text,
+        ),
+        condition=ConditionFacetPayload(
+            condition=passport.condition.condition,
+            status=passport.condition.status,
+            source=passport.condition.source,
+            notes=passport.condition.notes,
+        ),
+        material=MaterialFacetPayload(
+            materials=[
+                MaterialItemPayload(
+                    material=m.material,
+                    category=m.category,
+                    mass_g=m.mass_g,
+                    recoverable=m.recoverable,
+                    hazardous=m.hazardous,
+                    basis=m.basis,
+                )
+                for m in passport.material.materials
+            ],
+            total_mass_g=passport.material.total_mass_g,
+            source=passport.material.source,
+            version=passport.material.version,
+            notes=passport.material.notes,
+        ),
+        carbon=CarbonFacetPayload(
+            carbon_score=passport.carbon.carbon_score,
+            contributing_factors=passport.carbon.contributing_factors,
+            methodology=passport.carbon.methodology,
+            source=passport.carbon.source,
+            version=passport.carbon.version,
+            notes=passport.carbon.notes,
+        ),
+        lifecycle=LifecycleFacetPayload(
+            current_state=passport.lifecycle.current_state,
+            is_confirmed=passport.lifecycle.is_confirmed,
+            is_registered=passport.lifecycle.is_registered,
+            is_enriched=passport.lifecycle.is_enriched,
+        ),
+        audit=AuditFacetPayload(
+            total_events=passport.audit.total_events,
+            events=[
+                DeviceEventPayload(
+                    event_id=e["event_id"],
+                    device_id=e["device_id"],
+                    event_type=e["event_type"],
+                    timestamp=e["timestamp"],
+                    capture_id=e.get("capture_id"),
+                    metadata=e.get("metadata", {}),
+                )
+                for e in passport.audit.events
+            ],
+        ),
+        generated_at=passport.generated_at,
+    )
+
+
+@router.get("/{device_id}/passport", response_model=DevicePassportResponse)
+def get_device_passport(
+    request: Request,
+    device_id: str,
+    service: Annotated[DeviceRegistrationService, Depends(get_device_service)],
+) -> DevicePassportResponse:
+    """Retrieve the aggregated, read-oriented Device Passport and Traceability record.
+
+    Args:
+        request: Active HTTP request.
+        device_id: Public device identifier.
+        service: Injected DeviceRegistrationService.
+
+    Returns:
+        A :class:`DevicePassportResponse` containing the aggregated passport.
+    """
+    req_id = request.headers.get("X-Request-ID")
+    passport = service.get_device_passport(device_id)
+
+    return DevicePassportResponse(
+        success=True,
+        passport=_to_passport_payload(passport),
+        request_id=req_id,
+    )
+
+
+def _to_verification_payload(result: PassportVerificationResult) -> PassportVerificationPayload:
+    """Convert domain PassportVerificationResult into API payload."""
+    return PassportVerificationPayload(
+        device_id=result.device_id,
+        verification_status=result.verification_status.value,
+        passport_fingerprint=result.passport_fingerprint,
+        checks=result.checks,
+        check_details=[
+            VerificationCheckDetailPayload(
+                name=c.name,
+                status=c.status.value,
+                message=c.message,
+                details=c.details,
+            )
+            for c in result.check_details
+        ],
+        warnings=result.warnings,
+        errors=result.errors,
+        verified_at=result.verified_at,
+    )
+
+
+@router.get("/{device_id}/passport/verify", response_model=DevicePassportVerificationResponse)
+def verify_device_passport(
+    request: Request,
+    device_id: str,
+    service: Annotated[DeviceRegistrationService, Depends(get_device_service)],
+) -> DevicePassportVerificationResponse:
+    """Execute deterministic integrity, lifecycle, and provenance verification of a Device Passport.
+
+    Strictly read-only: does not modify device state, write to the database, or emit audit events.
+
+    Args:
+        request: Active HTTP request.
+        device_id: Public device identifier.
+        service: Injected DeviceRegistrationService.
+
+    Returns:
+        A :class:`DevicePassportVerificationResponse` containing the verification evaluation.
+    """
+    req_id = request.headers.get("X-Request-ID")
+    verification_result = service.verify_device_passport(device_id)
+
+    return DevicePassportVerificationResponse(
+        success=True,
+        verification=_to_verification_payload(verification_result),
+        request_id=req_id,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Trust Anchor Layer Endpoints (P5.8)
+# ---------------------------------------------------------------------------
+
+
+@router.post("/{device_id}/passport/anchor", response_model=TrustAnchorResponse, status_code=status.HTTP_200_OK)
+def anchor_device_passport(
+    request: Request,
+    response: Response,
+    device_id: str,
+    trust_service: Annotated[DevicePassportTrustService, Depends(get_trust_service)],
+    body: AnchorPassportRequest | None = None,
+) -> TrustAnchorResponse:
+    """Verify and anchor the Device Passport in the Trust Anchor layer.
+
+    Status codes:
+    - 201 Created: When a new anchor is created.
+    - 200 OK: When returning an existing idempotent anchor.
+
+    Args:
+        request: Active HTTP request.
+        response: Active HTTP response (to set 201 status code on new anchor creation).
+        device_id: Public device identifier.
+        trust_service: Injected DevicePassportTrustService.
+        body: Optional request body containing anchor metadata.
+
+    Returns:
+        A :class:`TrustAnchorResponse` containing the anchor payload.
+    """
+    req_id = request.headers.get("X-Request-ID")
+    metadata = body.metadata if body else None
+    anchor, is_new = trust_service.anchor_device_passport(device_id, metadata=metadata)
+
+    if is_new:
+        response.status_code = status.HTTP_201_CREATED
+
+    return TrustAnchorResponse(
+        success=True,
+        anchor=TrustAnchorPayload(
+            anchor_id=anchor.anchor_id,
+            device_id=anchor.device_id,
+            passport_fingerprint=anchor.passport_fingerprint,
+            algorithm=anchor.algorithm,
+            anchored_at=anchor.anchored_at,
+            status=anchor.status.value,
+            metadata=anchor.metadata,
+        ),
+        is_new=is_new,
+        request_id=req_id,
+    )
+
+
+@router.get("/{device_id}/passport/anchor", response_model=TrustAnchorResponse)
+def get_device_anchor(
+    request: Request,
+    device_id: str,
+    trust_service: Annotated[DevicePassportTrustService, Depends(get_trust_service)],
+) -> TrustAnchorResponse:
+    """Retrieve the stored Trust Anchor for a device.
+
+    Strictly read-only.
+
+    Args:
+        request: Active HTTP request.
+        device_id: Public device identifier.
+        trust_service: Injected DevicePassportTrustService.
+
+    Returns:
+        A :class:`TrustAnchorResponse` containing the anchor payload.
+    """
+    req_id = request.headers.get("X-Request-ID")
+    anchor = trust_service.get_device_anchor(device_id)
+
+    return TrustAnchorResponse(
+        success=True,
+        anchor=TrustAnchorPayload(
+            anchor_id=anchor.anchor_id,
+            device_id=anchor.device_id,
+            passport_fingerprint=anchor.passport_fingerprint,
+            algorithm=anchor.algorithm,
+            anchored_at=anchor.anchored_at,
+            status=anchor.status.value,
+            metadata=anchor.metadata,
+        ),
+        is_new=False,
+        request_id=req_id,
+    )
+
+
+@router.get("/{device_id}/passport/anchor/verify", response_model=TrustAnchorVerificationResponse)
+def verify_device_anchor(
+    request: Request,
+    device_id: str,
+    trust_service: Annotated[DevicePassportTrustService, Depends(get_trust_service)],
+) -> TrustAnchorVerificationResponse:
+    """Verify current passport fingerprint against the anchored trust record.
+
+    Strictly read-only: does not modify device, passport, or anchor.
+
+    Args:
+        request: Active HTTP request.
+        device_id: Public device identifier.
+        trust_service: Injected DevicePassportTrustService.
+
+    Returns:
+        A :class:`TrustAnchorVerificationResponse` containing the verification outcome.
+    """
+    req_id = request.headers.get("X-Request-ID")
+    verification = trust_service.verify_device_anchor(device_id)
+
+    return TrustAnchorVerificationResponse(
+        success=True,
+        verification=TrustAnchorVerificationPayload(
+            device_id=verification.device_id,
+            status=verification.status.value,
+            stored_fingerprint=verification.stored_fingerprint,
+            current_fingerprint=verification.current_fingerprint,
+            algorithm=verification.algorithm,
+            verified_at=verification.verified_at,
+            message=verification.message,
+            details=verification.details,
+        ),
+        request_id=req_id,
+    )
+
+
+@router.get("/{device_id}/trust", response_model=DeviceTrustStatusResponse)
+def get_device_trust_status(
+    request: Request,
+    device_id: str,
+    trust_service: Annotated[DevicePassportTrustService, Depends(get_trust_service)],
+) -> DeviceTrustStatusResponse:
+    """Evaluate canonical trust status for a device (P5.10).
+
+    Strictly read-only query that checks whether the current Device Passport
+    corresponds to the anchored record, evaluates integrity, and verifies freshness.
+    Guarantees zero database writes, zero device mutations, and zero audit event emissions.
+
+    Args:
+        request: Active HTTP request.
+        device_id: Public device identifier.
+        trust_service: Injected DevicePassportTrustService.
+
+    Returns:
+        A :class:`DeviceTrustStatusResponse` containing comprehensive trust details.
+    """
+    req_id = request.headers.get("X-Request-ID")
+    result = trust_service.get_device_trust_status(device_id)
+
+    return DeviceTrustStatusResponse(
+        success=True,
+        trust=TrustStatusPayload(
+            device_id=result.device_id,
+            status=result.status.value,
+            passport_fingerprint=result.passport_fingerprint,
+            anchored_fingerprint=result.anchored_fingerprint,
+            anchor_id=result.anchor_id,
+            algorithm=result.algorithm,
+            anchored_at=result.anchored_at,
+            evaluated_at=result.evaluated_at,
+            verification_status=result.verification_status,
+            reason=result.reason,
+            is_fresh=result.is_fresh,
+            max_age_days=result.max_age_days,
+            age_days=result.age_days,
+            checks=result.checks,
+            details=result.details,
+        ),
+        request_id=req_id,
+    )
+
+
+@router.post("/{device_id}/passport/reanchor", response_model=TrustAnchorResponse)
+def reanchor_device_passport(
+    request: Request,
+    device_id: str,
+    trust_service: Annotated[DevicePassportTrustService, Depends(get_trust_service)],
+    body: AnchorPassportRequest | None = None,
+) -> TrustAnchorResponse:
+    """Explicitly re-anchor a verified device passport, replacing any outdated anchor (P5.10).
+
+    Args:
+        request: Active HTTP request.
+        device_id: Public device identifier.
+        body: Optional anchor request payload with additional context metadata.
+        trust_service: Injected DevicePassportTrustService.
+
+    Returns:
+        A :class:`TrustAnchorResponse` with the updated anchor and ``is_new=True``.
+    """
+    req_id = request.headers.get("X-Request-ID")
+    metadata = body.metadata if body else {}
+
+    anchor, is_changed = trust_service.reanchor_device_passport(
+        device_id=device_id,
+        metadata=metadata,
+    )
+
+    return TrustAnchorResponse(
+        success=True,
+        anchor=TrustAnchorPayload(
+            anchor_id=anchor.anchor_id,
+            device_id=anchor.device_id,
+            passport_fingerprint=anchor.passport_fingerprint,
+            algorithm=anchor.algorithm,
+            anchored_at=anchor.anchored_at,
+            status=anchor.status.value,
+            metadata=anchor.metadata,
+        ),
+        is_new=is_changed,
+        request_id=req_id,
+    )
+
+
+# ---------------------------------------------------------------------------
+# External / Blockchain Trust Endpoints (P5.11)
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/{device_id}/passport/external-anchor",
+    response_model=ExternalTrustAnchorResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def anchor_device_passport_externally(
+    request: Request,
+    device_id: str,
+    trust_service: Annotated[DevicePassportTrustService, Depends(get_trust_service)],
+    body: AnchorPassportRequest | None = None,
+) -> ExternalTrustAnchorResponse:
+    """Submit and record an external / blockchain trust anchor for a locally verified passport (P5.11).
+
+    Args:
+        request: Active HTTP request.
+        device_id: Public device identifier.
+        trust_service: Injected DevicePassportTrustService.
+        body: Optional anchor request with metadata.
+
+    Returns:
+        An :class:`ExternalTrustAnchorResponse` with the external anchor details.
+    """
+    req_id = request.headers.get("X-Request-ID")
+    metadata = body.metadata if body else {}
+
+    anchor, is_new = trust_service.anchor_device_passport_externally(
+        device_id=device_id,
+        metadata=metadata,
+    )
+
+    return ExternalTrustAnchorResponse(
+        success=True,
+        anchor=ExternalTrustAnchorPayload(
+            external_anchor_id=anchor.external_anchor_id,
+            device_id=anchor.device_id,
+            passport_fingerprint=anchor.passport_fingerprint,
+            algorithm=anchor.algorithm,
+            provider=anchor.provider,
+            network=anchor.network,
+            transaction_id=anchor.transaction_id,
+            anchored_at=anchor.anchored_at,
+            status=anchor.status,
+            metadata=anchor.metadata,
+        ),
+        is_new=is_new,
+        request_id=req_id,
+    )
+
+
+@router.get("/{device_id}/passport/external-anchor", response_model=ExternalTrustAnchorResponse)
+def get_device_external_anchor(
+    request: Request,
+    device_id: str,
+    trust_service: Annotated[DevicePassportTrustService, Depends(get_trust_service)],
+) -> ExternalTrustAnchorResponse:
+    """Retrieve the stored External Trust Anchor for a device (P5.11).
+
+    Args:
+        request: Active HTTP request.
+        device_id: Public device identifier.
+        trust_service: Injected DevicePassportTrustService.
+
+    Returns:
+        An :class:`ExternalTrustAnchorResponse`.
+    """
+    req_id = request.headers.get("X-Request-ID")
+    anchor = trust_service.get_device_external_anchor(device_id)
+
+    return ExternalTrustAnchorResponse(
+        success=True,
+        anchor=ExternalTrustAnchorPayload(
+            external_anchor_id=anchor.external_anchor_id,
+            device_id=anchor.device_id,
+            passport_fingerprint=anchor.passport_fingerprint,
+            algorithm=anchor.algorithm,
+            provider=anchor.provider,
+            network=anchor.network,
+            transaction_id=anchor.transaction_id,
+            anchored_at=anchor.anchored_at,
+            status=anchor.status,
+            metadata=anchor.metadata,
+        ),
+        is_new=False,
+        request_id=req_id,
+    )
+
+
+@router.get(
+    "/{device_id}/passport/external-anchor/verify",
+    response_model=ExternalTrustVerificationResponse,
+)
+def verify_device_passport_external(
+    request: Request,
+    device_id: str,
+    trust_service: Annotated[DevicePassportTrustService, Depends(get_trust_service)],
+) -> ExternalTrustVerificationResponse:
+    """Verify the current passport against the external blockchain ledger (P5.11).
+
+    Strictly read-only: does not modify device, passport, local anchor, or external anchor.
+    Guarantees zero database writes, zero mutations, and zero audit event emissions.
+
+    Args:
+        request: Active HTTP request.
+        device_id: Public device identifier.
+        trust_service: Injected DevicePassportTrustService.
+
+    Returns:
+        An :class:`ExternalTrustVerificationResponse`.
+    """
+    req_id = request.headers.get("X-Request-ID")
+    result = trust_service.verify_device_passport_external(device_id)
+
+    return ExternalTrustVerificationResponse(
+        success=True,
+        verification=ExternalTrustVerificationPayload(
+            device_id=result.device_id,
+            status=result.status.value,
+            stored_fingerprint=result.stored_fingerprint,
+            current_fingerprint=result.current_fingerprint,
+            algorithm=result.algorithm,
+            provider=result.provider,
+            network=result.network,
+            transaction_id=result.transaction_id,
+            anchored_at=result.anchored_at,
+            verified_at=result.verified_at,
+            message=result.message,
+            details=result.details,
+        ),
+        request_id=req_id,
+    )
+
+
+@router.get("/{device_id}/trust/full", response_model=FullDeviceTrustStatusResponse)
+def get_full_device_trust_status(
+    request: Request,
+    device_id: str,
+    trust_service: Annotated[DevicePassportTrustService, Depends(get_trust_service)],
+) -> FullDeviceTrustStatusResponse:
+    """Retrieve synthesized full device trust status across both Local Operational Trust and External Blockchain Trust (P5.11).
+
+    Strictly read-only: performs zero mutations, zero writes, and emits zero events.
+
+    Args:
+        request: Active HTTP request.
+        device_id: Public device identifier.
+        trust_service: Injected DevicePassportTrustService.
+
+    Returns:
+        A :class:`FullDeviceTrustStatusResponse`.
+    """
+    req_id = request.headers.get("X-Request-ID")
+    result = trust_service.get_full_device_trust_status(device_id)
+
+    return FullDeviceTrustStatusResponse(
+        success=True,
+        trust=FullTrustComparisonPayload(
+            device_id=result.device_id,
+            local_status=result.local_status,
+            external_status=result.external_status,
+            overall_status=result.overall_status,
+            passport_fingerprint=result.passport_fingerprint,
+            local_anchored_fingerprint=result.local_anchored_fingerprint,
+            external_anchored_fingerprint=result.external_anchored_fingerprint,
+            local_anchor_id=result.local_anchor_id,
+            external_anchor_id=result.external_anchor_id,
+            transaction_id=result.transaction_id,
+            provider=result.provider,
+            network=result.network,
+            evaluated_at=result.evaluated_at,
+            reason=result.reason,
+            local_trust_details=result.local_trust_details,
+            external_trust_details=result.external_trust_details,
+        ),
+        request_id=req_id,
     )

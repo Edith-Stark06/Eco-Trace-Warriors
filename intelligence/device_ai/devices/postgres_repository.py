@@ -30,6 +30,8 @@ from .enrichment_models import (
 )
 from .models import (
     ConfidenceState,
+    DeviceEvent,
+    DeviceEventType,
     DeviceRecord,
     RegistrationState,
 )
@@ -58,6 +60,18 @@ def _model_to_domain(model: DeviceModel) -> DeviceRecord:
         metadata=dict(model.metadata_) if model.metadata_ is not None else {},
         created_at=model.created_at,
         updated_at=model.updated_at,
+    )
+
+
+def _event_model_to_domain(model: DeviceEventModel) -> DeviceEvent:
+    """Convert an ORM DeviceEventModel to a domain DeviceEvent."""
+    return DeviceEvent(
+        event_id=model.event_id,
+        device_id=model.device_id,
+        event_type=DeviceEventType(model.event_type),
+        timestamp=model.timestamp,
+        capture_id=model.capture_id,
+        metadata=dict(model.metadata_) if model.metadata_ is not None else {},
     )
 
 
@@ -206,6 +220,104 @@ class PostgresDeviceRepository:
                 )
                 session.add(item_model)
 
+    def append_event(self, event: DeviceEvent) -> None:
+        """Append an immutable DeviceEvent to PostgreSQL."""
+        with session_scope(self._session_factory) as session:
+            model = DeviceEventModel(
+                event_id=event.event_id,
+                device_id=event.device_id,
+                capture_id=event.capture_id,
+                event_type=event.event_type.value if isinstance(event.event_type, DeviceEventType) else str(event.event_type),
+                timestamp=event.timestamp,
+                metadata_=event.metadata,
+            )
+            session.add(model)
+
+    def list_events(self, device_id: str) -> list[DeviceEvent]:
+        """Return all audit events for device_id sorted chronologically (oldest -> newest)."""
+        with session_scope(self._session_factory) as session:
+            stmt = (
+                select(DeviceEventModel)
+                .where(DeviceEventModel.device_id == device_id)
+                .order_by(DeviceEventModel.timestamp)
+            )
+            events = session.scalars(stmt).all()
+            return [_event_model_to_domain(e) for e in events]
+
+    def get_latest_event(self, device_id: str) -> DeviceEvent | None:
+        """Return the most recent audit event for device_id, or None."""
+        with session_scope(self._session_factory) as session:
+            stmt = (
+                select(DeviceEventModel)
+                .where(DeviceEventModel.device_id == device_id)
+                .order_by(DeviceEventModel.timestamp.desc())
+                .limit(1)
+            )
+            event = session.scalars(stmt).first()
+            if event is None:
+                return None
+            return _event_model_to_domain(event)
+
+    def count_events(self, device_id: str | None = None) -> int:
+        """Count events for a specific device or total."""
+        with session_scope(self._session_factory) as session:
+            stmt = select(func.count()).select_from(DeviceEventModel)
+            if device_id is not None:
+                stmt = stmt.where(DeviceEventModel.device_id == device_id)
+            return int(session.scalar(stmt) or 0)
+
+    def save_with_event(self, device: DeviceRecord, event: DeviceEvent) -> None:
+        """Atomically persist/update a DeviceRecord and append a DeviceEvent in a single transaction."""
+        with session_scope(self._session_factory) as session:
+            # 1. Save / Update device record
+            model = session.get(DeviceModel, device.device_id)
+            if model is None:
+                model = DeviceModel(
+                    device_id=device.device_id,
+                    capture_id=device.capture_id,
+                    class_id=device.class_id,
+                    device_type=device.device_type,
+                    confidence=device.confidence,
+                    confidence_state=device.confidence_state.value,
+                    bounding_box=list(device.bounding_box),
+                    model_version=device.model_version,
+                    inference_mode=device.inference_mode,
+                    registration_state=device.registration_state.value,
+                    condition=device.condition,
+                    materials=device.materials,
+                    carbon_score=device.carbon_score,
+                    metadata_=device.metadata,
+                    created_at=device.created_at,
+                    updated_at=device.updated_at,
+                )
+                session.add(model)
+            else:
+                model.capture_id = device.capture_id
+                model.class_id = device.class_id
+                model.device_type = device.device_type
+                model.confidence = device.confidence
+                model.confidence_state = device.confidence_state.value
+                model.bounding_box = list(device.bounding_box)
+                model.model_version = device.model_version
+                model.inference_mode = device.inference_mode
+                model.registration_state = device.registration_state.value
+                model.condition = device.condition
+                model.materials = device.materials
+                model.carbon_score = device.carbon_score
+                model.metadata_ = device.metadata
+                model.updated_at = device.updated_at
+
+            # 2. Append event within the same transaction
+            event_model = DeviceEventModel(
+                event_id=event.event_id,
+                device_id=event.device_id,
+                capture_id=event.capture_id,
+                event_type=event.event_type.value if isinstance(event.event_type, DeviceEventType) else str(event.event_type),
+                timestamp=event.timestamp,
+                metadata_=event.metadata,
+            )
+            session.add(event_model)
+
     def record_event(
         self,
         event_type: str,
@@ -214,34 +326,18 @@ class PostgresDeviceRepository:
         metadata: dict[str, Any] | None = None,
     ) -> None:
         """Record an audit event."""
-        with session_scope(self._session_factory) as session:
-            event = DeviceEventModel(
+        evt_type = DeviceEventType(event_type) if event_type in DeviceEventType.__members__ else DeviceEventType.DEVICE_DETECTED
+        self.append_event(
+            DeviceEvent(
                 event_id=f"evt-{uuid.uuid4().hex[:12]}",
                 device_id=device_id,
-                capture_id=capture_id,
-                event_type=event_type,
+                event_type=evt_type,
                 timestamp=_utc_now(),
-                metadata_=metadata or {},
+                capture_id=capture_id,
+                metadata=metadata or {},
             )
-            session.add(event)
+        )
 
     def get_events(self, device_id: str) -> list[dict[str, Any]]:
-        """Return all audit events for a device."""
-        with session_scope(self._session_factory) as session:
-            stmt = (
-                select(DeviceEventModel)
-                .where(DeviceEventModel.device_id == device_id)
-                .order_by(DeviceEventModel.timestamp)
-            )
-            events = session.scalars(stmt).all()
-            return [
-                {
-                    "event_id": e.event_id,
-                    "device_id": e.device_id,
-                    "capture_id": e.capture_id,
-                    "event_type": e.event_type,
-                    "timestamp": e.timestamp.isoformat(),
-                    "metadata": e.metadata_,
-                }
-                for e in events
-            ]
+        """Return all audit events for a device as dictionaries."""
+        return [e.to_dict() for e in self.list_events(device_id)]

@@ -11,16 +11,17 @@ Provides:
 
 from __future__ import annotations
 
+from collections import defaultdict
 import json
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
-from .models import DeviceRecord
+from .models import DeviceEvent, DeviceRecord
 
 
 @runtime_checkable
 class DeviceRepository(Protocol):
-    """Storage-agnostic persistence contract for DeviceRecord entities."""
+    """Storage-agnostic persistence contract for DeviceRecord entities and audit events."""
 
     def save(self, device: DeviceRecord) -> None:
         """Persist ``device``, replacing any existing record with the same device_id."""
@@ -50,12 +51,29 @@ class DeviceRepository(Protocol):
         """Return the total number of stored device records."""
         ...
 
+    def append_event(self, event: DeviceEvent) -> None:
+        """Append an immutable lifecycle audit event."""
+        ...
+
+    def list_events(self, device_id: str) -> list[DeviceEvent]:
+        """Return all audit events for a device in chronological order (oldest -> newest)."""
+        ...
+
+    def get_latest_event(self, device_id: str) -> DeviceEvent | None:
+        """Return the most recent audit event for a device, or None."""
+        ...
+
+    def count_events(self, device_id: str | None = None) -> int:
+        """Count events for a specific device or across all devices."""
+        ...
+
 
 class InMemoryDeviceRepository:
-    """Non-durable, thread-safe in-memory repository backed by a dictionary."""
+    """Non-durable, thread-safe in-memory repository backed by dictionaries."""
 
     def __init__(self) -> None:
         self._records: dict[str, DeviceRecord] = {}
+        self._events: dict[str, list[DeviceEvent]] = defaultdict(list)
 
     def save(self, device: DeviceRecord) -> None:
         """Store or update ``device``."""
@@ -84,6 +102,7 @@ class InMemoryDeviceRepository:
         """Delete a record by device ID."""
         if device_id in self._records:
             del self._records[device_id]
+            self._events.pop(device_id, None)
             return True
         return False
 
@@ -91,12 +110,33 @@ class InMemoryDeviceRepository:
         """Total number of stored devices."""
         return len(self._records)
 
+    def append_event(self, event: DeviceEvent) -> None:
+        """Append an event to the in-memory event log."""
+        self._events[event.device_id].append(event)
+
+    def list_events(self, device_id: str) -> list[DeviceEvent]:
+        """List events sorted chronologically."""
+        events = list(self._events.get(device_id, []))
+        return sorted(events, key=lambda e: e.timestamp)
+
+    def get_latest_event(self, device_id: str) -> DeviceEvent | None:
+        """Return the most recent event for device_id."""
+        events = self.list_events(device_id)
+        return events[-1] if events else None
+
+    def count_events(self, device_id: str | None = None) -> int:
+        """Count events in memory."""
+        if device_id is not None:
+            return len(self._events.get(device_id, []))
+        return sum(len(evts) for evts in self._events.values())
+
 
 class JsonFileDeviceRepository:
-    """Durable JSON repository persisting one document per device under a directory."""
+    """Durable JSON repository persisting device records and event streams under a directory."""
 
     def __init__(self, store_dir: Path) -> None:
         self._store_dir = Path(store_dir)
+        self._events_dir = self._store_dir / "events"
 
     @property
     def store_dir(self) -> Path:
@@ -105,9 +145,13 @@ class JsonFileDeviceRepository:
 
     def _path_for(self, device_id: str) -> Path:
         """Return file path for a device ID."""
-        # Sanitize filename
         safe_id = "".join(c for c in device_id if c.isalnum() or c in ("-", "_"))
         return self._store_dir / f"{safe_id}.json"
+
+    def _events_path_for(self, device_id: str) -> Path:
+        """Return JSONL file path for a device ID's event stream."""
+        safe_id = "".join(c for c in device_id if c.isalnum() or c in ("-", "_"))
+        return self._events_dir / f"{safe_id}.events.jsonl"
 
     def save(self, device: DeviceRecord) -> None:
         """Write device record as JSON document."""
@@ -158,15 +202,61 @@ class JsonFileDeviceRepository:
         return all_records[offset : offset + limit]
 
     def delete(self, device_id: str) -> bool:
-        """Delete JSON record file."""
+        """Delete JSON record file and corresponding event log."""
+        deleted = False
         path = self._path_for(device_id)
         if path.is_file():
             path.unlink()
-            return True
-        return False
+            deleted = True
+        events_path = self._events_path_for(device_id)
+        if events_path.is_file():
+            events_path.unlink()
+        return deleted
 
     def count(self) -> int:
         """Count JSON records in storage directory."""
         if not self._store_dir.is_dir():
             return 0
         return len(list(self._store_dir.glob("*.json")))
+
+    def append_event(self, event: DeviceEvent) -> None:
+        """Append an event to the JSONL event log for the device."""
+        self._events_dir.mkdir(parents=True, exist_ok=True)
+        path = self._events_path_for(event.device_id)
+        with path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(event.to_dict()) + "\n")
+
+    def list_events(self, device_id: str) -> list[DeviceEvent]:
+        """Read all events from the device's JSONL stream."""
+        path = self._events_path_for(device_id)
+        if not path.is_file():
+            return []
+        events: list[DeviceEvent] = []
+        try:
+            with path.open("r", encoding="utf-8") as f:
+                for line in f:
+                    line_str = line.strip()
+                    if line_str:
+                        events.append(DeviceEvent.from_dict(json.loads(line_str)))
+        except Exception:
+            return []
+        return sorted(events, key=lambda e: e.timestamp)
+
+    def get_latest_event(self, device_id: str) -> DeviceEvent | None:
+        """Return the most recent event for device_id."""
+        events = self.list_events(device_id)
+        return events[-1] if events else None
+
+    def count_events(self, device_id: str | None = None) -> int:
+        """Count events in JSON storage."""
+        if device_id is not None:
+            return len(self.list_events(device_id))
+        total = 0
+        if self._events_dir.is_dir():
+            for path in self._events_dir.glob("*.events.jsonl"):
+                try:
+                    with path.open("r", encoding="utf-8") as f:
+                        total += sum(1 for line in f if line.strip())
+                except Exception:
+                    continue
+        return total

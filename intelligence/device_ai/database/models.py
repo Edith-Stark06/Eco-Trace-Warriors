@@ -64,6 +64,20 @@ class DeviceModel(Base):
         order_by="DeviceEventModel.timestamp",
     )
 
+    trust_anchor: Mapped[TrustAnchorModel | None] = relationship(
+        back_populates="device",
+        uselist=False,
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+    external_trust_anchor: Mapped[ExternalTrustAnchorModel | None] = relationship(
+        back_populates="device",
+        uselist=False,
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
 
 class DeviceEnrichmentModel(Base):
     """Relational table for persistent DeviceEnrichment aggregate snapshots."""
@@ -160,3 +174,53 @@ class DeviceEventModel(Base):
 # Composite indexes for high-frequency audit queries
 Index("ix_device_events_device_time", DeviceEventModel.device_id, DeviceEventModel.timestamp)
 Index("ix_device_events_type_time", DeviceEventModel.event_type, DeviceEventModel.timestamp)
+
+
+class TrustAnchorModel(Base):
+    """Relational table for persistent Trust Anchor records (P5.9)."""
+
+    __tablename__ = "trust_anchors"
+
+    anchor_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    device_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("devices.device_id", ondelete="CASCADE"),
+        unique=True,
+        index=True,
+        nullable=False,
+    )
+    passport_fingerprint: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
+    algorithm: Mapped[str] = mapped_column(String(32), nullable=False, default="sha256")
+    anchored_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="ANCHORED")
+    metadata_: Mapped[dict[str, Any]] = mapped_column("metadata", JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    device: Mapped[DeviceModel] = relationship(back_populates="trust_anchor")
+
+
+class ExternalTrustAnchorModel(Base):
+    """Relational table for persistent External Trust Anchor mirror records (P5.11)."""
+
+    __tablename__ = "external_trust_anchors"
+
+    external_anchor_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    device_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("devices.device_id", ondelete="CASCADE"),
+        unique=True,
+        index=True,
+        nullable=False,
+    )
+    passport_fingerprint: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
+    algorithm: Mapped[str] = mapped_column(String(32), nullable=False, default="sha256")
+    provider: Mapped[str] = mapped_column(String(64), nullable=False, default="memory")
+    network: Mapped[str] = mapped_column(String(64), nullable=False, default="ecotrace-channel")
+    transaction_id: Mapped[str] = mapped_column(String(128), index=True, nullable=False)
+    anchored_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="ANCHORED")
+    metadata_: Mapped[dict[str, Any]] = mapped_column("metadata", JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    device: Mapped[DeviceModel] = relationship(back_populates="external_trust_anchor")

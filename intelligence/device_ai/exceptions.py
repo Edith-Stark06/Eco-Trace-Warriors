@@ -444,3 +444,69 @@ class DevicePersistenceError(DeviceRegistrationError):
 
     code = "DEVICE_PERSISTENCE_ERROR"
     http_status = HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+# ---------------------------------------------------------------------------
+# Trust Anchor & Blockchain abstraction errors (P5.8)
+# ---------------------------------------------------------------------------
+
+
+class TrustAnchorError(DeviceAIError):
+    """Base class for trust anchor and verification errors."""
+
+    code = "TRUST_ANCHOR_ERROR"
+    http_status = HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+class AnchorNotFoundError(TrustAnchorError):
+    """Raised when no trust anchor exists for a requested device."""
+
+    code = "ANCHOR_NOT_FOUND"
+    http_status = HTTPStatus.NOT_FOUND
+
+
+class AnchorConflictError(TrustAnchorError):
+    """Raised when attempting to anchor a conflicting fingerprint onto an already anchored device."""
+
+    code = "ANCHOR_CONFLICT"
+    http_status = HTTPStatus.CONFLICT
+
+
+class PassportNotAnchorableError(TrustAnchorError):
+    """Raised when a passport fails verification and cannot be anchored."""
+
+    code = "PASSPORT_NOT_ANCHORABLE"
+    http_status = HTTPStatus.BAD_REQUEST
+
+
+# ---------------------------------------------------------------------------
+# External / Blockchain Trust Ledger errors (P5.11)
+# ---------------------------------------------------------------------------
+
+
+class ExternalLedgerError(TrustAnchorError):
+    """Base exception for external/blockchain ledger errors."""
+
+    code = "EXTERNAL_LEDGER_ERROR"
+    http_status = HTTPStatus.BAD_GATEWAY
+
+
+class ExternalLedgerUnavailableError(ExternalLedgerError):
+    """Raised when external ledger provider is unreachable or disabled."""
+
+    code = "EXTERNAL_LEDGER_UNAVAILABLE"
+    http_status = HTTPStatus.SERVICE_UNAVAILABLE
+
+
+class ExternalAnchorNotFoundError(ExternalLedgerError):
+    """Raised when no external anchor exists on the ledger for the requested device."""
+
+    code = "EXTERNAL_ANCHOR_NOT_FOUND"
+    http_status = HTTPStatus.NOT_FOUND
+
+
+class ExternalAnchorConflictError(ExternalLedgerError):
+    """Raised when attempting to externally anchor a conflicting fingerprint onto an already anchored device."""
+
+    code = "EXTERNAL_ANCHOR_CONFLICT"
+    http_status = HTTPStatus.CONFLICT
