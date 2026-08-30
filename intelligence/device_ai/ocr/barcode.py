@@ -189,7 +189,10 @@ class OpenCVBarcodeReader(BarcodeReader):
                     )
                 )
             if barcode_detector is not None:
-                ok, decoded, types, _points = barcode_detector.detectAndDecode(array)
+                raw = barcode_detector.detectAndDecode(array)
+                # cv2 API varies by version: older builds return (ok, decoded, types, points),
+                # newer builds return (ok, decoded, types). Extract only what we need.
+                ok, decoded, types = raw[0], raw[1], raw[2]
                 if ok and decoded:
                     for value, kind in zip(decoded, types, strict=False):
                         if value:

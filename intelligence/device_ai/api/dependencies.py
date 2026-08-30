@@ -596,7 +596,15 @@ def get_external_trust_repository() -> PostgresExternalTrustAnchorRepository | N
     """Return the process-wide :class:`PostgresExternalTrustAnchorRepository` singleton if postgres is configured."""
     settings = get_settings()
     if settings.device_backend == "postgres" or settings.trust_anchor_backend == "postgres":
-        session_factory = get_session_factory(settings)
+        db_url = settings.database_url or "postgresql+psycopg://ecotrace:ecotrace123@localhost:5432/ecotrace"
+        engine = get_engine(
+            db_url,
+            pool_size=settings.db_pool_size,
+            max_overflow=settings.db_max_overflow,
+            pool_timeout=settings.db_pool_timeout,
+            echo=settings.db_echo,
+        )
+        session_factory = get_session_factory(engine)
         return PostgresExternalTrustAnchorRepository(session_factory)
     return None
 

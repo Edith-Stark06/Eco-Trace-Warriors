@@ -56,7 +56,9 @@ class TestMockBarcodeReader:
 class TestOpenCVBarcodeReaderNotReady:
     """The real adapter degrades honestly when cv2 is absent."""
 
-    def test_not_ready_without_backend(self) -> None:
+    def test_not_ready_without_backend(self, monkeypatch) -> None:
+        # Simulate cv2 being absent regardless of the actual installed environment.
+        monkeypatch.setattr("device_ai.ocr.barcode._import_cv2", lambda: None)
         reader = OpenCVBarcodeReader()
         assert reader.is_ready is False
         assert reader.decode(_load()) == []
