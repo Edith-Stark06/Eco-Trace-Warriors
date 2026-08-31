@@ -42,6 +42,7 @@ from .external_trust import (
     InMemoryExternalTrustLedger,
     compute_overall_trust_status,
 )
+from .fabric_gateway_client import build_fabric_gateway_client
 from .models import DeviceEvent, DeviceEventType, DeviceRecord
 from .passport import DevicePassport, build_device_passport
 from .passport_verification import (
@@ -305,6 +306,7 @@ class DevicePassportTrustService:
                 chaincode=self._settings.external_trust_chaincode,
                 network=self._settings.external_trust_network,
                 provider=self._settings.external_trust_provider,
+                gateway_client=build_fabric_gateway_client(self._settings),
             )
         else:
             self._external_ledger = InMemoryExternalTrustLedger(

@@ -39,6 +39,7 @@ from ..devices.external_trust import (
     FabricExternalTrustLedger,
     InMemoryExternalTrustLedger,
 )
+from ..devices.fabric_gateway_client import FabricGatewayClient, build_fabric_gateway_client
 from ..devices.service import DeviceRegistrationService
 from ..devices.enrichment_service import DeviceIntelligenceService
 from ..devices.trust_anchor import (
@@ -566,16 +567,24 @@ def build_external_trust_ledger(settings: Settings) -> ExternalTrustLedger:
     """
     backend = settings.external_trust_backend
     if backend == "fabric":
+        # Built from the *passed* settings (matching the sibling
+        # build_device_repository/build_trust_anchor_repository factories),
+        # not the global get_settings() singleton — so this function remains
+        # correct if ever called with a non-global Settings instance (as
+        # tests for the other build_* factories already do).
+        gateway_client = build_fabric_gateway_client(settings)
         logger.info(
-            "Configuring FabricExternalTrustLedger (channel='{}', chaincode='{}').",
+            "Configuring FabricExternalTrustLedger (channel='{}', chaincode='{}', fabric_enabled={}).",
             settings.external_trust_channel,
             settings.external_trust_chaincode,
+            settings.fabric_enabled,
         )
         return FabricExternalTrustLedger(
             channel=settings.external_trust_channel,
             chaincode=settings.external_trust_chaincode,
             network=settings.external_trust_network,
             provider=settings.external_trust_provider,
+            gateway_client=gateway_client,
         )
 
     logger.info("Configuring InMemoryExternalTrustLedger (network='{}').", settings.external_trust_network)
@@ -589,6 +598,25 @@ def build_external_trust_ledger(settings: Settings) -> ExternalTrustLedger:
 def get_external_trust_ledger() -> ExternalTrustLedger:
     """Return the process-wide :class:`ExternalTrustLedger` singleton."""
     return build_external_trust_ledger(get_settings())
+
+
+@lru_cache(maxsize=1)
+def get_fabric_gateway_client() -> FabricGatewayClient | None:
+    """Return the process-wide :class:`FabricGatewayClient` singleton, or ``None`` when disabled.
+
+    Used by the read-only ``GET /system/blockchain/health`` endpoint. Kept as
+    its own cached singleton (rather than reaching into the
+    :class:`~device_ai.devices.external_trust.FabricExternalTrustLedger`
+    internals) so the health check works even when
+    ``external_trust_backend`` is not ``"fabric"`` — i.e. Fabric connectivity
+    can be inspected independently of which ledger backend is currently
+    serving trust anchors.
+
+    Returns:
+        The shared :class:`FabricGatewayClient`, or ``None`` if
+        ``FABRIC_ENABLED`` is false.
+    """
+    return build_fabric_gateway_client(get_settings())
 
 
 @lru_cache(maxsize=1)
@@ -666,6 +694,7 @@ def reset_dependency_caches() -> None:
     get_trust_anchor_repository.cache_clear()
     get_external_trust_ledger.cache_clear()
     get_external_trust_repository.cache_clear()
+    get_fabric_gateway_client.cache_clear()
     get_ocr_backend.cache_clear()
     get_barcode_reader.cache_clear()
     get_settings.cache_clear()

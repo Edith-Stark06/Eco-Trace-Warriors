@@ -1,0 +1,190 @@
+{
+  "phase": "P6.2",
+  "title": "Backend Fabric Gateway Integration",
+  "status": "IMPLEMENTED_MOCKED_VERIFIED_LIVE_NETWORK_UNAVAILABLE",
+  "timestamp": "2026-09-01T00:00:00Z",
+  "git": {
+    "branch": "develop",
+    "baseline_head": "22c9acfc58c54446a659f09823cfd4082ad68ff8"
+  },
+  "existing_architecture_discovered": {
+    "external_trust_py": "P5.11 FabricExternalTrustLedger already calls gateway_client.submitTransaction/evaluateTransaction (camelCase duck-type), locked in by test_fabric_live_client_adapter_invocations",
+    "placeholder_bugs_found": [
+      "get_anchor() always returned None even with a connected client (never parsed payload)",
+      "verify_anchor() always returned UNAVAILABLE even with a connected client (hardcoded stub)"
+    ],
+    "gateway_client_never_injected": "Both DevicePassportTrustService.__init__ and api/dependencies.py build_external_trust_ledger() constructed FabricExternalTrustLedger with no gateway_client prior to P6.2",
+    "no_official_python_fabric_gateway_sdk": "Confirmed via web search: only Go, Node.js, Java SDKs exist (github.com/hyperledger/fabric-gateway)",
+    "database_schema": "external_trust_anchors table (P5.11 ExternalTrustAnchorModel) already sufficient; no new table/migration added"
+  },
+  "chaincode_transaction_mapping": {
+    "AnchorDevicePassport": {
+      "type": "submit",
+      "args": ["deviceId", "passportFingerprint", "algorithm"],
+      "backend_call": "FabricExternalTrustLedger.anchor() -> gateway_client.submitTransaction(...)"
+    },
+    "GetDeviceAnchor": {
+      "type": "evaluate",
+      "args": ["deviceId"],
+      "backend_call": "FabricExternalTrustLedger.get_anchor()/.verify_anchor() -> gateway_client.evaluateTransaction(...)"
+    },
+    "verified_against": "blockchain/chaincode/ecotrace-lifecycle/src/ecotrace-lifecycle.ts (P6.1 source, not assumed)"
+  },
+  "fabric_gateway_client": {
+    "path": "intelligence/device_ai/devices/fabric_gateway_client.py",
+    "lines": 828,
+    "transport": "grpcio (no official Python Fabric Gateway SDK exists; justified per work-order constraint #12)",
+    "protocol_source": "vendored, byte-for-byte unmodified .proto files from github.com/hyperledger/fabric-protos (main, Apache-2.0)",
+    "vendored_proto_dir": "blockchain/fabric-protos/ (16 files)",
+    "compiled_stub_dir": "intelligence/device_ai/devices/fabric_pb/ (40 generated .py files, grpcio-tools)",
+    "public_api": ["connect", "disconnect", "submit_transaction", "evaluate_transaction", "health_check", "is_available"],
+    "adapter_compat_aliases": ["submitTransaction", "evaluateTransaction"],
+    "signing": "ECDSA P-256/SHA-256, DER, low-S normalized (Fabric malleability-resistant convention)",
+    "tx_id_derivation": "sha256(nonce(24 random bytes) || creator_bytes) hex, standard Fabric client construction"
+  },
+  "configuration_variables": {
+    "FABRIC_ENABLED": {"field": "fabric_enabled", "default": false},
+    "FABRIC_CHANNEL_NAME": {"field": "fabric_channel_name", "default": "ecotrace-channel"},
+    "FABRIC_CHAINCODE_NAME": {"field": "fabric_chaincode_name", "default": "ecotrace-lifecycle"},
+    "FABRIC_MSP_ID": {"field": "fabric_msp_id", "default": "EcoTraceOrgMSP"},
+    "FABRIC_PEER_ENDPOINT": {"field": "fabric_peer_endpoint", "default": "localhost:7051"},
+    "FABRIC_GATEWAY_PEER_ENDPOINT": {"field": "fabric_gateway_peer_endpoint", "default": "localhost:7051"},
+    "FABRIC_TLS_CERT_PATH": {"field": "fabric_tls_cert_path", "default": null},
+    "FABRIC_IDENTITY_CERT_PATH": {"field": "fabric_identity_cert_path", "default": null},
+    "FABRIC_IDENTITY_KEY_PATH": {"field": "fabric_identity_key_path", "default": null},
+    "FABRIC_CONNECTION_PROFILE": {"field": "fabric_connection_profile", "default": null, "note": "reserved, unused in P6.2"},
+    "FABRIC_DISCOVERY_ENABLED": {"field": "fabric_discovery_enabled", "default": false, "note": "reserved, unused in P6.2"},
+    "FABRIC_TIMEOUT_SECONDS": {"field": "fabric_timeout_seconds", "default": 10.0},
+    "external_trust_backend_fields_unchanged": ["external_trust_backend", "external_trust_channel", "external_trust_chaincode", "external_trust_network", "external_trust_provider"]
+  },
+  "exceptions_added": {
+    "FabricGatewayError": {"base": "ExternalLedgerError", "http_status": 502},
+    "FabricNotConfigured": {"base": "FabricGatewayError", "http_status": 503},
+    "FabricConfigurationError": {"base": "FabricGatewayError", "http_status": 503},
+    "FabricUnavailable": {"base": "FabricGatewayError", "http_status": 503},
+    "FabricConnectionError": {"base": "FabricGatewayError", "http_status": 503},
+    "FabricTransactionError": {"base": "FabricGatewayError", "http_status": 502},
+    "FabricQueryError": {"base": "FabricGatewayError", "http_status": 502},
+    "naming_note": "FabricNotConfigured/FabricUnavailable do not end in 'Error' per explicit work-order naming; not renamed for a lint preference"
+  },
+  "api": {
+    "existing_endpoints_unchanged": [
+      "POST /devices/{device_id}/passport/external-anchor",
+      "GET /devices/{device_id}/passport/external-anchor",
+      "GET /devices/{device_id}/passport/external-anchor/verify",
+      "GET /devices/{device_id}/trust/full"
+    ],
+    "new_endpoint": {
+      "path": "GET /system/blockchain/health",
+      "read_only": true,
+      "mechanism": "connection-level TLS/gRPC channel-ready probe; never submits a chaincode transaction",
+      "states": ["disabled", "configuration_error", "unavailable", "connected"]
+    }
+  },
+  "retry_policy": {
+    "submit_transaction": "no retry; single attempt, raises immediately on any failure to avoid duplicate on-chain writes",
+    "evaluate_transaction_connect_health_check": "no automatic retry either; conservative policy per work-order Phase 8",
+    "application_level_idempotency": "pre-existing, unchanged: DevicePassportTrustService.anchor_device_passport_externally() fingerprint-based conflict detection (P5.11)"
+  },
+  "test_metrics": {
+    "p62_new_suite_passed": 43,
+    "p62_new_suite_total": 43,
+    "p511_p512_regression_passed": 26,
+    "p511_p512_regression_total": 26,
+    "full_python_suite_passed": 1072,
+    "full_python_suite_total": 1073,
+    "full_python_suite_failed": 1,
+    "full_python_suite_failure_detail": "tests/test_detector_benchmark.py::test_benchmark_measures_latency_and_throughput — pre-existing, unrelated, machine-timing-dependent (asserts latency_ms > 0 on a trivial fake model; measures exactly 0.0 on this machine). Confirmed via git status that this file and training/detector/benchmark.py were never touched by P6.2. Deterministic on this machine (reran 3x, failed every time — not flaky).",
+    "p61_chaincode_tests_passed": 45,
+    "p61_chaincode_tests_total": 45,
+    "ruff_new_files_clean": true,
+    "ruff_deliberate_exceptions": "1 UP042 (str+Enum) kept for consistency with existing codebase convention (ExternalTrustStatus etc.); E501 in ANN/D-exempt test files matches this repo's demonstrated lint bar (untouched trust_anchor.py baseline itself has 67 ruff errors)",
+    "mypy_errors_attributable_to_p62": 0,
+    "mypy_note": "all errors reported when typechecking P6.2 files by import closure are in pre-existing, untouched modules"
+  },
+  "testing_strategy": {
+    "fake_gateway_server": "intelligence/device_ai/tests/fabric_test_server.py — in-process TLS gRPC server implementing the real gateway.Gateway service contract, compiled from the same vendored unmodified protos as the client",
+    "validates": ["TLS channel construction", "identity loading", "ECDSA-signed proposal/envelope construction", "protobuf (de)serialization", "full Endorse/Submit/CommitStatus/Evaluate RPC sequence"],
+    "does_not_validate": ["MSP/identity membership validation by a real peer", "endorsement policy satisfaction", "real chaincode execution", "ledger commit atomicity"],
+    "chaincode_simulation": "minimal stateful AnchorDevicePassport/GetDeviceAnchor replica in the fake server for round-trip trust-evaluation tests; records writes at Endorse time (simplification, documented)"
+  },
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "protected_assets_status": "ALL MATCH",
+  "fabric_live_network_status": {
+    "available": false,
+    "reason": "No live Hyperledger Fabric network exists in this repository or execution environment. blockchain/network/, blockchain/fabric-network/, blockchain/scripts/ are empty, pre-existing placeholder directories (dated 2026-07-20, predating P6.1). No docker-compose file anywhere defines a Fabric peer/orderer/CA.",
+    "fabric_integration_pytest_marker_added": false,
+    "marker_omission_reason": "No runnable live-network target exists in this environment; adding an unusable marker would be a hollow gesture rather than honest documentation",
+    "mocked_fabric_e2e": "PASS (via in-process fake Gateway server, real TLS/gRPC/protobuf/signing round trip)",
+    "live_fabric_e2e": "BLOCKED_BY_ENVIRONMENT",
+    "conflated": false
+  },
+  "security_considerations": [
+    "No secrets committed; .gitignore hardened for *.key, *.pem, *.p12, *.pfx, wallet/, credentials/, crypto-config/",
+    "No real certificate/key material ever created in the repository; only ephemeral tmp_path self-signed test identities generated fresh per test run",
+    "Logging never includes certificate/key contents; verified by dedicated tests",
+    "TLS is mandatory; no insecure-channel fallback",
+    "ECDSA signatures normalized to low-S form (Fabric malleability-resistant convention)"
+  ],
+  "files": {
+    "created": [
+      "intelligence/device_ai/devices/fabric_gateway_client.py",
+      "intelligence/device_ai/devices/fabric_pb/",
+      "intelligence/device_ai/api/blockchain_routes.py",
+      "intelligence/device_ai/api/blockchain_schemas.py",
+      "intelligence/device_ai/tests/fabric_test_server.py",
+      "intelligence/device_ai/tests/test_p62_fabric_gateway.py",
+      "blockchain/fabric-protos/",
+      "reports/P6_2_FABRIC_GATEWAY_INTEGRATION.md",
+      "reports/P6_2_FABRIC_GATEWAY_INTEGRATION.json"
+    ],
+    "modified": [
+      ".gitignore",
+      "intelligence/device_ai/.env.example",
+      "intelligence/device_ai/configs/settings.py",
+      "intelligence/device_ai/exceptions.py",
+      "intelligence/device_ai/devices/external_trust.py",
+      "intelligence/device_ai/devices/trust_anchor.py",
+      "intelligence/device_ai/api/dependencies.py",
+      "intelligence/device_ai/application.py",
+      "intelligence/device_ai/requirements.txt",
+      "intelligence/device_ai/requirements-dev.txt"
+    ]
+  },
+  "limitations": [
+    "No live Fabric network validation — the single largest gap (endorsement policy, MSP validation, real chaincode execution, commit atomicity all unverified against a genuine peer)",
+    "Two independent FabricGatewayClient instances can exist per process (ledger's own + health-endpoint singleton), each opening its own gRPC channel — deliberate per existing build_X/get_X convention, minor inefficiency",
+    "FABRIC_CONNECTION_PROFILE/FABRIC_DISCOVERY_ENABLED accepted but unused (direct single-peer connection only)",
+    "fabric_channel_name/fabric_chaincode_name deliberately duplicate external_trust_channel/external_trust_chaincode",
+    "ChaincodeSpec.type set to GOLANG placeholder even though chaincode is TypeScript (standard practice across Fabric SDKs; peer ignores it)",
+    "No automatic retry anywhere (deliberate conservative choice, not a gap)",
+    "fabric_test_server.py's chaincode simulation records writes at Endorse time, not gated on CommitStatus result (documented simplification)"
+  ],
+  "definition_of_done": {
+    "reconnaissance_against_actual_source": true,
+    "chaincode_transaction_names_confirmed_from_source": true,
+    "fabric_configuration_via_existing_settings_architecture": true,
+    "fabric_gateway_client_implemented": true,
+    "fabric_external_trust_ledger_connected": true,
+    "existing_endpoints_unchanged": true,
+    "health_check_connection_level_only": true,
+    "exceptions_mapped_to_existing_envelope": true,
+    "conservative_retry_policy": true,
+    "comprehensive_tests_no_live_network_required": true,
+    "live_network_status_documented_honestly": true,
+    "p5_regression_green": true,
+    "p61_regression_green": true,
+    "protected_assets_match": true,
+    "no_new_db_table_needed": true,
+    "no_secrets_committed": true,
+    "scope_held_to_backend_only": true
+  },
+  "next_task": "P6.3 (per BEAST MODE execution order) — Mobile Collector Application"
+}

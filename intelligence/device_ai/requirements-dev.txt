@@ -10,3 +10,4 @@ isort==5.13.2
 ruff==0.8.6
 mypy==1.14.1
 types-PyYAML==6.0.12.20240917    # type stubs for PyYAML (M1.3)
+grpcio-tools==1.83.1             # regenerates devices/fabric_pb/ from blockchain/fabric-protos/ (P6.2)

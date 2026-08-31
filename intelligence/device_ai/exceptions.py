@@ -510,3 +510,67 @@ class ExternalAnchorConflictError(ExternalLedgerError):
 
     code = "EXTERNAL_ANCHOR_CONFLICT"
     http_status = HTTPStatus.CONFLICT
+
+
+# ---------------------------------------------------------------------------
+# Fabric Gateway client errors (P6.2)
+# ---------------------------------------------------------------------------
+
+
+class FabricGatewayError(ExternalLedgerError):
+    """Base class for Fabric Gateway client errors.
+
+    Subclasses :class:`ExternalLedgerError` so existing callers that catch the
+    broader P5.11 external-ledger error family (and the registered FastAPI
+    exception handler) continue to work unchanged for Fabric-specific failures.
+    """
+
+    code = "FABRIC_GATEWAY_ERROR"
+    http_status = HTTPStatus.BAD_GATEWAY
+
+
+class FabricNotConfigured(FabricGatewayError):
+    """Raised when Fabric operations are attempted while ``FABRIC_ENABLED=false``."""
+
+    code = "FABRIC_NOT_CONFIGURED"
+    http_status = HTTPStatus.SERVICE_UNAVAILABLE
+
+
+class FabricConfigurationError(FabricGatewayError):
+    """Raised when Fabric is enabled but its configuration is invalid or incomplete.
+
+    Examples: a configured certificate/key path does not exist, a PEM file is
+    malformed, or a required setting is missing. Never carries file contents —
+    only paths and a description of what failed to parse.
+    """
+
+    code = "FABRIC_CONFIGURATION_ERROR"
+    http_status = HTTPStatus.SERVICE_UNAVAILABLE
+
+
+class FabricUnavailable(FabricGatewayError):
+    """Raised when the Fabric Gateway peer is unreachable (connection-level failure)."""
+
+    code = "FABRIC_UNAVAILABLE"
+    http_status = HTTPStatus.SERVICE_UNAVAILABLE
+
+
+class FabricConnectionError(FabricGatewayError):
+    """Raised when establishing or maintaining the Fabric Gateway gRPC connection fails."""
+
+    code = "FABRIC_CONNECTION_ERROR"
+    http_status = HTTPStatus.SERVICE_UNAVAILABLE
+
+
+class FabricTransactionError(FabricGatewayError):
+    """Raised when a Fabric chaincode submit transaction (endorse/submit/commit) fails."""
+
+    code = "FABRIC_TRANSACTION_ERROR"
+    http_status = HTTPStatus.BAD_GATEWAY
+
+
+class FabricQueryError(FabricGatewayError):
+    """Raised when a Fabric chaincode evaluate (query) transaction fails."""
+
+    code = "FABRIC_QUERY_ERROR"
+    http_status = HTTPStatus.BAD_GATEWAY
