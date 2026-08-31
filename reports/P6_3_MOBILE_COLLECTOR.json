@@ -1,0 +1,104 @@
+{
+  "phase": "P6.3",
+  "title": "Mobile Collector Application",
+  "status": "IMPLEMENTED_ANALYZED_TESTED_NO_APK",
+  "timestamp": "2026-09-01T00:00:00Z",
+  "reconnaissance_findings": {
+    "real_backend_is_not_ai_device_ai": "Collector app talks to backend/ (Express+Prisma), not intelligence/device_ai (Python AI microservice used by P6.1/P6.2)",
+    "workflow_is_pickup_logistics_not_ai_capture": "Submission model is a consumer-created waste pickup request (category/weight/address/geo/images), not an AI-detected device candidate; collector accepts/starts/completes it",
+    "no_self_service_collector_registration": "POST /auth/register hard-codes UserRole.CONSUMER (backend/src/modules/auth/auth.service.ts); no role param in registerSchema",
+    "get_submission_by_id_is_owner_admin_only": "loadAccessible() in submission.service.ts 404s for a collector fetching a pickup assigned to (not owned by) them; app resolves details from local cache instead",
+    "no_collector_history_endpoint": "findByCollector query exists in submission.repository.ts but is never called by the service or wired to a route; only GET /collector/submissions (active assignments) is exposed"
+  },
+  "architecture": {
+    "state_management": "flutter_riverpod 3.4.2 (Notifier/NotifierProvider — StateNotifier/StateNotifierProvider were removed in this version, discovered via flutter analyze)",
+    "networking": "dio, wrapped in ApiClient (Bearer + X-Request-ID) and mapDioExceptionToFailure (backend {success:false,error:{code,message}} envelope)",
+    "secrets": "flutter_secure_storage (Keystore/Keychain) only",
+    "offline_storage": "sqflite: sync_queue (queued actions) + submission_cache (last-known submission state)",
+    "no_hardcoded_urls": "AppConfig.apiBaseUrl/apiPrefix via String.fromEnvironment, dart-define overridable"
+  },
+  "screens": {
+    "splash": "implemented",
+    "login": "implemented",
+    "register": "not implemented — backend has no self-service collector registration; honest info dialog instead",
+    "home_task_list": "implemented as one tabbed shell (Tasks/History/Sync/Profile)",
+    "device_capture_registration": "not implemented — no such backend flow for collectors (real workflow is pickup accept/start/complete)",
+    "task_detail": "implemented",
+    "submission_history": "implemented — cache-backed, not server-backed (no history endpoint exists)",
+    "sync_queue": "implemented",
+    "profile": "implemented",
+    "settings": "implemented"
+  },
+  "offline_sync_design": {
+    "dedup": "SyncQueueRepository.enqueue collapses re-taps of the same (submissionId, actionPath) into one row",
+    "drain_trigger": "connectivity restored (connectivityProvider -> syncOnReconnectProvider)",
+    "reconciliation": "SyncManager re-fetches submission status on a 4xx replay failure and treats the action as already-applied (drops from queue) if status shows it took effect, instead of endlessly retrying or duplicating",
+    "no_blind_retry": "performOrQueue attempts once online; queues rather than looping on a retryable failure"
+  },
+  "environment": {
+    "flutter_sdk_present_at_start": false,
+    "choco_install_attempt": "failed — no admin rights (lib-bad directory access denied)",
+    "direct_download_attempt": "succeeded — Flutter 3.47.2 stable, ~1.93GB, downloaded to a user-writable directory, zip integrity verified before extraction",
+    "flutter_version": "3.47.2 (channel stable)",
+    "riverpod_api_break_found": "flutter_riverpod 3.4.2 removed StateNotifier/StateNotifierProvider; code rewritten against the actual installed package source (Notifier/NotifierProvider)"
+  },
+  "test_metrics": {
+    "flutter_pub_get": "resolved cleanly, all pinned versions valid",
+    "flutter_analyze_issues": 0,
+    "flutter_test_passed": 18,
+    "flutter_test_total": 18,
+    "unit_tests": 14,
+    "widget_tests": 4,
+    "sqlite_tests_real_execution": true,
+    "sqlite_test_note": "sqflite_common_ffi ran against a real in-memory SQLite database — the native sqlite3 library is available in this environment",
+    "apk_build_attempted": false,
+    "apk_build_reason": "no Android SDK in this environment (flutter doctor: 'Unable to locate Android SDK'); Windows/web build targets available but not exercised (marginal additional verification value vs. platform-plugin-compatibility risk for platforms this app doesn't target)"
+  },
+  "security": [
+    "Tokens only in flutter_secure_storage (Keystore/Keychain), never logged",
+    "No self-service creation of privileged (COLLECTOR) accounts possible",
+    "Client-side input validation in addition to server-side validation",
+    "Backend remains authoritative for every lifecycle transition — app never fabricates status locally",
+    "No hard-coded production API endpoint"
+  ],
+  "limitations": [
+    "No APK build (analyze/test-verified, not device/emulator-run)",
+    "No self-service collector registration (backend design, not an app gap)",
+    "Submission History is cache-only, not a complete server-side history (no such endpoint exists)",
+    "Camera/scanner service abstractions implemented but not wired to a live flow (no backend endpoint to receive photos from a collector)",
+    "No push notifications for new assignments",
+    "Windows/web build targets untested (app targets Android/iOS; some plugins have partial/no desktop-web support)"
+  ],
+  "files_created": [
+    "mobile/collector_app/pubspec.yaml",
+    "mobile/collector_app/analysis_options.yaml",
+    "mobile/collector_app/.gitignore",
+    "mobile/collector_app/lib/main.dart",
+    "mobile/collector_app/lib/app.dart",
+    "mobile/collector_app/lib/core/** (config, network, storage, theme, utils)",
+    "mobile/collector_app/lib/features/auth/**",
+    "mobile/collector_app/lib/features/tasks/**",
+    "mobile/collector_app/lib/features/sync/**",
+    "mobile/collector_app/lib/features/capture/services/**",
+    "mobile/collector_app/lib/features/home/**",
+    "mobile/collector_app/lib/features/profile/**",
+    "mobile/collector_app/lib/shared/**",
+    "mobile/collector_app/test/unit/**",
+    "mobile/collector_app/test/widget/**",
+    "reports/P6_3_MOBILE_COLLECTOR.md",
+    "reports/P6_3_MOBILE_COLLECTOR.json"
+  ],
+  "definition_of_done": {
+    "reconnaissance_against_real_backend": true,
+    "working_flutter_project": true,
+    "offline_first_architecture": true,
+    "idempotent_action_handling": true,
+    "secure_token_storage": true,
+    "camera_qr_abstractions_implemented": true,
+    "flutter_analyze_clean": true,
+    "flutter_test_passing": true,
+    "honest_scope_documentation": true,
+    "apk_build_honestly_reported": true
+  },
+  "next_task": "P6.4 — Mobile Consumer Application"
+}
