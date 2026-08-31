@@ -47,6 +47,12 @@ import {
   createRewardService,
 } from '@modules/rewards';
 import type { RewardRepository } from '@modules/rewards';
+import {
+  createBlockchainController,
+  createBlockchainRouter,
+  createBlockchainService,
+} from '@modules/blockchain';
+import type { BlockchainService } from '@modules/blockchain';
 
 /** Everything the app needs from the outside world, injected explicitly. */
 export interface AppDeps {
@@ -63,6 +69,8 @@ export interface AppDeps {
   readonly submissionRepository?: SubmissionRepository;
   /** Test seam: reward repository override so integration tests run without a database. */
   readonly rewardRepository?: RewardRepository;
+  /** Test seam: blockchain service override so tests don't make a real HTTP call. */
+  readonly blockchainService?: BlockchainService;
 }
 
 /**
@@ -77,6 +85,7 @@ export function createApp({
   authRepositories,
   submissionRepository,
   rewardRepository,
+  blockchainService: blockchainServiceOverride,
 }: AppDeps): Express {
   const app = express();
 
@@ -165,6 +174,19 @@ export function createApp({
     authorize,
   });
   app.use(config.apiPrefix, rewardRouter);
+
+  // Blockchain module — read-only proxy to the Python intelligence/device_ai
+  // service's Fabric Gateway health check (P6.5). This backend does not
+  // hold its own Fabric connection; see modules/blockchain/blockchain.service.ts.
+  const blockchainService =
+    blockchainServiceOverride ??
+    createBlockchainService({
+      deviceAiServiceUrl: config.deviceAiServiceUrl,
+      timeoutMs: config.deviceAiTimeoutMs,
+      logger,
+    });
+  const blockchainRouter = createBlockchainRouter(createBlockchainController(blockchainService));
+  app.use(config.apiPrefix, blockchainRouter);
 
   // Terminal handlers — must stay last
   app.use(notFoundHandler());
