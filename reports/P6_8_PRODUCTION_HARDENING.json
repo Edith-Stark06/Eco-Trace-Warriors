@@ -1,0 +1,80 @@
+{
+  "phase": "P6.8",
+  "title": "Production Hardening",
+  "status": "IMPLEMENTED_VERIFIED_WITH_ENVIRONMENTAL_LIMITATIONS",
+  "timestamp": "2026-09-01T00:00:00Z",
+  "secret_scan": {
+    "tracked_secret_like_files": 0,
+    "hardcoded_credential_patterns_in_source": 0,
+    "gitignore_coverage": "env files, key/pem/p12/pfx, wallet/, credentials/, crypto-config/ all covered",
+    "verdict": "PASS"
+  },
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "protected_assets_status": "ALL MATCH",
+  "fabric_gateway_security_review": {
+    "insecure_channel_fallback": "none found — raises FabricConfigurationError instead",
+    "tls_hostname_verification": "grpc.ssl_target_name_override set from configured peer host",
+    "identity_key_handling": "cryptography.hazmat load_pem_private_key, type-checked EllipticCurvePrivateKey, ECDSA(SHA256) signing with low-S normalization",
+    "key_persistence": "no plaintext key logging or caching introduced",
+    "verdict": "PASS"
+  },
+  "backend_hardening": {
+    "security_headers_helmet": true,
+    "cors_explicit_allowlist_no_wildcard": true,
+    "password_hashing": "bcrypt, configurable rounds",
+    "jwt_secret_strength_enforced_in_prod": true,
+    "auth_rate_limiting": true,
+    "request_validation": "Zod schemas on all mutating routes",
+    "sql_injection": "N/A — Prisma parameterized queries only, no raw SQL in P6 modules",
+    "request_correlation_id": true,
+    "error_responses_no_stack_leak": true,
+    "blockchain_route_stateless_never_throws": true,
+    "changes_required": 0
+  },
+  "frontend_hardening": {
+    "dangerously_set_inner_html_usages": 0,
+    "api_base_url_hardcoded": false,
+    "blockchain_card_renders_only_enum_and_numeric_data": true,
+    "shared_axios_instance_only": true,
+    "verdict": "PASS"
+  },
+  "mobile_hardening": {
+    "token_storage": "flutter_secure_storage in both apps",
+    "hardcoded_secrets": "none — only local-dev base URL defaults",
+    "native_platform_review": "BLOCKED — no android/ or ios/ platform directories exist in either app (no APK/IPA build attempted, disclosed since P6.3)",
+    "verdict": "PARTIAL"
+  },
+  "database_migration_chain": {
+    "alembic_chain": "linear, single head: 001 -> 002 -> 003, verified via alembic history (no DB required)",
+    "downgrade_functions_real_not_stubs": true,
+    "prisma_migrations": "6, single ordered chain, standard convention",
+    "live_upgrade_downgrade_upgrade_run": "NOT EXECUTED — no PostgreSQL/Docker available in this environment",
+    "verdict": "STRUCTURALLY_SOUND_NOT_LIVE_VERIFIED"
+  },
+  "observability": {
+    "structured_logging": true,
+    "request_id_correlation": true,
+    "health_endpoints": ["GET /health", "GET /system/blockchain/health"],
+    "metrics_tracing_backend": "none exists (pre-existing, out of scope to add)"
+  },
+  "performance_notes": "No caching on blockchain health proxy (negligible at current scale, not added speculatively); no N+1 patterns introduced (route touches no database)",
+  "documentation": "P6.7/P6.8 reports serve as the required doc updates; no README/architecture staleness found",
+  "source_code_changes_this_phase": 0,
+  "definition_of_done": {
+    "secret_scan_clean": true,
+    "protected_assets_reverified": true,
+    "fabric_security_reviewed": true,
+    "backend_frontend_mobile_hardening_reviewed": true,
+    "migration_chain_statically_verified": true,
+    "observability_performance_reviewed": true,
+    "no_unrelated_refactoring": true
+  },
+  "next_task": "Final P6 Release Audit"
+}
