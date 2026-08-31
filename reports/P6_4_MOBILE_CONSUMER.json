@@ -1,0 +1,85 @@
+{
+  "phase": "P6.4",
+  "title": "Mobile Consumer Application",
+  "status": "IMPLEMENTED_ANALYZED_TESTED_NO_APK",
+  "timestamp": "2026-09-01T00:00:00Z",
+  "reconnaissance_findings": {
+    "reuses_p63_backend_findings": "Same backend/ (Express+Prisma); submission = pickup request, not AI device capture",
+    "fabric_ai_clients_are_placeholders": "backend/src/infrastructure/fabric/fabric.client.ts and ai/ai.client.ts explicitly reject/no-op ('Phase 7'/'Phase 8'); zero import sites in any module or route — verified via grep",
+    "no_image_upload_endpoint": "createSubmissionSchema.imageUrls expects pre-hosted URLs; no multer/multipart/upload endpoint exists anywhere in backend/src",
+    "no_consumer_reward_redemption_endpoint": "POST /rewards/issue/:submissionId is ADMIN-only manual override; rewards auto-issued on recycler completion"
+  },
+  "screens": {
+    "splash": "implemented",
+    "login": "implemented",
+    "register": "implemented — real, register always creates CONSUMER role (correct for this app)",
+    "home": "implemented as tabbed shell (Reports/Rewards/Learn/Profile) + scan shortcut",
+    "scan_device": "implemented — QR to submission-id lookup only, no device-identity backend exists",
+    "device_verification": "implemented as honest 'not yet connected' state",
+    "device_passport": "not implemented — no backend data model",
+    "lifecycle_timeline": "covered by submission detail fields, no separate screen needed (same backend data)",
+    "rewards": "implemented — read-only balance + history",
+    "redemption": "not implemented as functional flow — no backend endpoint",
+    "recycling_education": "implemented — static content",
+    "submission_history": "implemented",
+    "community_leaderboard_challenges": "not implemented — no backend data model",
+    "profile": "implemented",
+    "settings": "folded into profile screen"
+  },
+  "architecture": {
+    "reused_from_collector_app": ["ApiClient", "AppFailure/Result", "SecureStorageService", "AppTheme", "loading/empty/error widgets"],
+    "state_management": "flutter_riverpod 3.4.2 (Notifier/NotifierProvider, per P6.3 findings)",
+    "offline_handling": "simpler than collector app by deliberate scope choice — no local write queue; reads degrade to retryable ErrorState"
+  },
+  "test_metrics": {
+    "flutter_pub_get": "resolved cleanly",
+    "flutter_analyze_issues": 0,
+    "flutter_test_passed": 9,
+    "flutter_test_total": 9,
+    "unit_tests": 7,
+    "widget_tests": 2,
+    "apk_build_attempted": false,
+    "apk_build_reason": "same environment constraint as P6.3 — no Android SDK"
+  },
+  "limitations": [
+    "No APK build",
+    "Blockchain/AI trust verification not connected (backend placeholders unimplemented)",
+    "No photo attachment on submissions (no upload endpoint)",
+    "No functional reward redemption (no backend endpoint)",
+    "No community/leaderboard/challenges (no backend data model)",
+    "Simpler offline handling than collector app (deliberate scope choice)",
+    "No push notifications"
+  ],
+  "files_created": [
+    "mobile/consumer_app/pubspec.yaml",
+    "mobile/consumer_app/analysis_options.yaml",
+    "mobile/consumer_app/.gitignore",
+    "mobile/consumer_app/lib/main.dart",
+    "mobile/consumer_app/lib/app.dart",
+    "mobile/consumer_app/lib/core/**",
+    "mobile/consumer_app/lib/features/auth/**",
+    "mobile/consumer_app/lib/features/submissions/**",
+    "mobile/consumer_app/lib/features/rewards/**",
+    "mobile/consumer_app/lib/features/trust/**",
+    "mobile/consumer_app/lib/features/scan/**",
+    "mobile/consumer_app/lib/features/education/**",
+    "mobile/consumer_app/lib/features/home/**",
+    "mobile/consumer_app/lib/features/profile/**",
+    "mobile/consumer_app/lib/shared/**",
+    "mobile/consumer_app/test/unit/**",
+    "mobile/consumer_app/test/widget/**",
+    "reports/P6_4_MOBILE_CONSUMER.md",
+    "reports/P6_4_MOBILE_CONSUMER.json"
+  ],
+  "definition_of_done": {
+    "reconnaissance_against_real_backend": true,
+    "working_flutter_project": true,
+    "functional_registration": true,
+    "real_report_rewards_history_flows": true,
+    "honest_representation_of_unavailable_features": true,
+    "flutter_analyze_clean": true,
+    "flutter_test_passing": true,
+    "apk_build_honestly_reported": true
+  },
+  "next_task": "P6.5 — Backend Blockchain Integration"
+}
