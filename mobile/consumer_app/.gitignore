@@ -1,0 +1,23 @@
+# Flutter/Dart build artifacts and tooling caches — never committed.
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Platform directories are not scaffolded in this P6.3 pass (no Android SDK
+# in the authoring environment — see reports/P6_3_MOBILE_COLLECTOR.md).
+# When `flutter create .` is run to add them, keep this section but drop the
+# blanket excludes below in favor of each platform's own generated .gitignore.
+
+# Coverage
+coverage/
+
+# Local secrets — never commit a real API endpoint override file.
+.env
