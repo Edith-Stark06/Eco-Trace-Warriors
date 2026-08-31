@@ -16,6 +16,15 @@ coverage/
 .env.*
 !.env.example
 
+# Secrets, certificates, and crypto material (never commit) — P6.2 Fabric identities
+*.key
+*.pem
+*.p12
+*.pfx
+wallet/
+credentials/
+crypto-config/
+
 # Logs
 *.log
 

@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
+import json
 from typing import Any, Protocol, runtime_checkable
 import uuid
 
@@ -20,6 +21,7 @@ from ..exceptions import (
     AnchorConflictError,
     ExternalAnchorConflictError,
     ExternalAnchorNotFoundError,
+    ExternalLedgerError,
     ExternalLedgerUnavailableError,
 )
 
@@ -365,23 +367,81 @@ class FabricExternalTrustLedger:
                 status="ANCHORED",
                 metadata=anchor.metadata,
             )
+        except ExternalLedgerError:
+            # Already a correctly classified domain error (e.g. a P6.2
+            # FabricGatewayClient FabricTransactionError/FabricUnavailable) —
+            # propagate it as-is rather than flattening it to UNAVAILABLE.
+            raise
         except Exception as exc:
             logger.bind(device_id=anchor.device_id, error=str(exc)).error("Fabric transaction submission failed.")
             raise ExternalLedgerUnavailableError(f"Fabric transaction failed: {exc}") from exc
 
     def get_anchor(self, device_id: str) -> ExternalTrustAnchor | None:
-        """Query anchor from Hyperledger Fabric ledger."""
+        """Query anchor from Hyperledger Fabric ledger.
+
+        Calls the P6.1 chaincode's ``GetDeviceAnchor`` query (via
+        ``evaluateTransaction``) and parses its JSON ``PassportAnchor``
+        response (``{deviceId, passportFingerprint, algorithm, anchoredAt,
+        transactionId}``, or the literal string ``"null"`` when nothing is
+        anchored) into the domain :class:`ExternalTrustAnchor`. The chaincode
+        has no concept of a backend-side anchor id, so one is derived
+        deterministically from the device id (stable across repeated queries;
+        no randomness in a read-only path).
+
+        Raises:
+            ExternalLedgerError: A connectivity-class failure classified by
+                the injected client (e.g. the P6.2 ``FabricGatewayClient``
+                raising ``FabricUnavailable`` / ``FabricConnectionError``,
+                both ``ExternalLedgerError`` subclasses) propagates rather
+                than being swallowed into ``None`` — "the chain is
+                unreachable" and "this device was never anchored" are
+                different facts, and :meth:`verify_anchor` (the only in-tree
+                caller that needs to tell them apart) distinguishes them via
+                this exception. A generic, non-domain exception from an
+                unrecognized duck-typed client — or a malformed-but-reachable
+                response — still degrades to ``None`` (logged), matching the
+                pre-P6.2 defensive behavior for callers this class was not
+                specifically built to classify.
+        """
         if self._client is None:
             return None
 
         try:
             raw = self._client.evaluateTransaction("GetDeviceAnchor", device_id)
-            if not raw:
-                return None
-            # Parse response if client returns payload
-            return None
+        except ExternalLedgerError:
+            raise
         except Exception as exc:
             logger.bind(device_id=device_id, error=str(exc)).warning("Fabric query evaluation failed.")
+            return None
+
+        if not raw or raw == "null":
+            return None
+
+        try:
+            data = json.loads(raw)
+        except (TypeError, ValueError) as exc:
+            logger.bind(device_id=device_id, error=str(exc)).warning("Malformed GetDeviceAnchor payload from chaincode.")
+            return None
+        if not isinstance(data, dict):
+            return None
+
+        try:
+            return ExternalTrustAnchor(
+                external_anchor_id=f"chain-anc-{data['deviceId']}",
+                device_id=data["deviceId"],
+                passport_fingerprint=data["passportFingerprint"],
+                algorithm=data.get("algorithm", "sha256"),
+                provider=self._provider,
+                network=self._network,
+                transaction_id=data["transactionId"],
+                anchored_at=data["anchoredAt"],
+                status="ANCHORED",
+                metadata={},
+            )
+        except KeyError as exc:
+            logger.bind(device_id=device_id, error=str(exc)).warning(
+                "GetDeviceAnchor payload missing an expected field."
+            )
             return None
 
     def verify_anchor(
@@ -390,7 +450,12 @@ class FabricExternalTrustLedger:
         current_fingerprint: str,
         algorithm: str = "sha256",
     ) -> ExternalTrustVerificationResult:
-        """Verify fingerprint on Hyperledger Fabric ledger."""
+        """Verify fingerprint on Hyperledger Fabric ledger.
+
+        Mirrors :meth:`InMemoryExternalTrustLedger.verify_anchor`'s
+        NOT_ANCHORED / VERIFIED / MISMATCH semantics, backed by a real
+        ``GetDeviceAnchor`` chaincode query instead of an in-memory dict.
+        """
         eval_time = _utc_now().isoformat()
 
         if self._client is None:
@@ -409,18 +474,92 @@ class FabricExternalTrustLedger:
                 details={"provider": self._provider, "network": self._network, "connected": False},
             )
 
-        # When client is connected, evaluate on-chain record
+        try:
+            stored = self.get_anchor(device_id)
+        except ExternalLedgerError as exc:
+            # A classified connectivity-class failure (e.g. FabricUnavailable /
+            # FabricConnectionError from the P6.2 gateway client): the chain
+            # could not be reached, which is a different fact from "this
+            # device was never anchored" — never conflate the two.
+            logger.bind(device_id=device_id, error=str(exc)).warning("Fabric ledger unreachable during verification.")
+            return ExternalTrustVerificationResult(
+                device_id=device_id,
+                status=ExternalTrustStatus.UNAVAILABLE,
+                stored_fingerprint=None,
+                current_fingerprint=current_fingerprint,
+                algorithm=algorithm,
+                provider=self._provider,
+                network=self._network,
+                transaction_id=None,
+                anchored_at=None,
+                verified_at=eval_time,
+                message=f"Hyperledger Fabric external ledger is unreachable: {exc.message}",
+                details={"provider": self._provider, "network": self._network, "connected": True},
+            )
+        except Exception as exc:
+            logger.bind(device_id=device_id, error=str(exc)).error("Fabric query evaluation failed unexpectedly.")
+            return ExternalTrustVerificationResult(
+                device_id=device_id,
+                status=ExternalTrustStatus.ERROR,
+                stored_fingerprint=None,
+                current_fingerprint=current_fingerprint,
+                algorithm=algorithm,
+                provider=self._provider,
+                network=self._network,
+                transaction_id=None,
+                anchored_at=None,
+                verified_at=eval_time,
+                message=f"Unexpected error querying Hyperledger Fabric ledger: {exc}",
+                details={"provider": self._provider, "network": self._network},
+            )
+
+        if stored is None:
+            return ExternalTrustVerificationResult(
+                device_id=device_id,
+                status=ExternalTrustStatus.NOT_ANCHORED,
+                stored_fingerprint=None,
+                current_fingerprint=current_fingerprint,
+                algorithm=algorithm,
+                provider=self._provider,
+                network=self._network,
+                transaction_id=None,
+                anchored_at=None,
+                verified_at=eval_time,
+                message=f"Device '{device_id}' has not been anchored on external ledger '{self._network}'.",
+                details={"provider": self._provider, "network": self._network},
+            )
+
+        if stored.passport_fingerprint == current_fingerprint and stored.algorithm == algorithm:
+            return ExternalTrustVerificationResult(
+                device_id=device_id,
+                status=ExternalTrustStatus.VERIFIED,
+                stored_fingerprint=stored.passport_fingerprint,
+                current_fingerprint=current_fingerprint,
+                algorithm=algorithm,
+                provider=self._provider,
+                network=self._network,
+                transaction_id=stored.transaction_id,
+                anchored_at=stored.anchored_at,
+                verified_at=eval_time,
+                message="External ledger anchor verified: fingerprint and algorithm match recorded state.",
+                details={"external_anchor_id": stored.external_anchor_id, "metadata": stored.metadata},
+            )
+
         return ExternalTrustVerificationResult(
             device_id=device_id,
-            status=ExternalTrustStatus.UNAVAILABLE,
-            stored_fingerprint=None,
+            status=ExternalTrustStatus.MISMATCH,
+            stored_fingerprint=stored.passport_fingerprint,
             current_fingerprint=current_fingerprint,
             algorithm=algorithm,
             provider=self._provider,
             network=self._network,
-            transaction_id=None,
-            anchored_at=None,
+            transaction_id=stored.transaction_id,
+            anchored_at=stored.anchored_at,
             verified_at=eval_time,
-            message="Hyperledger Fabric integration active.",
-            details={"provider": self._provider},
+            message="External ledger fingerprint MISMATCH: recorded on-chain state differs from current passport.",
+            details={
+                "external_anchor_id": stored.external_anchor_id,
+                "stored_fingerprint": stored.passport_fingerprint,
+                "current_fingerprint": current_fingerprint,
+            },
         )

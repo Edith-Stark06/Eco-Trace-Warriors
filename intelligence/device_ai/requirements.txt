@@ -23,3 +23,13 @@ numpy==2.2.1
 
 # --- Logging ---
 loguru==0.7.3
+
+# --- P6.2 Fabric Gateway client ---
+# Hyperledger Fabric does not publish an official Python Gateway SDK (only
+# Go, Node.js, Java); the Gateway is a plain gRPC service, so grpcio is the
+# correct, standard transport for a Python client speaking its protocol
+# directly against the vendored `.proto` contract in blockchain/fabric-protos/
+# (see that directory's README and reports/P6_2_FABRIC_GATEWAY_INTEGRATION.md).
+grpcio==1.83.1
+protobuf==7.36.0                   # generated Fabric Gateway stub runtime
+cryptography==50.0.1               # X.509 identity loading + ECDSA proposal/tx signing

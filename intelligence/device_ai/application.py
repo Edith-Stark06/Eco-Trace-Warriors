@@ -14,6 +14,7 @@ from fastapi import FastAPI
 from loguru import logger
 
 from . import __version__
+from .api.blockchain_routes import router as blockchain_router
 from .api.dataset_routes import router as dataset_router
 from .api.dependencies import get_pipeline, get_registry
 from .api.device_routes import router as device_router
@@ -78,5 +79,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(fingerprint_router)
     app.include_router(ocr_router)
     app.include_router(device_router)
+    app.include_router(blockchain_router)
 
     return app

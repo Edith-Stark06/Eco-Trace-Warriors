@@ -652,6 +652,80 @@ class Settings(BaseSettings):
         description="Fabric channel name.",
     )
 
+    # --- Fabric Gateway client (P6.2) --------------------------------------
+    # These configure the live `FabricGatewayClient` gRPC connection. They are
+    # deliberately separate from the pre-existing `external_trust_*` fields
+    # above (which continue to label the `FabricExternalTrustLedger` adapter
+    # exactly as they did in P5.11, unchanged) so P6.2 is purely additive: a
+    # P5.11 deployment with no FABRIC_* variables set behaves identically to
+    # before, because `fabric_enabled` defaults to False.
+    fabric_enabled: bool = Field(
+        default=False,
+        description=(
+            "Master switch for the live Fabric Gateway client. When False, "
+            "FabricExternalTrustLedger is constructed with no gateway client "
+            "and honestly reports UNAVAILABLE (identical to pre-P6.2 behavior)."
+        ),
+    )
+    fabric_channel_name: str = Field(
+        default="ecotrace-channel",
+        description="Fabric channel the Gateway client targets.",
+    )
+    fabric_chaincode_name: str = Field(
+        default="ecotrace-lifecycle",
+        description="Chaincode name the Gateway client invokes (the P6.1 contract).",
+    )
+    fabric_msp_id: str = Field(
+        default="EcoTraceOrgMSP",
+        description="MSP ID of the organization the client's identity belongs to.",
+    )
+    fabric_peer_endpoint: str = Field(
+        default="localhost:7051",
+        description="host:port of the target Fabric peer (used for TLS server-name override).",
+    )
+    fabric_gateway_peer_endpoint: str = Field(
+        default="localhost:7051",
+        description="host:port the gRPC channel connects to (the peer's Gateway service).",
+    )
+    fabric_tls_cert_path: str | None = Field(
+        default=None,
+        description=(
+            "Path to the PEM-encoded TLS CA certificate used to verify the peer. "
+            "When unset, the connection is refused rather than falling back to an "
+            "insecure channel."
+        ),
+    )
+    fabric_identity_cert_path: str | None = Field(
+        default=None,
+        description="Path to the client's PEM-encoded X.509 identity certificate (MSP signcert).",
+    )
+    fabric_identity_key_path: str | None = Field(
+        default=None,
+        description="Path to the client's PEM-encoded EC private key (MSP keystore).",
+    )
+    fabric_connection_profile: str | None = Field(
+        default=None,
+        description=(
+            "Optional path to a Fabric connection profile (JSON/YAML) for future "
+            "discovery-based connection resolution. Not required for direct "
+            "peer/channel/chaincode configuration."
+        ),
+    )
+    fabric_discovery_enabled: bool = Field(
+        default=False,
+        description=(
+            "Whether to use Fabric's discovery service to resolve endorsing peers. "
+            "P6.2 connects directly to a single configured peer; this flag is "
+            "reserved for a future multi-peer/discovery-based client."
+        ),
+    )
+    fabric_timeout_seconds: float = Field(
+        default=10.0,
+        ge=0.1,
+        le=300.0,
+        description="gRPC call timeout (seconds) for Fabric Gateway connect/health/query/transaction RPCs.",
+    )
+
     @field_validator("min_images")
     @classmethod
     def _min_not_greater_than_max(cls, value: int, info: ValidationInfo) -> int:
