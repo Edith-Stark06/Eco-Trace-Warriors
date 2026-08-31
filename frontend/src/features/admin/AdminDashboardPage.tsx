@@ -20,6 +20,7 @@ import { SUBMISSION_STATUSES } from '@/types';
 import { AnalyticsUnavailable } from '@/features/government/components/AnalyticsUnavailable';
 import { AdminUnavailable } from '@/features/admin/components/AdminUnavailable';
 import { AdminSubmissionsTable } from '@/features/admin/components/AdminSubmissionsTable';
+import { BlockchainHealthCard } from '@/features/admin/components/BlockchainHealthCard';
 import { useAdminSubmissions } from '@/features/admin/hooks/use-admin';
 import { sortByNewest, statusLabel } from '@/features/consumer/lib/submission-display';
 
@@ -35,6 +36,8 @@ const ALL_STATUSES = 'ALL';
  *   - Assignment: inline via Assign Collector/Recycler dialogs
  *       (GET /users?role=, PATCH /submissions/:id/assign, /assign-recycler)
  *   - Reward Administration: inline via IssueRewardDialog (POST /rewards/issue/:id)
+ *   - Blockchain Monitoring: GET /system/blockchain/health (P6.5 — a real proxy
+ *       through to the P6.1/P6.2 Fabric Gateway client, not a fabricated status)
  *
  * Sections with no backend API (informational unavailable state):
  *   - System Overview / Analytics: no /analytics router mounted
@@ -84,6 +87,15 @@ export default function AdminDashboardPage() {
         <ContentCard>
           <AnalyticsUnavailable />
         </ContentCard>
+      </Section>
+
+      {/* Blockchain Monitoring — GET /system/blockchain/health (P6.5/P6.6),
+          a real proxy through to the P6.1/P6.2 Fabric Gateway. */}
+      <Section
+        title="Blockchain monitoring"
+        description="Live Fabric Gateway connectivity, proxied from the device intelligence service."
+      >
+        <BlockchainHealthCard />
       </Section>
 
       {/* User Management — role-scoped lookup exists, but no full user directory */}
