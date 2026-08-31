@@ -47,4 +47,7 @@ export const queryKeys = {
   user: {
     profile: ['user', 'profile'] as const,
   },
+  blockchain: {
+    health: ['blockchain', 'health'] as const,
+  },
 } as const;
