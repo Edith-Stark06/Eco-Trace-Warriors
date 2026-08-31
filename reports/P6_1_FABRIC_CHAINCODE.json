@@ -1,0 +1,180 @@
+{
+  "phase": "P6.1",
+  "title": "Hyperledger Fabric Chaincode for Device Lifecycle Management",
+  "status": "VERIFIED",
+  "timestamp": "2026-09-01T00:00:00Z",
+  "git": {
+    "branch": "develop",
+    "head": "22c9acf"
+  },
+  "chaincode": {
+    "package": "blockchain/chaincode/ecotrace-lifecycle",
+    "language": "typescript (fabric-contract-api)",
+    "entry": "src/ecotrace-lifecycle.ts",
+    "contract_class": "EcoTraceLifecycleContract",
+    "chaincode_name": "ecotrace-lifecycle",
+    "channel": "ecotrace-channel",
+    "org": "EcoTraceOrg"
+  },
+  "transactions": {
+    "RegisterDevice": {
+      "type": "submit",
+      "params": ["deviceId", "ecoId", "classId", "deviceType", "passportFingerprint", "metadataJSON"],
+      "auth": "PLATFORM",
+      "description": "Anchor device in DETECTED state; reject duplicates"
+    },
+    "UpdateLifecycle": {
+      "type": "submit",
+      "params": ["deviceId", "newState", "recordHash", "metadataJSON"],
+      "auth": "PLATFORM",
+      "description": "Enforce DETECTED->CONFIRMED->REGISTERED->ENRICHED with record-hash anchoring"
+    },
+    "AnchorDevicePassport": {
+      "type": "submit",
+      "params": ["deviceId", "passportFingerprint", "algorithm"],
+      "auth": "PLATFORM",
+      "description": "P5 FabricExternalTrustLedger wire name; create/update passport anchor"
+    },
+    "GetDevice": {
+      "type": "evaluate",
+      "params": ["deviceId"],
+      "description": "Return { device } or { device: null }"
+    },
+    "DeviceExists": {
+      "type": "evaluate",
+      "params": ["deviceId"],
+      "description": "Return { exists: boolean }"
+    },
+    "GetDeviceHistory": {
+      "type": "evaluate",
+      "params": ["deviceId"],
+      "description": "Chronological immutable LifecycleEvent array"
+    },
+    "VerifyPassportFingerprint": {
+      "type": "evaluate",
+      "params": ["deviceId", "passportFingerprint"],
+      "description": "Deterministic MATCH / MISMATCH / NOT_FOUND"
+    },
+    "GetDeviceAnchor": {
+      "type": "evaluate",
+      "params": ["deviceId"],
+      "description": "P5 FabricExternalTrustLedger wire name; PassportAnchor or null"
+    },
+    "GetAllDeviceIds": {
+      "type": "evaluate",
+      "params": [],
+      "description": "List device IDs via getStateByRange"
+    }
+  },
+  "lifecycle_state_machine": {
+    "states": ["DETECTED", "CONFIRMED", "REGISTERED", "ENRICHED"],
+    "initial": "DETECTED",
+    "transitions": {
+      "DETECTED": ["CONFIRMED"],
+      "CONFIRMED": ["REGISTERED"],
+      "REGISTERED": ["ENRICHED"],
+      "ENRICHED": []
+    },
+    "record_hash_required": true,
+    "off_chain_lifecycle": "DETECTED -> CONFIRMED -> REGISTERED (P5 RegistrationState) + enrichment",
+    "on_chain_lifecycle": "same progression, each transition anchored by SHA-256 recordHash"
+  },
+  "trust_model": {
+    "primary_identity": "SHA-256 hex passport fingerprint",
+    "results": ["MATCH", "MISMATCH", "NOT_FOUND"],
+    "anchor_preference": "PassportAnchor first, then DeviceAsset fingerprint",
+    "complements": "P5 trust architecture (local TrustAnchor remains authoritative); chaincode adds tamper-evident anchoring",
+    "p5_adapter_interface": {
+      "anchor": "submitTransaction(AnchorDevicePassport, device_id, fingerprint, algorithm)",
+      "get_anchor": "evaluateTransaction(GetDeviceAnchor, device_id)"
+    }
+  },
+  "authorization_model": {
+    "resolver": "resolveActorRole(mspId, identityId) — pure function, keyword-based",
+    "roles": ["PLATFORM", "COLLECTOR", "RECYCLER", "GOVERNMENT", "OWNER"],
+    "p61_mutations": "PLATFORM only",
+    "extension_point": "getAllowedRolesForTransition(targetState) per-transition role map"
+  },
+  "chaincode_events": {
+    "DEVICE_REGISTERED": "RegisterDevice",
+    "DEVICE_LIFECYCLE_UPDATED": "UpdateLifecycle",
+    "PASSPORT_ANCHORED": "AnchorDevicePassport"
+  },
+  "determinism": {
+    "timestamps": "getTxTimestamp().seconds.low * 1000 (no system clocks)",
+    "event_ids": "evt-<deviceId>-<seq> (no randomness)",
+    "external_calls": 0
+  },
+  "taxonomy": {
+    "version": "1.0.0",
+    "class_count": 19,
+    "class_0": "laptop",
+    "source": "components/data/components.yaml via load_taxonomy()"
+  },
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "protected_assets_status": "ALL MATCH",
+  "test_metrics": {
+    "p61_jest_tests_passed": 45,
+    "p61_jest_tests_total": 45,
+    "p61_tsc_noemit": "clean",
+    "p61_eslint_src": "clean",
+    "p5_full_active_suite_passed": 1030,
+    "p5_full_active_suite_total": 1030,
+    "p5_full_active_suite_note": "work-order baseline was 999/999 as of P5.13; suite grew additively since, this run is a superset covering every named subset",
+    "p5_4_p512_file_group_passed": 127,
+    "p5_4_p512_file_group_total": 127,
+    "p5_55_p512_tests_passed": null,
+    "p5_55_p512_tests_total": 119,
+    "p5_55_p512_note": "work-order figure not reproduced against an identical file/marker selection; not verified as stated",
+    "core_suite_passed": null,
+    "core_suite_total": 194,
+    "core_suite_note": "work-order figure not reproduced against an identical file/marker selection; not verified as stated",
+    "failures": 0,
+    "verification_pass_test_bugs_fixed": 8
+  },
+  "verification_pass_fixes": [
+    "test/ecotrace-lifecycle.test.ts: 2 authorization tests had unused shadowed ctx vars (TS6133, would not compile)",
+    "test/mock-context.ts: removed dead getStateByPartialCompositeKey (unused param, TS6133; contract never calls it, uses getStateByRange)",
+    "test/ecotrace-lifecycle.test.ts: 3 AnchorDevicePassport calls used non-hex 'g'/'h'/'i' repeat(64) as fake SHA-256 fingerprints, rejected by isValidSha256Hex before the assertions could run",
+    "test/ecotrace-lifecycle.test.ts: 2 authorization tests used createMockContext (fresh empty ledger) instead of the registered ledger for the unauthorized actor, so they passed for the wrong reason (device-not-found, not auth-rejected); fixed to share ledger state via ctx.setClientIdentity and assert state is unchanged after rejection",
+    "test/ecotrace-lifecycle.test.ts: 2 tests typed GetDevice's return as bare DeviceAsset instead of { device }, reading undefined and failing assertions",
+    "test/ecotrace-lifecycle.test.ts: full-progression test reused one fixed mock timestamp across 3 transitions then asserted updatedAt !== createdAt; fixed by advancing stub.setTimestamp() per transition",
+    "src/ecotrace-lifecycle.ts: GetAllDeviceIds while(true) loop rewritten to while(!result.done) to satisfy eslint no-constant-condition (behavior unchanged)",
+    "blockchain/chaincode/ecotrace-lifecycle/.eslintrc.json added; package.json declared eslint deps/script but no config existed, so npm run lint failed outright"
+  ],
+  "files": {
+    "src/types.ts": "P5-aligned domain types, taxonomy, enums, helpers",
+    "src/ecotrace-lifecycle.ts": "EcoTraceLifecycleContract (verification pass: no-constant-condition loop fix)",
+    "test/mock-context.ts": "In-memory mock Context/Stub/ClientIdentity (verification pass: dead method removed)",
+    "test/ecotrace-lifecycle.test.ts": "P6.1 Jest suite (verification pass: 6 test-bug fixes)",
+    ".eslintrc.json": "NEW - verification pass",
+    "reports/P6_1_FABRIC_CHAINCODE.md": "this report (markdown)",
+    "reports/P6_1_FABRIC_CHAINCODE.json": "this report (json)"
+  },
+  "git_status": {
+    "branch": "develop",
+    "head": "22c9acf (P5.13)",
+    "committed": false,
+    "pushed": false,
+    "tracked_files_modified": "none",
+    "untracked": "blockchain/"
+  },
+  "limitations": [
+    "No live Fabric network; validated against mock stub only",
+    "Single-org PLATFORM authorization; multi-org designed but not enforced",
+    "algorithm restricted to sha256",
+    "P5 adapter get_anchor response parsing is a later-phase concern",
+    "09_BLOCKCHAIN.md illustrative surface stale relative to deviceId-keyed contract",
+    "RESOLVED: ESLint config added in verification pass; npm run lint passes on src/ (test/ intentionally outside tsconfig include)",
+    "dist/ regenerated and verified clean via npm run build in verification pass",
+    "Work-order subset counts (119, 194) not reproduced 1:1; full-suite 1030/1030 supersedes as regression evidence"
+  ],
+  "next_task": "P6.2 — Backend Fabric Gateway integration (deferred by explicit instruction)"
+}
