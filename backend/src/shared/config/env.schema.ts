@@ -50,6 +50,13 @@ export const envSchema = z
       .min(1000)
       .default(15 * 60 * 1000),
     AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(10),
+    // Base URL of the Python `intelligence/device_ai` service — the P6.1/P6.2
+    // Fabric Gateway integration lives there (see
+    // `intelligence/device_ai/api/blockchain_routes.py`). This backend does
+    // not hold its own Fabric connection; the blockchain module proxies a
+    // read-only health check to this URL (P6.5).
+    DEVICE_AI_SERVICE_URL: z.string().url().default('http://localhost:8100'),
+    DEVICE_AI_TIMEOUT_MS: z.coerce.number().int().min(100).default(5000),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'production') return;

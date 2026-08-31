@@ -23,6 +23,10 @@ export interface AppConfig {
   };
   readonly isProduction: boolean;
   readonly isTest: boolean;
+  /** Base URL of the Python `intelligence/device_ai` service (P6.5 blockchain proxy). */
+  readonly deviceAiServiceUrl: string;
+  /** Timeout (ms) for the blockchain health proxy request. */
+  readonly deviceAiTimeoutMs: number;
 }
 
 /**
@@ -59,6 +63,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     },
     isProduction: parsed.NODE_ENV === 'production',
     isTest: parsed.NODE_ENV === 'test',
+    deviceAiServiceUrl: parsed.DEVICE_AI_SERVICE_URL,
+    deviceAiTimeoutMs: parsed.DEVICE_AI_TIMEOUT_MS,
   });
 }
 
