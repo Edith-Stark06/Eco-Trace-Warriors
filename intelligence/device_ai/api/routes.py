@@ -26,7 +26,12 @@ from ..inference.class_map import CANONICAL_CLASSES, CLASS_NAME_TO_ID
 from ..inference.pipeline import PredictionPipeline, PredictionResult
 from ..preprocessing.validator import ImageValidator, RawUpload
 from ..utils.metrics import get_metrics_registry
-from .dependencies import get_pipeline, get_registry, get_validator
+from .dependencies import (
+    enforce_predict_rate_limit,
+    get_pipeline,
+    get_registry,
+    get_validator,
+)
 from .schemas import (
     ComponentHealth,
     ConditionPayload,
@@ -201,7 +206,12 @@ def get_model_info(
     )
 
 
-@router.post("/predict", response_model=PredictionResponse, tags=["inference"])
+@router.post(
+    "/predict",
+    response_model=PredictionResponse,
+    tags=["inference"],
+    dependencies=[Depends(enforce_predict_rate_limit)],
+)
 async def predict(
     request: Request,
     images: Annotated[list[UploadFile], File(description="Device images.")],

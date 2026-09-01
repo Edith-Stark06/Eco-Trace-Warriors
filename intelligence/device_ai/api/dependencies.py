@@ -14,11 +14,40 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from loguru import logger
 
 from ..configs.settings import Settings, get_settings
+from ..database.database import dispose_engines, get_engine
+from ..database.session import get_session_factory
 from ..dataset.service import DatasetService
+from ..devices.enrichment_service import DeviceIntelligenceService
+from ..devices.external_trust import (
+    ExternalTrustLedger,
+    FabricExternalTrustLedger,
+    InMemoryExternalTrustLedger,
+)
+from ..devices.fabric_gateway_client import (
+    FabricGatewayClient,
+    build_fabric_gateway_client,
+)
+from ..devices.postgres_external_trust_repository import (
+    PostgresExternalTrustAnchorRepository,
+)
+from ..devices.postgres_repository import PostgresDeviceRepository
+from ..devices.postgres_trust_anchor_repository import PostgresTrustAnchorRepository
+from ..devices.repository import (
+    DeviceRepository,
+    InMemoryDeviceRepository,
+    JsonFileDeviceRepository,
+)
+from ..devices.service import DeviceRegistrationService
+from ..devices.trust_anchor import (
+    DevicePassportTrustService,
+    InMemoryTrustAnchorRepository,
+    TrustAnchorPolicy,
+    TrustAnchorRepository,
+)
 from ..fingerprint.repository import (
     FingerprintRepository,
     InMemoryFingerprintRepository,
@@ -26,32 +55,9 @@ from ..fingerprint.repository import (
 )
 from ..fingerprint.service import FingerprintService
 from ..fingerprint.verification import VerificationEngine
-from ..devices.repository import (
-    DeviceRepository,
-    InMemoryDeviceRepository,
-    JsonFileDeviceRepository,
-)
-from ..devices.postgres_repository import PostgresDeviceRepository
-from ..devices.postgres_trust_anchor_repository import PostgresTrustAnchorRepository
-from ..devices.postgres_external_trust_repository import PostgresExternalTrustAnchorRepository
-from ..devices.external_trust import (
-    ExternalTrustLedger,
-    FabricExternalTrustLedger,
-    InMemoryExternalTrustLedger,
-)
-from ..devices.fabric_gateway_client import FabricGatewayClient, build_fabric_gateway_client
-from ..devices.service import DeviceRegistrationService
-from ..devices.enrichment_service import DeviceIntelligenceService
-from ..devices.trust_anchor import (
-    DevicePassportTrustService,
-    InMemoryTrustAnchorRepository,
-    TrustAnchorPolicy,
-    TrustAnchorRepository,
-)
-from ..database.database import dispose_engines, get_engine
-from ..database.session import get_session_factory
 from ..inference.clip_encoder import CLIPEncoder
 from ..inference.ecoid import EcoIDGenerator
+from ..inference.ensemble_detector import EnsembleDetector
 from ..inference.pipeline import (
     PredictionPipeline,
     build_detection_pipeline,
@@ -59,13 +65,13 @@ from ..inference.pipeline import (
 )
 from ..inference.predictor import EmbeddingEncoder, MockEmbeddingEncoder
 from ..inference.registry import ModelRegistry
-from ..inference.ensemble_detector import EnsembleDetector
 from ..inference.yolo_detector import YOLODetector
 from ..ocr.backends import EasyOCRBackend, MockOCRBackend, OCRBackend
 from ..ocr.barcode import BarcodeReader, MockBarcodeReader, OpenCVBarcodeReader
 from ..ocr.parser import OCRParser
 from ..ocr.service import OCRService
 from ..preprocessing.validator import ImageValidator
+from ..utils.rate_limit import RateLimiter
 
 
 @lru_cache(maxsize=1)
@@ -185,6 +191,37 @@ def get_registry() -> ModelRegistry:
         The shared :class:`ModelRegistry` bound to the configured model dir.
     """
     return ModelRegistry(get_settings().model_dir)
+
+
+@lru_cache(maxsize=1)
+def get_predict_rate_limiter() -> RateLimiter:
+    """Return the process-wide `/predict` rate limiter singleton (P7.4).
+
+    Returns:
+        A :class:`RateLimiter` configured from the active settings.
+    """
+    settings = get_settings()
+    return RateLimiter(
+        max_requests=settings.predict_rate_limit_max_requests,
+        window_seconds=settings.predict_rate_limit_window_seconds,
+    )
+
+
+def enforce_predict_rate_limit(
+    request: Request,
+    limiter: Annotated[RateLimiter, Depends(get_predict_rate_limiter)],
+) -> None:
+    """FastAPI dependency: enforce the `/predict` rate limit for this request.
+
+    Args:
+        request: The active request (used only for the caller's IP).
+        limiter: Injected rate limiter singleton.
+
+    Raises:
+        RateLimitExceededError: The client has exceeded the limit.
+    """
+    client_key = request.client.host if request.client else "unknown"
+    limiter.check(client_key)
 
 
 def get_validator(
@@ -688,6 +725,7 @@ def reset_dependency_caches() -> None:
     """
     get_pipeline.cache_clear()
     get_registry.cache_clear()
+    get_predict_rate_limiter.cache_clear()
     get_fingerprint_encoder.cache_clear()
     get_fingerprint_repository.cache_clear()
     get_device_repository.cache_clear()

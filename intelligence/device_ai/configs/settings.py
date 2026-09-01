@@ -726,6 +726,18 @@ class Settings(BaseSettings):
         description="gRPC call timeout (seconds) for Fabric Gateway connect/health/query/transaction RPCs.",
     )
 
+    # --- Rate limiting (P7.4) ----------------------------------------------
+    predict_rate_limit_max_requests: int = Field(
+        default=30,
+        ge=1,
+        description="Max /predict requests a single client (by IP) may make per window.",
+    )
+    predict_rate_limit_window_seconds: float = Field(
+        default=60.0,
+        ge=1.0,
+        description="Fixed window length (seconds) for the /predict rate limit.",
+    )
+
     @field_validator("min_images")
     @classmethod
     def _min_not_greater_than_max(cls, value: int, info: ValidationInfo) -> int:
@@ -753,7 +765,7 @@ class Settings(BaseSettings):
         return self.max_file_size / (1024 * 1024)
 
     @model_validator(mode="after")
-    def _validate_production_safety(self) -> "Settings":
+    def _validate_production_safety(self) -> Settings:
         """Fail fast at startup when ``environment=production`` is combined
         with a configuration that would otherwise only fail later, at first
         use (P7.2 — mirrors the backend's ``env.schema.ts`` production

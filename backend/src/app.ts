@@ -3,6 +3,7 @@ import type { Express } from 'express';
 import type { AppConfig } from '@shared/config';
 import type { Logger } from '@shared/logging';
 import {
+  apiRateLimiter,
   authenticate,
   authorize,
   authRateLimiter,
@@ -113,6 +114,11 @@ export function createApp({
   });
   const healthRouter = createHealthRouter(createHealthController(healthService));
   app.use(config.apiPrefix, healthRouter);
+
+  // General-purpose rate limiting (P7.4) — mounted after the health router
+  // so liveness/readiness polling (frequent, from orchestrators/load
+  // balancers) is never throttled; applies to every route registered below.
+  app.use(config.apiPrefix, apiRateLimiter(config.apiRateLimit));
 
   const apiInfoService = createApiInfoService({
     name: API_NAME,

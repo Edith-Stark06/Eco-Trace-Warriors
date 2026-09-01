@@ -50,6 +50,15 @@ export const envSchema = z
       .min(1000)
       .default(15 * 60 * 1000),
     AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(10),
+    // General-purpose API rate limiting (P7.4) — a generous DoS/abuse
+    // backstop applied to every route, distinct from the stricter
+    // AUTH_RATE_LIMIT_* above which only guards /auth/*.
+    API_RATE_LIMIT_WINDOW_MS: z.coerce
+      .number()
+      .int()
+      .min(1000)
+      .default(60 * 1000),
+    API_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(300),
     // Base URL of the Python `intelligence/device_ai` service — the P6.1/P6.2
     // Fabric Gateway integration lives there (see
     // `intelligence/device_ai/api/blockchain_routes.py`). This backend does

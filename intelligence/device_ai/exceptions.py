@@ -574,3 +574,10 @@ class FabricQueryError(FabricGatewayError):
 
     code = "FABRIC_QUERY_ERROR"
     http_status = HTTPStatus.BAD_GATEWAY
+
+
+class RateLimitExceededError(DeviceAIError):
+    """Raised when a client exceeds the configured request rate limit (P7.4)."""
+
+    code = "RATE_LIMIT_EXCEEDED"
+    http_status = HTTPStatus.TOO_MANY_REQUESTS
