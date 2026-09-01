@@ -6,16 +6,25 @@ services:
 
     restart: unless-stopped
 
+    # Values fall back to the same local-dev defaults this compose file
+    # always used, so `docker compose up` still works with no .env present.
+    # Override POSTGRES_PASSWORD (at minimum) for anything beyond local dev.
     environment:
-      POSTGRES_USER: ecotrace
-      POSTGRES_PASSWORD: ecotrace123
-      POSTGRES_DB: ecotrace
+      POSTGRES_USER: ${POSTGRES_USER:-ecotrace}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ecotrace123}
+      POSTGRES_DB: ${POSTGRES_DB:-ecotrace}
 
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ecotrace} -d ${POSTGRES_DB:-ecotrace}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:

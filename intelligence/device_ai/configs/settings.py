@@ -52,7 +52,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, ValidationInfo, field_validator
+from pydantic import Field, ValidationInfo, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Media types accepted by the prediction endpoint. Declared here (single
@@ -751,6 +751,46 @@ class Settings(BaseSettings):
     def max_file_size_mb(self) -> float:
         """Return the maximum file size expressed in megabytes."""
         return self.max_file_size / (1024 * 1024)
+
+    @model_validator(mode="after")
+    def _validate_production_safety(self) -> "Settings":
+        """Fail fast at startup when ``environment=production`` is combined
+        with a configuration that would otherwise only fail later, at first
+        use (P7.2 — mirrors the backend's ``env.schema.ts`` production
+        refinement, which does the equivalent check for JWT secrets/
+        ``DATABASE_URL`` at startup rather than at first request).
+        """
+        if self.environment != "production":
+            return self
+
+        errors: list[str] = []
+        if self.device_backend == "postgres" and not self.database_url:
+            errors.append(
+                "DATABASE_URL is required in production when DEVICE_BACKEND=postgres"
+            )
+        if self.trust_anchor_backend == "postgres" and not self.database_url:
+            errors.append(
+                "DATABASE_URL is required in production when TRUST_ANCHOR_BACKEND=postgres"
+            )
+        if self.fabric_enabled:
+            missing = [
+                name
+                for name, value in (
+                    ("FABRIC_TLS_CERT_PATH", self.fabric_tls_cert_path),
+                    ("FABRIC_IDENTITY_CERT_PATH", self.fabric_identity_cert_path),
+                    ("FABRIC_IDENTITY_KEY_PATH", self.fabric_identity_key_path),
+                )
+                if not value
+            ]
+            if missing:
+                errors.append(
+                    "FABRIC_ENABLED=true requires "
+                    + ", ".join(missing)
+                    + " to be set in production"
+                )
+        if errors:
+            raise ValueError("; ".join(errors))
+        return self
 
 
 @lru_cache(maxsize=1)

@@ -141,4 +141,31 @@ describe('loadConfig', () => {
 
     expect(config.corsOrigins).toEqual(['https://app.ecotrace.in', 'https://admin.ecotrace.in']);
   });
+
+  // --- P7.2: production-safety cases not yet covered above ---------------
+
+  it('rejects a placeholder JWT_REFRESH_SECRET in production even when JWT_SECRET is strong', () => {
+    expect(() =>
+      loadConfig({
+        NODE_ENV: 'production',
+        DATABASE_URL: 'postgresql://user:pass@db:5432/ecotrace',
+        JWT_SECRET: 'a-strong-production-access-secret-0123456789',
+      }),
+    ).toThrow(/JWT_REFRESH_SECRET must be set to a strong value in production/);
+  });
+
+  it('rejects a malformed DEVICE_AI_SERVICE_URL', () => {
+    expect(() => loadConfig({ DEVICE_AI_SERVICE_URL: 'not-a-url' })).toThrow(
+      /Invalid environment configuration/,
+    );
+  });
+
+  it('does not require distinct JWT secrets outside production (dev convenience)', () => {
+    const config = loadConfig({
+      JWT_SECRET: 'same-value-for-both-secrets-0000000000000',
+      JWT_REFRESH_SECRET: 'same-value-for-both-secrets-0000000000000',
+    });
+
+    expect(config.jwtSecret).toBe(config.jwtRefreshSecret);
+  });
 });
