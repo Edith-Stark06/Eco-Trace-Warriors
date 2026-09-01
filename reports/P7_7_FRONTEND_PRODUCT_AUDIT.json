@@ -1,0 +1,57 @@
+{
+  "phase": "P7.7",
+  "title": "Frontend Product & Role Experience",
+  "status": "PASS",
+  "timestamp": "2026-09-01T00:00:00Z",
+  "checklist_review": {
+    "route_guards": "PASS — ProtectedRoute (auth) + RoleGuard (per role), documented UX-only, server is authoritative",
+    "permissions": "PASS — every role has its own RoleGuard boundary; AccessDenied shown, real keyboard-navigable Link, not a blank page",
+    "navigation": "PASS — redirect-preserving login, root redirect, 404 catch-all",
+    "dashboard_loading": "PASS — SkeletonCards/SkeletonTable on every role dashboard",
+    "api_error_handling": "PASS — consistent ServerError-with-retry; Government distinguishes module-not-deployed 404 from transient failure",
+    "empty_states": "PASS — distinct EmptyState per section, never a bare empty table",
+    "loading_states": "PASS",
+    "trust_visualization": "PASS — BlockchainHealthCard, 5 real statuses, never fabricated",
+    "device_lifecycle_visualization": "PASS — SubmissionStatusBadge/SubmissionTimeline driven by real backend enum",
+    "blockchain_status": "PASS",
+    "audit_trail": "STILL_HONESTLY_UNAVAILABLE — no backend audit/activity endpoint exists, re-confirmed not fabricated",
+    "accessibility": "PASS — Radix primitives underlie every interactive component; AccessDenied spot-checked as real focusable Link",
+    "responsive_behavior": "PASS — Tailwind responsive grid prefixes throughout; shared Table primitive wraps overflow-auto at the component level for all tables automatically",
+    "mobile_browser_support": "IMPROVED_THIS_PHASE — vendor chunk splitting (see fix)"
+  },
+  "fix": {
+    "issue": "main JS chunk was 626.50 kB (196.62 kB gzip), triggering Vite's chunk-size warning since P6.6, never addressed through P7.1/P7.4's re-verifications",
+    "change": "added build.rollupOptions.output.manualChunks to vite.config.ts, splitting vendor-react, vendor-data, vendor-ui from app code",
+    "before": { "largest_chunk_kb": 626.50, "gzip_kb": 196.62, "warning_present": true },
+    "after": { "largest_chunk_kb": 251.35, "gzip_kb": 77.50, "warning_present": false, "new_vendor_chunks_kb": { "vendor-react": 42.73, "vendor-data": 175.41, "vendor-ui": 190.69 } },
+    "safety_verification": "rebuilt cleanly (Rollup validates the dependency graph at build time), served production dist/ via vite preview, confirmed root document loads HTTP 200 with correct chunk references"
+  },
+  "tests": {
+    "typecheck_errors": 0,
+    "lint_errors": 0,
+    "build": "succeeds, chunk-size warning eliminated",
+    "test_suite": "none exists in this project — pre-existing, disclosed since P6.6, not newly introduced or silently left stale",
+    "production_build_smoke_test": "HTTP 200 on GET /, correct script references"
+  },
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "protected_assets_status": "6/6 MATCH (before and after)",
+  "environmental_limitations": [],
+  "release_blockers": [],
+  "definition_of_done": {
+    "all_5_roles_reviewed_against_checklist_vs_real_backend": true,
+    "route_guards_and_permissions_verified_real": true,
+    "audit_trail_gap_reconfirmed_not_glossed_over": true,
+    "one_real_measurable_improvement_made_with_before_after_numbers": true,
+    "typecheck_lint_build_clean": true,
+    "protected_assets_verified": true,
+    "no_redesign_no_api_changes_no_unrelated_files": true
+  },
+  "next_task": "P7.8 — Real-World Integration & Demonstration Environment"
+}
