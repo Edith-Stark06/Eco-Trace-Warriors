@@ -32,11 +32,26 @@ RUN npm run build
 FROM nginx:1.27-alpine AS runtime
 
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Both configs are staged at fixed, stable paths outside /etc/nginx/conf.d/
+# — docker-entrypoint-tls.sh copies the right ONE into conf.d/default.conf
+# on every single container start (not just the first), so the choice is
+# idempotent across `docker compose restart` regardless of what a PREVIOUS
+# start of this same container instance wrote there (e.g. a cert that was
+# mounted before and has since been removed).
+COPY nginx.conf /etc/nginx/nginx.http.conf
+COPY nginx.tls.conf /etc/nginx/nginx.tls.conf
+COPY docker-entrypoint-tls.sh /docker-entrypoint-tls.sh
+RUN chmod +x /docker-entrypoint-tls.sh
 
-EXPOSE 80
+EXPOSE 80 443
 
+# Checks whichever port is actually active (same certificate-presence
+# test the entrypoint uses) — --no-check-certificate is safe here since
+# it is only ever a container-internal loopback check, never external
+# traffic; a self-signed cert failing browser trust is expected and
+# unrelated to whether the server itself is healthy.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:80/ || exit 1
+  CMD sh -c 'if [ -f /etc/nginx/tls/tls.crt ]; then wget --no-check-certificate -qO- https://127.0.0.1:443/; else wget -qO- http://127.0.0.1:80/; fi' || exit 1
 
+ENTRYPOINT ["/docker-entrypoint-tls.sh"]
 CMD ["nginx", "-g", "daemon off;"]
