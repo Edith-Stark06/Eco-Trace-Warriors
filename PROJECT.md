@@ -268,7 +268,7 @@ EcoTrace India consists of multiple independent services working together.
 
 Major components include:
 
-- Flutter Applications
+- React Native (Expo) Mobile Applications
 - React Dashboard
 - REST Backend
 - PostgreSQL Database
@@ -283,7 +283,7 @@ Communication occurs primarily through secure REST APIs.
 
 ## Mobile
 
-Flutter
+React Native + Expo SDK 57 + TypeScript (migrated from Flutter/Dart in P9.3)
 
 ## Web
 
@@ -336,7 +336,7 @@ NGINX
 # High-Level Architecture
 
 ```
-                    Flutter Apps
+                 React Native (Expo) Apps
                           │
                           ▼
                    REST API Gateway
@@ -433,7 +433,8 @@ Artificial Intelligence
 
 ## Phase 9
 
-Flutter Applications
+Mobile Applications (React Native + Expo SDK 57; superseded the
+originally-planned Flutter/Dart stack — see reports/P9_3_MOBILE_REACT_NATIVE.md)
 
 ## Phase 10
 

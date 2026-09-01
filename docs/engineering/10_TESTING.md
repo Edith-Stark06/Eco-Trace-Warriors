@@ -63,7 +63,7 @@ Most tests are unit tests. Integration tests cover boundaries (HTTP, database, A
 |---|---|---|
 | Backend (`backend/`) | Jest + Supertest | Integration tests run against a disposable PostgreSQL (Docker) |
 | Dashboard (`dashboard/`) | Vitest + React Testing Library | Component & hook tests |
-| Mobile (`mobile/`) | `flutter test` | Widget + unit tests |
+| Mobile (`mobile/`) | `npm test` (Jest + React Native Testing Library) | Component + unit tests |
 | AI (`ai/`) | pytest + FastAPI TestClient | Fixture-based; pinned test artifacts |
 | Chaincode (`blockchain/`) | Jest with Fabric contract stub | Dev-network integration via scripts |
 | Cross-cutting E2E | `testing/` suites | Runs against the Docker Compose stack (`11_DEPLOYMENT.md`) |
@@ -114,8 +114,8 @@ Every pull request must pass (enforced by CI — `11_DEPLOYMENT.md`):
 |---|---|
 | Build | All modules compile/build |
 | Tests | All test suites green |
-| Lint | ESLint / Ruff / `flutter analyze` clean |
-| Types | `tsc --noEmit`, `mypy`, Dart analyzer clean |
+| Lint | ESLint (backend, frontend, both mobile apps) / Ruff clean |
+| Types | `tsc --noEmit` (backend, frontend, both mobile apps), `mypy` clean |
 | Migrations | Apply cleanly to an empty database |
 
 A red gate blocks merge. Skipping a gate requires an explicit, written justification in the PR (`AGENTS.md` → Never ignore failing tests).

@@ -319,9 +319,10 @@ Document every new endpoint.
 
 # Frontend Guidelines
 
-Flutter
+React Native (Expo) — see docs/mobile/README.md; Flutter/Dart was
+superseded in P9.3.
 
-Prefer reusable widgets.
+Prefer reusable components.
 
 Keep screens lightweight.
 

@@ -25,7 +25,9 @@ Status: Active
 
 # Purpose
 
-This document defines standards for the EcoTrace India client applications: the Flutter mobile apps (`mobile/`) and the React dashboard (`dashboard/`).
+This document defines standards for the EcoTrace India client applications:
+the React Native (Expo) mobile apps (`mobile/` — migrated from Flutter/Dart
+in P9.3, see `docs/mobile/README.md`) and the React dashboard (`frontend/`).
 
 Both consume only the backend REST API defined in `05_API.md` (`03_ARCHITECTURE.md` → System Context).
 
@@ -35,12 +37,14 @@ Both consume only the backend REST API defined in `05_API.md` (`03_ARCHITECTURE.
 
 | Application | Stack | Persona(s) | Key features |
 |---|---|---|---|
-| Consumer app | Flutter | Consumer | Device registration, EcoID/QR, collection scheduling, GreenCoins, history |
-| Collector app | Flutter | Collector | Assigned pickups, route view, QR verification, status updates |
-| Recycler portal | Flutter | Recycler | Device intake, material recovery, certification |
+| Consumer app | React Native (Expo) | Consumer | Device registration, EcoID/QR, collection scheduling, GreenCoins, history |
+| Collector app | React Native (Expo) | Collector | Assigned pickups, route view, QR verification, status updates |
 | Dashboard | React + Tailwind | Admin, Government | Analytics, heatmaps, reports, user/device management |
 
-The three Flutter experiences are built as **one codebase with role-based flows**, sharing widgets, services, and models — not three separate projects.
+The Consumer and Collector apps are two independent React Native (Expo)
+projects sharing an equivalent architecture (see `docs/mobile/README.md`),
+not one shared codebase — no dedicated Recycler mobile app exists (P8's
+known limitation #9); Recycler workflows are handled via the API today.
 
 ---
 
@@ -55,6 +59,15 @@ The three Flutter experiences are built as **one codebase with role-based flows*
 ---
 
 # Flutter Applications
+
+> **Superseded (P9.3):** the mobile apps are implemented in **React Native +
+> Expo SDK 57 + TypeScript**, not Flutter/Dart — see
+> [`docs/mobile/README.md`](../mobile/README.md) and
+> `reports/P9_3_MOBILE_REACT_NATIVE.md` for the current architecture,
+> structure, and standards. The Flutter-specific content below (structure,
+> `flutter analyze`/`dart format`, widget-based state management) describes
+> the superseded stack and is retained only as historical context for why
+> the earlier `mobile/` tree looked the way it did.
 
 ## Structure
 

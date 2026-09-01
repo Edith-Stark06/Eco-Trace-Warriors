@@ -12,8 +12,8 @@
 
 EcoTrace India is an e-waste lifecycle management platform: a real Node
 backend, a real trained AI device-detection service, a real (chaincode +
-Gateway-client) Hyperledger Fabric integration, two Flutter mobile apps,
-and a React operator dashboard, connecting Consumers, Collectors,
+Gateway-client) Hyperledger Fabric integration, two React Native (Expo)
+mobile apps, and a React operator dashboard, connecting Consumers, Collectors,
 Recyclers, and Government/Admin oversight around one transparent
 submission-to-recycling workflow.
 
@@ -33,26 +33,28 @@ not asserted on its own.
 
 | | |
 |---|---|
-| Regression suite | 1,557+ passing tests across backend (Jest), chaincode (Jest), the AI service (pytest), and both mobile apps (`flutter test`) — see `reports/P8_7_SECURITY_AUDIT.md` §12 for the current breakdown |
-| Live-verified | Full Docker Compose stack, real Postgres migrations, real AI inference, real chaincode tests, real E2E stakeholder scenarios — `reports/P8_1_REAL_DEPLOYMENT.md`, `reports/P8_5_COMPLETE_E2E.md` |
+| Regression suite | 1,500+ passing tests across backend (Jest), chaincode (Jest), the AI service (pytest), and both mobile apps (Jest + React Native Testing Library) — see `reports/P8_7_SECURITY_AUDIT.md` §12 and `reports/P9_3_MOBILE_REACT_NATIVE.md` for the current breakdown |
+| Live-verified | Full Docker Compose stack, real Postgres migrations, real AI inference, real chaincode tests, real E2E stakeholder scenarios, and (P9.2) a real local Hyperledger Fabric network with real transactions — `reports/P8_1_REAL_DEPLOYMENT.md`, `reports/P8_5_COMPLETE_E2E.md`, `reports/P9_2_LIVE_FABRIC.md` |
 | Security-audited | `reports/P8_7_SECURITY_AUDIT.md` — full threat model, 2 real gaps found and fixed |
 | Demo-ready | `python scripts/demo/run_scenarios.py all` — `reports/P8_8_DEMO_ENVIRONMENT.md` |
-| Known, disclosed limitation | No live Hyperledger Fabric peer exists in this environment — the chaincode and Gateway client are real and fully tested against a protocol-conformant fake server, but never against a live network. See "Honest Scope" below. |
+| Mobile architecture | React Native + Expo SDK 57 + TypeScript (migrated from Flutter/Dart in P9.3 — see `reports/P9_3_MOBILE_REACT_NATIVE.md`) |
 
 ---
 
 ## 🚀 What actually works today
 
-### Consumer app (Flutter)
+### Consumer app (React Native + Expo)
 
-Registration/login (role-checked), submitting e-waste for pickup, QR/id
-lookup of a submission's status, recycling history, GreenCoin reward
-balance, educational content.
+Registration/login (role-checked), reporting e-waste for pickup, QR-code
+device passport/trust/blockchain-verification lookup, GreenCoin reward
+balance and history, recycling history, educational content — offline-first
+(AsyncStorage-backed sync queue).
 
-### Collector app (Flutter)
+### Collector app (React Native + Expo)
 
 Role-checked login, assigned-pickup queue, accept → start → complete
-workflow, offline sync queue (SQLite-backed, tested against real
+workflow, camera capture + AI device classification/confirmation,
+offline sync queue (AsyncStorage-backed, tested against real
 disconnect/reconnect scenarios).
 
 ### Recycler workflow (via the API — no dedicated app yet)
@@ -101,7 +103,7 @@ P8_2_LIVE_BLOCKCHAIN.md`).
 ## 🏗 Architecture
 
 ```
-Flutter Mobile Apps (Collector, Consumer)     React Dashboard (Admin/Gov)
+React Native Mobile Apps (Collector, Consumer)     React Dashboard (Admin/Gov)
               │                                        │
               └──────────────┬─────────────────────────┘
                               ▼
@@ -112,8 +114,9 @@ Flutter Mobile Apps (Collector, Consumer)     React Dashboard (Admin/Gov)
                                          │
                                          ▼
                           Blockchain abstraction (chaincode +
-                          Fabric Gateway client — real, tested
-                          against a fake server; no live peer here)
+                          Fabric Gateway client — real; validated
+                          against both a fake server and a real
+                          local Hyperledger Fabric network, P9.2)
 ```
 
 See `docs/engineering/03_ARCHITECTURE.md` for the full, current
@@ -127,7 +130,7 @@ match what actually shipped, not an earlier plan).
 
 | Layer | Stack |
 |---|---|
-| Mobile | Flutter, `flutter_riverpod`, `dio`, `flutter_secure_storage` |
+| Mobile | React Native, Expo SDK 57, TypeScript, `@react-navigation`, `expo-secure-store` |
 | Dashboard | React, TypeScript, Vite, Tailwind CSS |
 | Backend | Node.js, Express, TypeScript, Prisma ORM |
 | Database | PostgreSQL |
@@ -145,8 +148,8 @@ Real, working code lives here:
 backend/                  Node/Express/Prisma API — the real product backend
 frontend/                 React admin/government dashboard
 intelligence/device_ai/   Python AI service — device lifecycle, passport, trust
-mobile/collector_app/     Flutter Collector app
-mobile/consumer_app/      Flutter Consumer app
+mobile/collector_app/     React Native (Expo) Collector app
+mobile/consumer_app/      React Native (Expo) Consumer app
 blockchain/chaincode/     Hyperledger Fabric chaincode (TypeScript, tested)
 scripts/demo/             Demo/pilot environment scripts (see QUICKSTART.md)
 docs/engineering/         Engineering standards & current architecture docs

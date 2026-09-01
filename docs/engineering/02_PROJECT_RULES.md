@@ -38,7 +38,7 @@ The approved top-level layout (per `CLAUDE.md`):
 
 ```
 backend/       Node.js + Express + TypeScript REST API
-mobile/        Flutter applications (consumer, collector, recycler)
+mobile/        React Native (Expo) applications (consumer, collector)
 dashboard/     React + Tailwind CSS web dashboard (admin, government)
 blockchain/    Hyperledger Fabric network config and chaincode
 ai/            Python AI services (classification, forecasting, fraud)
@@ -142,7 +142,7 @@ Cross-cutting rules (language-specific detail lives in the module documents):
 |---|---|---|---|
 | Backend (TypeScript) | Prettier | ESLint | `strict` TypeScript |
 | Dashboard (React/TS) | Prettier | ESLint | `strict` TypeScript |
-| Mobile (Flutter/Dart) | `dart format` | `flutter analyze` | Sound null safety |
+| Mobile (React Native/TypeScript) | `eslint --fix` | `eslint` | `tsc --noEmit` strict mode |
 | AI (Python) | Black | Ruff | Type hints + mypy |
 
 General principles (from `AGENTS.md`):

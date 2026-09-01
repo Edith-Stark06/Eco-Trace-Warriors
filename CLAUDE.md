@@ -204,9 +204,9 @@ Document all new endpoints.
 
 # Frontend Rules
 
-Flutter:
+React Native (Expo) — see docs/mobile/README.md; Flutter/Dart was superseded in P9.3:
 
-- Prefer reusable widgets.
+- Prefer reusable components.
 - Keep UI components small.
 - Separate UI from business logic.
 

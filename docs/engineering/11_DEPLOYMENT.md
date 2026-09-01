@@ -112,11 +112,11 @@ flowchart TB
   defect: a fresh `alembic_version` table defaults to `VARCHAR(32)`,
   too narrow for this project's `NNN_description`-style revision IDs — see
   `intelligence/device_ai/alembic/env.py`.
-- Flutter apps have no compose service (no Android/iOS emulator exists in
-  this environment) — they point at the backend via
-  `--dart-define=API_BASE_URL=...` at build time
-  (`mobile/*/lib/core/config/app_config.dart`), independent of whichever
-  host is actually running the compose stack.
+- React Native (Expo) apps have no compose service (no Android SDK/iOS
+  Xcode toolchain exists in this environment — see P9.3/P9.10) — they
+  point at the backend via the `EXPO_PUBLIC_API_BASE_URL` build-time env
+  var (`mobile/*/src/config/env.ts`), independent of whichever host is
+  actually running the compose stack.
 - One-command reproducible demo on top of this stack:
   `scripts/demo/run_demo.py` (P7.8).
 
@@ -160,8 +160,8 @@ Pipeline stages map to the quality gates in `10_TESTING.md`:
 
 | Stage | Runs |
 |---|---|
-| Lint & Types | ESLint, `tsc --noEmit`, Ruff, mypy, `flutter analyze` per changed module |
-| Tests | Jest, Vitest, pytest, `flutter test`; backend integration against ephemeral PostgreSQL |
+| Lint & Types | ESLint, `tsc --noEmit`, Ruff, mypy — per changed module, including both mobile apps |
+| Tests | Jest, Vitest, pytest; backend integration against ephemeral PostgreSQL |
 | Docker Builds | All service images build successfully |
 | E2E (release only) | Full-stack journeys from `testing/` against the composed stack |
 | Smoke | Health endpoints + connectivity after deploy |
@@ -213,9 +213,9 @@ an NGINX gateway layer.
   — `docker-compose.yml` passes it through empty). Set it for any
   deployment reachable beyond a laptop; see `05_API.md` → Internal AI
   Service API → Service authentication.
-- Mobile apps have no `.env` mechanism; the API base URL is a Flutter
-  build-time `--dart-define=API_BASE_URL=...` (see
-  `mobile/*/lib/core/config/app_config.dart`), not an environment file.
+- Mobile apps have no runtime `.env` mechanism; the API base URL is an
+  Expo build-time public env var, `EXPO_PUBLIC_API_BASE_URL` (see
+  `mobile/*/src/config/env.ts`), not a loaded environment file.
 - A configuration change that alters behavior is documented in the affected
   module document, same PR (`02_PROJECT_RULES.md` → Documentation Policy).
 
