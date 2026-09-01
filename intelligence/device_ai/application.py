@@ -23,6 +23,7 @@ from .api.fingerprint_routes import router as fingerprint_router
 from .api.middleware import RequestContextMiddleware
 from .api.ocr_routes import router as ocr_router
 from .api.routes import router
+from .api.service_auth import ServiceApiKeyMiddleware
 from .configs.logging import configure_logging
 from .configs.settings import Settings, get_settings
 
@@ -70,8 +71,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
 
     # Order matters: the context middleware wraps everything so its
-    # request_id is available to handlers and logs.
+    # request_id is available to handlers and logs, including a 401 from
+    # the auth middleware below.
     app.add_middleware(RequestContextMiddleware)
+    # Opt-in service-to-service auth (P8.7) — allows every request when
+    # settings.service_api_key is unset, matching pre-P8.7 behavior exactly.
+    app.add_middleware(ServiceApiKeyMiddleware, settings=settings)
 
     register_exception_handlers(app)
     app.include_router(router)

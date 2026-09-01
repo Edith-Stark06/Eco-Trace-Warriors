@@ -40,6 +40,7 @@ def test_production_accepts_postgres_backends_with_database_url() -> None:
         device_backend="postgres",
         trust_anchor_backend="postgres",
         database_url="postgresql+psycopg://user:pass@host:5432/db",
+        service_api_key="prod-service-key",
     )
     assert settings.database_url is not None
 
@@ -66,8 +67,27 @@ def test_production_accepts_fabric_enabled_with_full_identity_material() -> None
         fabric_tls_cert_path="/certs/ca.pem",
         fabric_identity_cert_path="/certs/id.pem",
         fabric_identity_key_path="/certs/id.key",
+        service_api_key="prod-service-key",
     )
     assert settings.fabric_enabled is True
+
+
+def test_production_rejects_missing_service_api_key() -> None:
+    """P8.7 — a production deployment must configure a service-to-service
+    API key; this service has no other authentication layer of its own."""
+    with pytest.raises(ValidationError, match="SERVICE_API_KEY is required in production"):
+        _settings(environment="production")
+
+
+def test_production_accepts_a_configured_service_api_key() -> None:
+    settings = _settings(environment="production", service_api_key="prod-service-key")
+    assert settings.service_api_key == "prod-service-key"
+
+
+def test_development_leaves_service_api_key_unset_by_default() -> None:
+    """Unchanged pre-P8.7 behavior for local dev/demo/tests: open by default."""
+    settings = _settings()
+    assert settings.service_api_key is None
 
 
 def test_staging_environment_is_not_held_to_production_safety_rules() -> None:
