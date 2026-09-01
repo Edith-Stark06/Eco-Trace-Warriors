@@ -1,0 +1,69 @@
+{
+  "phase": "P7.1",
+  "title": "Full System Acceptance Audit",
+  "status": "PASS_WITH_DOCUMENTED_WARNINGS",
+  "timestamp": "2026-09-01T00:00:00Z",
+  "environment_discovery": {
+    "docker_desktop": "was not running at session start; started successfully this phase",
+    "preexisting_postgres_container": "ecotrace-postgres, postgres:16, restart:unless-stopped, 5 weeks old, real prior data (35 devices, 8 users, 1 submission, 3 trust anchors) — not created or modified by this session",
+    "unrelated_containers_not_touched": ["atlas-postgres", "atlas-redis"],
+    "flutter_sdk_location": "D:\\dev-tools\\flutter (3.47.2 stable), not on PATH, used directly",
+    "android_sdk": "still absent",
+    "ios_tooling": "categorically unavailable — Windows host, no macOS/Xcode"
+  },
+  "findings": [
+    { "id": "F1", "component": "backend", "classification": "WARNING_THEN_PASS", "summary": "npm run build initially failed with EPERM on Prisma DLL rename, root-caused to an orphaned tsx watch process from P6.7's background task; killed after verifying via command-line inspection it was mine; build then succeeded" },
+    { "id": "F2", "component": "frontend", "classification": "PRE_EXISTING", "summary": "no test script/suite exists in this project (unchanged since P6.6)" },
+    { "id": "F3", "component": "mobile_collector", "classification": "ENVIRONMENT_BLOCKED", "summary": "no Android SDK, no macOS/Xcode — native APK/IPA build not possible" },
+    { "id": "F4", "component": "mobile_consumer", "classification": "ENVIRONMENT_BLOCKED", "summary": "same as F3" },
+    { "id": "F5", "component": "chaincode_lint", "classification": "FAIL_THEN_FIXED", "summary": "ESLint's parserOptions.project pointed at tsconfig.json which excludes **/*.test.ts, so test files could never be parsed by the type-aware linter since P6.1; fixed with a dedicated tsconfig.eslint.json; re-verified 0 lint errors, jest 45/45 unaffected, tsc --noEmit unaffected" },
+    { "id": "F6", "component": "python_ruff", "classification": "PRE_EXISTING_WARNING", "summary": "1470 findings across ~316 files, first real enforcement run; not mass-fixed — out of audit scope, would be a broad unrequested rewrite" },
+    { "id": "F7", "component": "python_mypy", "classification": "PRE_EXISTING_WARNING", "summary": "203 errors in 81 files, mostly Optional-typed test fixtures accessed without None-narrowing plus a few real source-level mismatches and 2 missing stub packages (grpc, ultralytics); not mass-fixed — out of audit scope" },
+    { "id": "F8", "component": "docker_compose", "classification": "WARNING", "summary": "root docker-compose.yml only defines postgres (hardcoded password, no backend/frontend/Fabric services, no frontend Dockerfile); deferred to P7.5 as that phase's actual scope" },
+    { "id": "F9", "component": "fabric_network", "classification": "ENVIRONMENT_BLOCKED", "summary": "no peer/orderer/CA anywhere in repo or environment, unchanged from P6" },
+    { "id": "F10", "component": "database_migrations", "classification": "PASS", "summary": "live Postgres now available; alembic_version=head, all 6 Prisma migrations applied — first LIVE (not static-only) confirmation this session; destructive upgrade/downgrade/upgrade round-trip deliberately deferred to a disposable DB in P7.9/P7.10, not run against this shared data-bearing instance" },
+    { "id": "F11", "component": "repository_integrity", "classification": "PASS", "summary": "git fsck shows only benign dangling objects, no corruption; secret scan 0 findings" }
+  ],
+  "fixes_applied": [
+    { "file": "blockchain/chaincode/ecotrace-lifecycle/tsconfig.eslint.json", "change": "new file — extends tsconfig.json, re-includes test/**/*, overrides exclude" },
+    { "file": "blockchain/chaincode/ecotrace-lifecycle/.eslintrc.json", "change": "parserOptions.project now points at tsconfig.eslint.json instead of tsconfig.json" }
+  ],
+  "tests": {
+    "python_device_ai": { "passed": 1072, "total": 1073, "pre_existing_failure": "tests/test_detector_benchmark.py::test_benchmark_measures_latency_and_throughput" },
+    "chaincode_jest": { "passed": 45, "total": 45 },
+    "chaincode_eslint": { "errors": 0, "note": "fixed this phase, was failing since P6.1" },
+    "chaincode_tsc": { "errors": 0 },
+    "backend_jest": { "passed": 323, "total": 323 },
+    "backend_lint_typecheck_build": { "lint_errors": 0, "typecheck_errors": 0, "build": "success" },
+    "frontend_typecheck_lint_build": { "typecheck_errors": 0, "lint_errors": 0, "build": "success", "test_suite": "does not exist (pre-existing)" },
+    "collector_flutter": { "analyze_issues": 0, "passed": 18, "total": 18 },
+    "consumer_flutter": { "analyze_issues": 0, "passed": 9, "total": 9 },
+    "ruff_device_ai": { "findings": 1470, "note": "pre-existing, not fixed" },
+    "mypy_device_ai": { "errors": 203, "note": "pre-existing, not fixed" },
+    "total_automated_tests_passing": 1467,
+    "matches_p6_baseline": true
+  },
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "protected_assets_status": "6/6 MATCH (verified before and after this phase's change)",
+  "environmental_limitations": [
+    "No live Hyperledger Fabric peer/orderer",
+    "No Android SDK / no macOS-Xcode — no native mobile builds",
+    "Live Postgres now available (new this phase) but destructive migration round-trip deliberately deferred to a disposable database, not run against the shared pre-existing data-bearing container"
+  ],
+  "release_blockers": [],
+  "definition_of_done": {
+    "full_blackbox_audit_from_source_not_prior_reports": true,
+    "every_finding_classified": true,
+    "real_bug_found_and_fixed_with_regression_check": true,
+    "protected_assets_verified_before_and_after": true,
+    "no_unrelated_refactoring": true
+  },
+  "next_task": "P7.2 — Production Configuration & Environment Management"
+}
