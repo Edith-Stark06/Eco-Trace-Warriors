@@ -27,7 +27,7 @@ Status: Active
 
 # Purpose
 
-This document defines the REST API conventions and the endpoint contract exposed by the EcoTrace India backend. All clients (Flutter apps, React dashboard) consume this API exclusively (`03_ARCHITECTURE.md`).
+This document defines the REST API conventions and the endpoint contract exposed by the EcoTrace India backend. All clients (React Native mobile apps, React dashboard) consume this API exclusively (`03_ARCHITECTURE.md`).
 
 This is a **contract document** — request/response shapes are normative; implementation details belong in `06_BACKEND.md`.
 

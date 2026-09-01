@@ -49,7 +49,7 @@ The handbook defines **standards, conventions, and architecture decisions** — 
 | `04_DATABASE.md` | PostgreSQL + Prisma standards, entity model, migration policy |
 | `05_API.md` | REST conventions, versioning, authentication, error contract, endpoint catalog |
 | `06_BACKEND.md` | Node.js / Express / TypeScript service standards and internal layering |
-| `07_FRONTEND.md` | Flutter application and React dashboard standards |
+| `07_FRONTEND.md` | React Native (Expo) mobile app and React dashboard standards |
 | `08_AI.md` | AI service standards: classification, forecasting, fraud detection |
 | `09_BLOCKCHAIN.md` | Hyperledger Fabric design: chaincode scope, on-chain vs off-chain data |
 | `10_TESTING.md` | Testing strategy, tooling per stack, quality gates |

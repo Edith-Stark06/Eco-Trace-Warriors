@@ -50,9 +50,8 @@ Derived from `PROJECT.md`:
 ```mermaid
 flowchart TB
     subgraph Clients
-        C1[Consumer App<br/>Flutter]
-        C2[Collector App<br/>Flutter]
-        C3[Recycler Portal<br/>Flutter]
+        C1[Consumer App<br/>React Native / Expo]
+        C2[Collector App<br/>React Native / Expo]
         C4[Admin & Government Dashboard<br/>React]
     end
 
@@ -93,7 +92,7 @@ early plan never built out; see `README.md` → Repository Structure):
 
 | Component | Real directory | Technology | Responsibility |
 |---|---|---|---|
-| Mobile apps | `mobile/collector_app/`, `mobile/consumer_app/` | Flutter | Consumer and collector user experiences (Recycler workflow is API-only today, no dedicated app — `06_BACKEND.md`) |
+| Mobile apps | `mobile/collector_app/`, `mobile/consumer_app/` | React Native (Expo SDK 57, TypeScript) — migrated from Flutter/Dart in P9.3 | Consumer and collector user experiences (Recycler workflow is API-only today, no dedicated app — `06_BACKEND.md`) |
 | Dashboard | `frontend/` | React + Tailwind (Vite) | Admin and government submission audit/assignment; analytics module not yet deployed (frontend degrades this honestly) |
 | Backend API | `backend/` | Node.js, Express, TypeScript, Prisma | Business logic, orchestration, authentication, API contracts, Submission lifecycle |
 | Database | `backend/prisma/`, PostgreSQL | PostgreSQL + Prisma (backend); optionally also `intelligence/device_ai` via `DEVICE_BACKEND=postgres` | System of record for application data |

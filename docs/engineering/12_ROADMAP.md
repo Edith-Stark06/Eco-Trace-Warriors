@@ -40,7 +40,7 @@ flowchart LR
     P5 --> P6[Phase 6<br/>Collection Module]
     P6 --> P7[Phase 7<br/>Blockchain]
     P6 --> P8[Phase 8<br/>AI]
-    P7 --> P9[Phase 9<br/>Flutter Apps]
+    P7 --> P9[Phase 9<br/>Mobile Apps]
     P8 --> P9
     P9 --> P10[Phase 10<br/>Dashboard]
     P10 --> P11[Phase 11<br/>Deployment]
@@ -98,11 +98,13 @@ Phases 0–2 are complete (repository, this handbook, and the backend foundation
 - Demand forecasting (Prophet); rule-based fraud scoring
 - Backend AI client with graceful degradation
 
-## Phase 9 — Flutter Applications
+## Phase 9 — Mobile Applications (React Native + Expo)
 
-- Single codebase, role-based flows per `07_FRONTEND.md`
+- Two independent React Native (Expo SDK 57, TypeScript) apps per
+  `07_FRONTEND.md`/`docs/mobile/README.md` — the originally-planned
+  single-codebase Flutter/Dart stack was superseded (P9.3)
 - Consumer journey first (register → device → collection → rewards)
-- Collector and recycler flows second
+- Collector flow second (no dedicated Recycler app — API-only, `06_BACKEND.md`)
 
 ## Phase 10 — Dashboard
 
@@ -151,7 +153,7 @@ A phase is complete only when (in addition to the Definition of Done in `02_PROJ
 | Device lifecycle (P5) | Auth (P4) |
 | Collection (P6) | Device lifecycle (P5) |
 | Blockchain (P7), AI (P8) | Collection (P6) — parallel tracks |
-| Flutter apps (P9) | Stable API surface from P4–P8 |
+| Mobile apps (P9) | Stable API surface from P4–P8 |
 | Dashboard (P10) | Analytics endpoints (P8) |
 | Deployment (P11) | All services containerizable |
 
