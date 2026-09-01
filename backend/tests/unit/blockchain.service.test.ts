@@ -157,5 +157,21 @@ describe('createBlockchainService', () => {
         ['deviceAiServiceUrl', 'fetchImpl', 'logger', 'timeoutMs'].sort(),
       );
     });
+
+    it('invokes onCheck with the resolved status on both success and degraded outcomes (P7.3)', async () => {
+      const observed: string[] = [];
+      const okFetch = jest.fn(() =>
+        Promise.resolve(jsonResponse({ success: true, health: { status: 'disabled' } })),
+      ) as unknown as typeof fetch;
+
+      await buildService(okFetch, { onCheck: (status) => observed.push(status) }).getHealth();
+
+      const failingFetch = jest.fn(() =>
+        Promise.reject(new Error('ECONNREFUSED')),
+      ) as unknown as typeof fetch;
+      await buildService(failingFetch, { onCheck: (status) => observed.push(status) }).getHealth();
+
+      expect(observed).toEqual(['disabled', 'proxy_unreachable']);
+    });
   });
 });

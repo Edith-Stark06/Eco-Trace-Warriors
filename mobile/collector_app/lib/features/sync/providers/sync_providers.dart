@@ -1,6 +1,7 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/diagnostics/app_logger.dart';
 import '../../../core/storage/local_database.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../tasks/data/tasks_repository.dart';
@@ -39,8 +40,11 @@ final connectivityProvider = StreamProvider<bool>((ref) {
 /// Re-drains the sync queue whenever connectivity transitions to online.
 final syncOnReconnectProvider = Provider<void>((ref) {
   ref.listen<AsyncValue<bool>>(connectivityProvider, (previous, next) {
-    final wasOffline = previous?.value == false;
     final isOnlineNow = next.value == true;
+    if (previous?.value != next.value) {
+      AppLogger.info('connectivity', isOnlineNow ? 'Online' : 'Offline');
+    }
+    final wasOffline = previous?.value == false;
     if (wasOffline && isOnlineNow) {
       ref.read(syncManagerProvider.future).then((manager) => manager.drainQueue());
     }

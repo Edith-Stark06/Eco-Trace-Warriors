@@ -21,9 +21,11 @@ from loguru import logger
 
 from .. import __version__
 from ..configs.settings import Settings, get_settings
+from ..database.database import get_engine, ping_engine
 from ..inference.class_map import CANONICAL_CLASSES, CLASS_NAME_TO_ID
 from ..inference.pipeline import PredictionPipeline, PredictionResult
 from ..preprocessing.validator import ImageValidator, RawUpload
+from ..utils.metrics import get_metrics_registry
 from .dependencies import get_pipeline, get_registry, get_validator
 from .schemas import (
     ComponentHealth,
@@ -31,6 +33,7 @@ from .schemas import (
     DetectionPayload,
     DetectorInfo,
     HealthResponse,
+    MetricsResponse,
     ModelInfoResponse,
     OCRPayload,
     PredictionResponse,
@@ -98,6 +101,34 @@ def health(
     except Exception:  # noqa: BLE001
         model_dir_available = False
 
+    # Database is only a real dependency when a component is actually
+    # configured to use Postgres (P7.3) — mirrors the production-safety
+    # validator added in P7.2 (configs/settings.py), which applies the same
+    # "postgres backend implies DATABASE_URL matters" rule.
+    uses_postgres = settings.device_backend == "postgres" or (
+        settings.trust_anchor_backend == "postgres"
+    )
+    if uses_postgres:
+        try:
+            db_url = (
+                settings.database_url
+                or "postgresql+psycopg://ecotrace:ecotrace123@localhost:5432/ecotrace"
+            )
+            engine = get_engine(
+                db_url,
+                pool_size=settings.db_pool_size,
+                max_overflow=settings.db_max_overflow,
+                pool_timeout=settings.db_pool_timeout,
+                echo=settings.db_echo,
+            )
+            db_ready = ping_engine(engine)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"Error checking database health: {exc}")
+            db_ready = False
+        components.append(ComponentHealth(name="database", ready=db_ready))
+        if not db_ready:
+            overall = "degraded"
+
     return HealthResponse(
         status=overall,
         version=__version__,
@@ -125,6 +156,21 @@ def version(
         model_version=settings.model_version,
         api=_API_CONTRACT,
     )
+
+
+@router.get("/metrics", response_model=MetricsResponse, tags=["meta"])
+def metrics() -> MetricsResponse:
+    """Return in-process request and Fabric-transaction counters (P7.3).
+
+    Public, read-only, no request body, no authentication — the JSON
+    summary contains only aggregate counts/timings per route (method +
+    matched route template, never raw URLs, query strings, or bodies), so
+    it carries no more sensitive information than ``/health``.
+
+    Returns:
+        A :class:`MetricsResponse` wrapping the registry snapshot.
+    """
+    return MetricsResponse(metrics=get_metrics_registry().snapshot())
 
 
 @router.get("/model", response_model=ModelInfoResponse, tags=["meta"])

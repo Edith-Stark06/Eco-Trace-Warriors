@@ -16,6 +16,7 @@ from starlette.requests import Request
 from starlette.types import ASGIApp
 
 from ..utils.hashing import new_request_id
+from ..utils.metrics import get_metrics_registry
 
 # Header used to surface the correlation id to clients and accept an
 # upstream-provided id (e.g. from the backend) when present.
@@ -77,3 +78,12 @@ class RequestContextMiddleware:
                     method=request.method,
                     path=request.url.path,
                 ).info("Request completed")
+                # Matched route template when available (keeps cardinality
+                # bounded for parameterized paths, e.g. /devices/{device_id});
+                # falls back to the raw path for requests that never matched
+                # a route (404s) — P7.3.
+                route = request.scope.get("route")
+                route_path = getattr(route, "path", None) or request.url.path
+                get_metrics_registry().record_request(
+                    request.method, route_path, status_holder["status"], latency_ms
+                )

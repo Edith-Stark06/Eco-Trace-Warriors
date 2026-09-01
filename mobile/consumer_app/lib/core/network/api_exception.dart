@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../diagnostics/app_logger.dart';
 import '../utils/result.dart';
 
 /// Translates a [DioException] into the app's [AppFailure] model.
@@ -9,6 +10,15 @@ import '../utils/result.dart';
 /// `{"error": {"code": ..., "message": ..., "details": {...}}, "request_id": ...}`
 /// (see `intelligence/device_ai/api/schemas.py` / `api/errors.py`).
 AppFailure mapDioExceptionToFailure(DioException exception) {
+  AppLogger.warn(
+    'network',
+    'Request failed: ${exception.requestOptions.method} ${exception.requestOptions.path}',
+    context: {
+      'type': exception.type.name,
+      'statusCode': exception.response?.statusCode,
+    },
+  );
+
   switch (exception.type) {
     case DioExceptionType.connectionTimeout:
     case DioExceptionType.sendTimeout:
