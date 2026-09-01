@@ -28,6 +28,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from ..inference.class_map import CANONICAL_CLASSES
 from ..preprocessing.image_loader import LoadedImage
 from ..utils.hashing import short_hash
 
@@ -384,13 +385,35 @@ class MockDetector(Detector):
         self._model_dir = model_dir
 
     def detect(self, images: list[LoadedImage]) -> DetectionResult:
-        """Return a deterministic device type/brand for the batch."""
+        """Return a deterministic device type/brand, and one matching Detection.
+
+        ``detections`` is populated (not left empty) so that callers relying
+        on per-object detections — chiefly device registration
+        (``devices/service.py: register_from_images``), which raises
+        ``NoDetectionsForRegistrationError`` on an empty list — remain
+        functional when no trained weights are present (P7.8): every
+        deployment without real weights would otherwise be permanently
+        unable to demonstrate registration at all, mock or not. The
+        synthetic label is drawn from the canonical taxonomy
+        (``inference/class_map.py``), not ``_DEVICE_TYPES`` (an older,
+        looser display vocabulary that includes non-canonical values like
+        "Desktop"), since ``register_from_images`` maps ``label.lower()``
+        through ``CLASS_NAME_TO_ID`` and would reject anything else.
+        """
         seed = _batch_seed(images)
+        canonical_labels = list(CANONICAL_CLASSES.values())
+        confidence = _confidence(seed)
         return DetectionResult(
             device_type=_pick(_DEVICE_TYPES, seed),
             brand=_pick(_BRANDS, seed >> 3),
-            confidence=_confidence(seed),
-            detections=[],
+            confidence=confidence,
+            detections=[
+                Detection(
+                    label=_pick(canonical_labels, seed >> 7),
+                    confidence=confidence,
+                    bounding_box=(10, 10, 200, 200),
+                )
+            ],
         )
 
 
