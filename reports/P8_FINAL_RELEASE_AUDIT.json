@@ -1,0 +1,125 @@
+{
+  "phase": "P8_FINAL",
+  "title": "Final System Certification",
+  "status": "P8_COMPLETE_WITH_ENVIRONMENTAL_LIMITATIONS",
+  "timestamp": "2026-09-01T10:30:00Z",
+  "git_audit": {
+    "branch": "develop",
+    "working_tree_clean": true,
+    "head": "ac7d809f474e8047283cd58fe9247d20bf3dda96",
+    "origin_develop": "ac7d809f474e8047283cd58fe9247d20bf3dda96",
+    "head_equals_origin": true,
+    "all_9_phase_commits_present": true,
+    "all_18_report_files_present": true,
+    "no_force_push": true,
+    "no_history_rewrite": true,
+    "no_direct_commit_to_main": true
+  },
+  "phase_commits": {
+    "P8.1": "83cfeea",
+    "P8.2": "a320935",
+    "P8.3": "67d83d1",
+    "P8.4": "05f1778",
+    "P8.5": "f794161",
+    "P8.6": "d64b4fe",
+    "P8.7": "2d9be11",
+    "P8.8": "c9b6f24",
+    "P8.9": "ac7d809"
+  },
+  "regression_suite_fresh": {
+    "backend_jest": { "passed": 341, "total": 341 },
+    "backend_lint_errors": 0,
+    "backend_typecheck_errors": 0,
+    "backend_build": "succeeds",
+    "chaincode_jest": { "passed": 47, "total": 47 },
+    "device_ai_pytest": { "passed": 1121, "total": 1121, "failed": 0, "errors": 0, "skipped": 0, "note": "the previously-documented flaky benchmark test did not fail this run" },
+    "collector_app_flutter_test": { "passed": 26, "total": 26, "analyze_issues": 0 },
+    "consumer_app_flutter_test": { "passed": 22, "total": 22, "analyze_issues": 0 },
+    "frontend": { "typecheck_errors": 0, "lint_errors": 0, "build": "succeeds", "test_suite": "none exists (unchanged, disclosed)" },
+    "total_passing": 1557,
+    "total_failing": 0
+  },
+  "docker_validation": {
+    "compose_config_valid": true,
+    "all_3_images_build_clean": true,
+    "all_4_containers_healthy": true
+  },
+  "migration_verification": {
+    "prisma_fresh_deploy": { "database": "ecotrace_p810_migration_test", "migrations_applied": 6, "result": "success" },
+    "alembic_fresh_upgrade": { "database": "ecotrace_p810_alembic_test", "migrations_applied": 3, "result": "success" },
+    "disposable_databases_cleaned_up": true
+  },
+  "e2e_demo_verification": {
+    "health_check": "all 3 services PASS",
+    "run_scenarios_all": { "happy_path": "PASS", "trust_mismatch": "PASS", "blockchain_unavailable": "PASS", "invalid_device": "PASS" },
+    "reset_all": "PASS, device-ai confirmed healthy",
+    "quickstart_re_verified": true
+  },
+  "security_scan_fresh": {
+    "backend_prod_npm_audit": { "high": 3, "note": "accepted residual, deepmerge-ts/@prisma/config, unchanged since P7.4/P8.7" },
+    "frontend_npm_audit": { "vulnerabilities": 0 },
+    "device_ai_pip_audit": { "vulnerabilities": 0 },
+    "no_new_or_worsened_finding": true
+  },
+  "performance_smoke_test": {
+    "backend_health_latency_ms": "~4",
+    "device_ai_health_latency_ms": "~5.5",
+    "consistent_with_p8_6": true
+  },
+  "secret_scan": {
+    "tracked_secret_files": 0,
+    "hardcoded_secret_patterns_in_p8_diff": 0,
+    "p8_diff_files_changed": 104,
+    "p8_diff_insertions": 7026
+  },
+  "code_hygiene": {
+    "debug_code_found": 0,
+    "unrelated_files_found": 0,
+    "working_tree_clean": true
+  },
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "protected_assets_status": "6/6 MATCH - zero drift across the entire P8 session, final check",
+  "documentation_consistency": {
+    "p8_9_corrections_re_checked": true,
+    "quickstart_commands_re_verified": true,
+    "no_new_drift_since_p8_9": true
+  },
+  "every_claimed_pass_cross_checked": true,
+  "environmental_limitations": [
+    "Live Hyperledger Fabric -- no peer/orderer/CA anywhere in this environment; chaincode and Gateway client real and fully tested against a fake server only",
+    "Native Android/iOS builds -- no Android SDK, no macOS/Xcode; Dart analyze/test fully real and green, native APK/IPA build blocked",
+    "No real production deployment target / credentials / cloud infrastructure exists to validate against",
+    "deepmerge-ts/@prisma/config accepted residual dependency risk, no safe fix without a Prisma major-version bump, not reachable from the running service",
+    "No automated CI beyond backend/ -- a real GitHub Actions workflow exists for backend only",
+    "No scheduled database backup/restore procedure for a genuine pilot deployment yet",
+    "device-ai's single-worker CPU bottleneck under heavy concurrent load, documented not fixed (would break in-memory device store per-process state)",
+    "Government analytics module not deployed -- frontend handles this gracefully",
+    "No dedicated Recycler mobile app -- workflow fully functional via API"
+  ],
+  "release_blockers": [],
+  "release_blocker_count": 0,
+  "definition_of_done": {
+    "git_audit_clean": true,
+    "regression_suite_fresh_1557_passing": true,
+    "docker_validated_fresh": true,
+    "migrations_verified_fresh_both_chains": true,
+    "e2e_demo_reverified_fresh": true,
+    "security_scan_reverified_fresh": true,
+    "performance_smoke_test_consistent": true,
+    "secret_scan_zero_findings": true,
+    "no_debug_code_no_unrelated_files": true,
+    "protected_assets_final_check_6_of_6": true,
+    "documentation_consistency_reverified": true,
+    "every_pass_crosschecked_not_taken_on_faith": true,
+    "environmental_limitations_disclosed": true,
+    "zero_release_blockers": true
+  },
+  "final_verdict": "P8 COMPLETE WITH ENVIRONMENTAL LIMITATIONS"
+}
