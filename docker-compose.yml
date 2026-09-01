@@ -1,3 +1,20 @@
+# EcoTrace India — local/demo full-stack compose (P7.5).
+#
+# `docker compose up --build` starts every service that can genuinely run
+# in this environment: Postgres, the Node backend, the Python device
+# intelligence service, and the static frontend. Real, live-verified this
+# phase (see reports/P7_5_DEPLOYMENT.md) — not just statically reviewed.
+#
+# What this file deliberately does NOT start: a Hyperledger Fabric network.
+# No peer/orderer/CA binaries or channel artifacts exist anywhere in this
+# repository — adding Fabric services here would either silently fail to
+# start or require inventing a network this project has never actually
+# built. FABRIC_ENABLED stays false by default (see intelligence/device_ai/
+# .env.example); the backend's blockchain health route and the frontend's
+# BlockchainHealthCard both already degrade honestly when Fabric is
+# unavailable (P6.2/P6.5/P6.6) — that degradation is the correct behavior
+# here too, not a gap this compose file needs to work around.
+
 services:
   postgres:
     image: postgres:16
@@ -25,6 +42,100 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  backend:
+    build:
+      context: ./backend
+
+    container_name: ecotrace-backend
+
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    # The image hardcodes NODE_ENV=production (backend/Dockerfile), so
+    # env.schema.ts's production-safety checks are active here: a real
+    # DATABASE_URL and non-placeholder JWT secrets are required, not the
+    # dev-insecure-* fallbacks. These are local-dev-only example values —
+    # override every one of them for anything beyond `docker compose up`
+    # on a laptop.
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ecotrace}:${POSTGRES_PASSWORD:-ecotrace123}@postgres:5432/${POSTGRES_DB:-ecotrace}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-compose-local-dev-access-secret-CHANGE-ME-0}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-compose-local-dev-refresh-secret-CHANGE-ME}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+      DEVICE_AI_SERVICE_URL: http://device-ai:8100
+
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
+  device-ai:
+    build:
+      context: ./intelligence/device_ai
+
+    container_name: ecotrace-device-ai
+
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    # DEVICE_BACKEND/TRUST_ANCHOR_BACKEND default to "memory" (see
+    # intelligence/device_ai/.env.example) — Postgres is available to this
+    # service but not required unless explicitly switched to "postgres"
+    # here.
+    environment:
+      ENVIRONMENT: ${DEVICE_AI_ENVIRONMENT:-development}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-ecotrace}:${POSTGRES_PASSWORD:-ecotrace123}@postgres:5432/${POSTGRES_DB:-ecotrace}
+
+    ports:
+      - "${DEVICE_AI_PORT:-8100}:8100"
+
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8100/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Vite bakes this into the bundle at BUILD time (see
+        # frontend/Dockerfile's own note) — it is the browser's own URL to
+        # the backend, not a container-to-container address, so it must
+        # stay a host-reachable URL (the mapped BACKEND_PORT), never the
+        # `backend` service DNS name.
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000/api/v1}
+
+    container_name: ecotrace-frontend
+
+    restart: unless-stopped
+
+    depends_on:
+      backend:
+        condition: service_healthy
+
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:80/"]
+      interval: 15s
+      timeout: 5s
+      start_period: 5s
+      retries: 3
 
 volumes:
   postgres_data:

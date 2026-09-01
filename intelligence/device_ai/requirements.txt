@@ -24,6 +24,18 @@ numpy==2.2.1
 # --- Logging ---
 loguru==0.7.3
 
+# --- P5.4/P5.9/P5.11 PostgreSQL persistence ---
+# Imported unconditionally at module load time (device_ai/devices/__init__.py
+# -> postgres_external_trust_repository.py), not gated behind
+# DEVICE_BACKEND=postgres — the service fails to even start without these,
+# regardless of which backend is configured. Missing from this file since at
+# least P5.4 and never caught because local development environments always
+# had them installed ad hoc; only surfaced by a real, clean `docker build`
+# (P7.5), which is exactly the class of bug that audit exists to catch.
+sqlalchemy==2.0.52
+psycopg[binary]==3.3.4
+alembic==1.19.1
+
 # --- P6.2 Fabric Gateway client ---
 # Hyperledger Fabric does not publish an official Python Gateway SDK (only
 # Go, Node.js, Java); the Gateway is a plain gRPC service, so grpcio is the
