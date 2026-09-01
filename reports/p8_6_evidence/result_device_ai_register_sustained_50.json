@@ -1,0 +1,24 @@
+{
+  "name": "device_ai_register_ml_inference",
+  "levels": [
+    {
+      "concurrency": 50,
+      "total_requests": 600,
+      "wall_elapsed_s": 3.5962,
+      "throughput_rps": 166.84,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "200": 600
+      },
+      "latency_ms": {
+        "min": 93.98,
+        "mean": 286.63,
+        "p50": 279.62,
+        "p95": 393.84,
+        "p99": 425.75,
+        "max": 428.32
+      }
+    }
+  ]
+}

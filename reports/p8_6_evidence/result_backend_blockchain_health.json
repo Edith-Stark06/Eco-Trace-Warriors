@@ -1,0 +1,84 @@
+{
+  "name": "backend_blockchain_health",
+  "url": "http://localhost:3000/api/v1/system/blockchain/health",
+  "method": "GET",
+  "levels": [
+    {
+      "concurrency": 1,
+      "total_requests": 100,
+      "wall_elapsed_s": 2.1037,
+      "throughput_rps": 47.54,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "200": 100
+      },
+      "latency_ms": {
+        "min": 7.96,
+        "mean": 20.82,
+        "p50": 19.56,
+        "p95": 36.79,
+        "p99": 39.21,
+        "max": 76.81
+      }
+    },
+    {
+      "concurrency": 10,
+      "total_requests": 100,
+      "wall_elapsed_s": 0.3898,
+      "throughput_rps": 256.52,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "200": 100
+      },
+      "latency_ms": {
+        "min": 21.85,
+        "mean": 37.4,
+        "p50": 36.88,
+        "p95": 50.8,
+        "p99": 63.24,
+        "max": 67.36
+      }
+    },
+    {
+      "concurrency": 25,
+      "total_requests": 100,
+      "wall_elapsed_s": 0.372,
+      "throughput_rps": 268.82,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "200": 99,
+        "429": 1
+      },
+      "latency_ms": {
+        "min": 30.53,
+        "mean": 82.04,
+        "p50": 84.71,
+        "p95": 117.12,
+        "p99": 142.49,
+        "max": 143.25
+      }
+    },
+    {
+      "concurrency": 50,
+      "total_requests": 100,
+      "wall_elapsed_s": 0.2709,
+      "throughput_rps": 369.09,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "429": 100
+      },
+      "latency_ms": {
+        "min": 7.87,
+        "mean": 59.43,
+        "p50": 65.44,
+        "p95": 85.79,
+        "p99": 95.62,
+        "max": 96.78
+      }
+    }
+  ]
+}
