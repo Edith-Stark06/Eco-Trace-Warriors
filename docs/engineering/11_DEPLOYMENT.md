@@ -133,8 +133,24 @@ CI secrets live in GitHub Actions encrypted secrets only.
 # Configuration Management
 
 - Each service reads environment variables validated at startup (`06_BACKEND.md`, `08_AI.md`).
-- `deployment/env/` holds per-environment `*.env.example` templates; real values are provisioned outside Git.
-- A configuration change that alters behavior is documented in the affected module document, same PR (`02_PROJECT_RULES.md` → Documentation Policy).
+- **Current implementation (P7.2):** there is no `deployment/env/` directory yet —
+  each runnable service keeps its own `.env.example` beside its source
+  (`backend/.env.example`, `intelligence/device_ai/.env.example`,
+  `frontend/.env.example`), indexed from the repo root's `.env.example`.
+  Real values are provisioned outside Git in every case (`.gitignore`
+  excludes `.env`/`.env.*`, keeping only the `*.example` templates tracked).
+- Both the backend (`env.schema.ts`, Zod, `superRefine`) and the Python
+  service (`configs/settings.py`, Pydantic `model_validator`) fail fast at
+  startup when `NODE_ENV`/`ENVIRONMENT=production` is combined with an
+  unsafe configuration (placeholder JWT secrets, a missing `DATABASE_URL`,
+  or `FABRIC_ENABLED=true` without TLS/identity material) — see
+  `backend/tests/unit/config.test.ts` and
+  `intelligence/device_ai/tests/test_p72_production_config_validation.py`.
+- Mobile apps have no `.env` mechanism; the API base URL is a Flutter
+  build-time `--dart-define=API_BASE_URL=...` (see
+  `mobile/*/lib/core/config/app_config.dart`), not an environment file.
+- A configuration change that alters behavior is documented in the affected
+  module document, same PR (`02_PROJECT_RULES.md` → Documentation Policy).
 
 ---
 
