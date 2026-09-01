@@ -114,6 +114,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     labelText: 'Password',
                     suffixIcon: IconButton(
                       icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                      tooltip: _obscurePassword ? 'Show password' : 'Hide password',
                       onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),

@@ -1,0 +1,67 @@
+{
+  "phase": "P7.6",
+  "title": "Mobile Production Readiness",
+  "status": "PASS",
+  "timestamp": "2026-09-01T00:00:00Z",
+  "collector_checklist": {
+    "authentication": "PASS", "api_integration": "PASS", "camera": "PASS_scope_honest_not_wired_no_backend_endpoint",
+    "qr_barcode": "PASS_scope_honest_not_wired_no_backend_endpoint", "device_registration": "N/A",
+    "offline_storage": "PASS", "synchronization": "PASS", "retry_handling": "PASS",
+    "task_assignment_flow": "PASS", "submission_status": "PASS", "error_handling": "PASS",
+    "loading_states": "PASS", "connectivity_handling": "PASS", "secure_token_storage": "PASS"
+  },
+  "consumer_checklist": {
+    "authentication": "PASS", "device_lookup": "N/A_no_backend_api", "qr_barcode_verification": "PASS",
+    "lifecycle_view": "PASS", "trust_verification": "PASS_scope_honest_not_connected",
+    "rewards": "PASS_read_only", "educational_content": "PASS", "history": "PASS",
+    "error_handling": "PASS", "accessibility": "GAP_FOUND_AND_FIXED"
+  },
+  "accessibility_fix": {
+    "gap": "3 icon-only password-visibility-toggle IconButtons had no tooltip, so a screen reader would announce nothing distinguishing show/hide password",
+    "files_fixed": [
+      "mobile/collector_app/lib/features/auth/screens/login_screen.dart",
+      "mobile/consumer_app/lib/features/auth/screens/login_screen.dart",
+      "mobile/consumer_app/lib/features/auth/screens/register_screen.dart"
+    ],
+    "verified_not_missed": "register_screen.dart's confirm-password field reuses the same _obscurePassword state/toggle, not a second separately-broken one",
+    "other_iconbuttons_already_had_tooltips": ["sync_queue_screen.dart retry button", "consumer home_screen.dart action button"]
+  },
+  "native_build_status": {
+    "android_apk_debug": "ENVIRONMENT_BLOCKED — no Android SDK, re-verified via fresh flutter doctor run",
+    "ios": "ENVIRONMENT_BLOCKED — categorical, Windows host, no macOS/Xcode possible"
+  },
+  "mock_api_mode": {
+    "built": false,
+    "reasoning": "widget/unit tests already run against fake repositories and real in-memory SQLite — the practical mock-mode this environment can exercise and verify; an interactive manual-testing toggle could not itself be verified in an environment with no emulator/device, so was not built to avoid speculative unverifiable work"
+  },
+  "tests": {
+    "collector_flutter_analyze": { "issues": 0 },
+    "collector_flutter_test": { "passed": 22, "total": 22 },
+    "consumer_flutter_analyze": { "issues": 0 },
+    "consumer_flutter_test": { "passed": 13, "total": 13 },
+    "regression_check": "identical pass counts before and after the accessibility fix"
+  },
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "protected_assets_status": "6/6 MATCH (before and after)",
+  "environmental_limitations": [
+    "No Android SDK — APK build environment-blocked",
+    "No macOS/Xcode — iOS build categorically environment-blocked"
+  ],
+  "release_blockers": [],
+  "definition_of_done": {
+    "both_apps_reviewed_against_checklist_vs_real_backend": true,
+    "real_accessibility_gap_found_and_fixed_no_regression": true,
+    "native_build_status_reverified_not_assumed": true,
+    "mock_mode_need_assessed_and_disclosed": true,
+    "no_rewrites_no_removed_functionality": true,
+    "protected_assets_verified": true
+  },
+  "next_task": "P7.7 — Frontend Product & Role Experience"
+}
