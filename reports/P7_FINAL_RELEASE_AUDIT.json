@@ -1,0 +1,108 @@
+{
+  "phase": "P7.10",
+  "title": "Final Production Release Audit",
+  "status": "READY_WITH_ENVIRONMENTAL_LIMITATIONS",
+  "timestamp": "2026-09-01T00:00:00Z",
+  "git": {
+    "branch": "develop",
+    "pre_phase_head": "b76057ee3e6802b6079b0f3ce08a83345c7e699c",
+    "pre_phase_origin_develop": "b76057ee3e6802b6079b0f3ce08a83345c7e699c",
+    "synchronized_pre_phase": true,
+    "working_tree_clean_pre_commit": true,
+    "no_commits_to_main": true,
+    "no_force_push_no_history_rewrite": true
+  },
+  "tests": {
+    "python_device_ai": { "passed": 1109, "total": 1110, "note": "1 pre-existing unrelated benchmark-timing flake, carried since P6.2, observed both passing and failing across this session's runs" },
+    "chaincode_jest": { "passed": 45, "total": 45 },
+    "backend_jest": { "passed": 339, "total": 339, "note": "one initial run showed 1 failure due to a port collision with this session's own live docker-compose stack (P7.5/P7.8) occupying :8100 — not a code defect; stack stopped, suite re-run clean, stack restarted" },
+    "collector_flutter": { "passed": 22, "total": 22, "analyze_issues": 0 },
+    "consumer_flutter": { "passed": 13, "total": 13, "analyze_issues": 0 },
+    "frontend": { "typecheck_errors": 0, "lint_errors": 0, "build": "success, no chunk-size warning", "test_suite": "does not exist, pre-existing" },
+    "total_automated_tests_passing": 1528
+  },
+  "database": {
+    "migration_chain": "linear, 3 alembic revisions + 6 Prisma migrations, unchanged structure",
+    "real_defect_found": {
+      "description": "version_table_col_length=64 in alembic/env.py is not a real Alembic parameter (verified absent from EnvironmentContext.configure()'s signature and alembic.runtime.migration's source); Alembic's real hardcoded default is VARCHAR(32), too narrow for this project's revision IDs (up to 36 chars); a fresh `alembic upgrade head` failed with StringDataRightTruncation on migration 003",
+      "how_the_existing_db_worked": "the shared ecotrace database's alembic_version table was manually widened to VARCHAR(64) via direct SQL outside any tracked migration, at an undocumented point in the past — never reproducible",
+      "fix": "env.py now pre-creates alembic_version with a real VARCHAR(64) column via idempotent CREATE TABLE IF NOT EXISTS before Alembic's bootstrap runs; a related bug in the first draft (table silently rolling back, uncommitted) was caught and fixed with an explicit connection.commit()",
+      "verification": "full upgrade -> downgrade base -> re-upgrade head round-trip performed against a disposable database (ecotrace_migration_test, created and dropped), never against the shared real database; real 35-device dataset confirmed untouched throughout"
+    },
+    "upgrade_downgrade_reupgrade_verified_live": true
+  },
+  "blockchain": {
+    "chaincode_tests": "45/45",
+    "fabric_gateway_client": "real gRPC client against vendored authentic protos; P7.9 added a genuine RPC timeout test (slow-but-reachable peer) proving fabric_timeout_seconds is actually enforced",
+    "external_trust": "real in-memory ExternalTrustLedger, same API contract as a live backend, re-proven in P7.8's live demo",
+    "unavailable_behavior": "FabricUnavailable raised correctly for both connection failure and RPC timeout; backend proxy degrades to proxy_unreachable with HTTP 200, never 5xx",
+    "live_fabric_status": "no Hyperledger Fabric peer/orderer/CA exists anywhere in this repository or environment — re-confirmed this phase, not assumed",
+    "verdict": "MOCKED_FABRIC_E2E_PASS, LIVE_FABRIC_E2E_BLOCKED_BY_ENVIRONMENT, never conflated"
+  },
+  "security": {
+    "secret_scan": "0 findings, re-run this phase",
+    "tls": "Fabric client has no insecure fallback; application-layer TLS termination honestly documented as a real gap in 11_DEPLOYMENT.md, not claimed as solved",
+    "auth_rbac": "JWT+bcrypt backend, server-side authorize middleware authoritative, frontend RoleGuard explicitly UX-only",
+    "input_validation": "Zod/Pydantic/image validators, re-exercised this session",
+    "rate_limiting": "authRateLimiter + apiRateLimiter (P7.4) + /predict limiter (Python, P7.4); concurrency-safety proven under real thread contention (P7.9)",
+    "dependency_vulnerabilities": { "backend_high": 3, "backend_note": "Prisma CLI tooling deepmerge-ts, not runtime-reachable, accepted/disclosed P7.4, unchanged", "frontend": 0, "chaincode": 0, "python": 0 }
+  },
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "protected_assets_status": "6/6 MATCH — identical across all 10 P7 phases and all of P6, zero modifications the entire session",
+  "api": {
+    "standard_envelopes": "re-verified via P7.9's failure-injection tests — genuine raised exceptions still produce the standard clean envelope",
+    "http_codes_covered": [200, 201, 401, 403, 404, 409, 422, 429, 500, 503],
+    "correlation_ids": "X-Request-ID on every backend response; device_ai RequestContextMiddleware binds the same pattern",
+    "read_only_guarantees": "re-verified for both new /metrics endpoints (P7.3, stateless) and the blockchain proxy (P6.5's dedicated test)"
+  },
+  "mobile": {
+    "collector": { "passed": 22, "total": 22, "analyze_issues": 0 },
+    "consumer": { "passed": 13, "total": 13, "analyze_issues": 0 },
+    "offline_behavior": "real SQLite sync queue, reconciliation-on-reconnect, unchanged and re-verified",
+    "accessibility": "P7.6 fix (3 icon-only buttons) re-verified no regression",
+    "native_builds": "ENVIRONMENT_BLOCKED — no Android SDK (re-confirmed fresh flutter doctor run this phase), no macOS/Xcode (categorical)"
+  },
+  "frontend": {
+    "all_5_roles_reviewed": true,
+    "build_status": "0 typecheck errors, 0 lint errors, build succeeds, no chunk-size warning",
+    "audit_trail": "still honestly unavailable, no backend endpoint, not fabricated"
+  },
+  "deployment": {
+    "docker_all_4_services": "re-verified healthy after a deliberate stop/start cycle this phase for clean test isolation",
+    "environment_parameterized": true,
+    "health_checks_on_every_container": true,
+    "graceful_startup_shutdown": "verified via stop/start this phase plus the earlier full down/up cycle (P7.5); real data intact throughout every cycle"
+  },
+  "documentation": {
+    "deployment_doc_updated_this_phase": "closes a gap explicitly deferred in P7.2 — Containerization/Local Dev Stack sections now match real P7.5 artifacts; CI/CD and NGINX Gateway sections now explicitly labeled planned/partially-implemented instead of silently describing nonexistent infrastructure; Health Checks section reflects real P7.3 endpoints",
+    "demo_readme": "P7.8, one-command startup + honest scope section",
+    "security_threat_model": "P7.4's full table",
+    "operations_troubleshooting": "distributed across each phase's own report, consistent with this project's existing documentation organization"
+  },
+  "release_blockers": [],
+  "environmental_limitations": [
+    "No Hyperledger Fabric peer/orderer/CA anywhere in this repository or environment",
+    "No Android SDK — no APK build",
+    "No macOS/Xcode — no iOS build (categorical, Windows host)",
+    "Application-layer TLS termination not yet fronted by a unified gateway (honestly documented, not claimed solved)"
+  ],
+  "definition_of_done": {
+    "complete_audit_from_scratch_this_phase": true,
+    "real_deployment_breaking_db_defect_found_and_fixed": true,
+    "real_upgrade_downgrade_reupgrade_verified_live": true,
+    "environmental_test_artifact_disclosed_not_hidden": true,
+    "exact_fresh_test_counts_every_component": true,
+    "protected_assets_final_check_6_of_6": true,
+    "git_clean_head_equals_origin": true,
+    "deployment_docs_brought_current": true,
+    "every_limitation_reverified_with_current_evidence": true
+  },
+  "final_verdict": "READY WITH ENVIRONMENTAL LIMITATIONS"
+}
