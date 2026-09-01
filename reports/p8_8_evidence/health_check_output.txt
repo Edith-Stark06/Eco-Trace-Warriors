@@ -1,0 +1,8 @@
+======================================================================
+EcoTrace India - Demo Environment Health Check
+======================================================================
+[PASS] Backend (Node)                   http://localhost:3000/api/v1/health           OK
+[PASS] Device Intelligence (Python)     http://localhost:8100/health                  OK
+[PASS] Frontend (static)                http://localhost:8080/                        OK
+======================================================================
+All services healthy. Ready to run scripts/demo/run_scenarios.py
