@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "e8eb7a27-308a-4f52-bf06-2501fa085e6b",
+      "fullName": "System Administrator",
+      "email": "admin@ecotrace.com",
+      "phone": "9999999991",
+      "region": "Head Office",
+      "role": "ADMIN",
+      "emailVerified": true,
+      "createdAt": "2026-07-27T13:16:00.904Z"
+    },
+    "accessToken": "[REDACTED_JWT_DEV_TOKEN]",
+    "refreshToken": "[REDACTED_JWT_DEV_TOKEN]"
+  }
+}

@@ -234,6 +234,16 @@ describe('createSubmissionService', () => {
       expect(repo.findByUser).not.toHaveBeenCalled();
       expect(result).toHaveLength(2);
     });
+
+    it('returns every submission for a government actor (audit visibility, P8.5)', async () => {
+      const { service, repo } = buildService();
+
+      const result = await service.list(GOVERNMENT);
+
+      expect(repo.findAll).toHaveBeenCalled();
+      expect(repo.findByUser).not.toHaveBeenCalled();
+      expect(result).toHaveLength(2);
+    });
   });
 
   describe('getById', () => {
@@ -249,6 +259,14 @@ describe('createSubmissionService', () => {
       const { service } = buildService();
 
       const result = await service.getById(ADMIN, 'sub-1');
+
+      expect(result.id).toBe('sub-1');
+    });
+
+    it('returns the submission for a government actor regardless of owner (audit visibility, P8.5)', async () => {
+      const { service } = buildService();
+
+      const result = await service.getById(GOVERNMENT, 'sub-1');
 
       expect(result.id).toBe('sub-1');
     });

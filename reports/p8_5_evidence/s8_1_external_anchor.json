@@ -1,0 +1,1 @@
+{"success":false,"error":{"code":"PASSPORT_NOT_ANCHORABLE","message":"Cannot anchor device 'DEV-2026-SCENARIO-01' externally: device passport is in MISMATCH state. Passport must be locally verified before external anchoring.","details":{"device_id":"DEV-2026-SCENARIO-01","local_status":"MISMATCH"}},"request_id":"5048478f87d34684997a14cc4b7665b8"}

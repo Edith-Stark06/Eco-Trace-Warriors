@@ -115,6 +115,19 @@ function canAssign(actor: SubmissionActor): boolean {
 }
 
 /**
+ * Roles permitted read/audit visibility across every submission, regardless
+ * of ownership. Government already has system-wide assignment authority
+ * (canAssign) — without this, a government actor could route a submission to
+ * a collector/recycler they can never see in `list()`/`getById()`, an
+ * authorization gap (write power without matching read visibility) found via
+ * live P8.5 audit-trail testing. Deliberately narrower than isAdmin(): it
+ * grants read visibility only, not the update/delete override admins get.
+ */
+function canAudit(actor: SubmissionActor): boolean {
+  return actor.role === UserRole.ADMIN || actor.role === UserRole.GOVERNMENT;
+}
+
+/**
  * Centralized transition guard. Throws ConflictError when `to` is not a legal
  * successor of `from` per allowedTransitions. The one place a transition is
  * ever judged — callers never compare statuses themselves.
@@ -166,6 +179,23 @@ export function createSubmissionService(deps: SubmissionServiceDeps): Submission
       throw new NotFoundError('Submission not found.');
     }
     if (!isAdmin(actor) && record.userId !== actor.userId) {
+      throw new NotFoundError('Submission not found.');
+    }
+    return record;
+  }
+
+  /**
+   * Loads a submission for a read-only lookup, visible to its owner or any
+   * canAudit() actor (admin or government). Kept distinct from
+   * loadAccessible(): update()/delete() must stay admin-only overrides, but
+   * getById() is a pure read and should match list()'s audit visibility.
+   */
+  async function loadForAudit(actor: SubmissionActor, id: string): Promise<SubmissionRecord> {
+    const record = await deps.submissions.findById(id);
+    if (!record) {
+      throw new NotFoundError('Submission not found.');
+    }
+    if (!canAudit(actor) && record.userId !== actor.userId) {
       throw new NotFoundError('Submission not found.');
     }
     return record;
@@ -231,14 +261,14 @@ export function createSubmissionService(deps: SubmissionServiceDeps): Submission
     },
 
     async list(actor: SubmissionActor, pagination?: Pagination): Promise<PublicSubmission[]> {
-      const records = isAdmin(actor)
+      const records = canAudit(actor)
         ? await deps.submissions.findAll(pagination)
         : await deps.submissions.findByUser(actor.userId, pagination);
       return records.map(toPublicSubmission);
     },
 
     async getById(actor: SubmissionActor, id: string): Promise<PublicSubmission> {
-      const record = await loadAccessible(actor, id);
+      const record = await loadForAudit(actor, id);
       return toPublicSubmission(record);
     },
 

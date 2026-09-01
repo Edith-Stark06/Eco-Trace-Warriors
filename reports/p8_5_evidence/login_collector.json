@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "72581dc5-50c2-483e-b6b3-98d5c86e9203",
+      "fullName": "Collection Partner",
+      "email": "collector@ecotrace.com",
+      "phone": "9999999993",
+      "region": "Chennai",
+      "role": "COLLECTOR",
+      "emailVerified": true,
+      "createdAt": "2026-07-27T13:16:00.925Z"
+    },
+    "accessToken": "[REDACTED_JWT_DEV_TOKEN]",
+    "refreshToken": "[REDACTED_JWT_DEV_TOKEN]"
+  }
+}
