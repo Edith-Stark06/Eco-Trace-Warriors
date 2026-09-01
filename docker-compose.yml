@@ -135,9 +135,23 @@ services:
 
     ports:
       - "${FRONTEND_PORT:-8080}:80"
+      - "${FRONTEND_TLS_PORT:-8443}:443"
+
+    # Optional local/demo TLS (P9.1): mounting an empty deployment/tls/ is
+    # safe (no error) — docker-entrypoint-tls.sh only enables HTTPS when it
+    # actually finds tls.crt/tls.key inside. Generate them with
+    # `bash deployment/tls/generate_local_cert.sh`; a real deployment
+    # mounts a real CA-issued cert at the same two filenames instead.
+    # FRONTEND_TLS_PORT is passed through so the HTTP->HTTPS redirect names
+    # the correct host-mapped port (must match the mapping on the left above).
+    environment:
+      FRONTEND_TLS_PORT: ${FRONTEND_TLS_PORT:-8443}
+
+    volumes:
+      - ./deployment/tls:/etc/nginx/tls:ro
 
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:80/"]
+      test: ["CMD-SHELL", "if [ -f /etc/nginx/tls/tls.crt ]; then wget --no-check-certificate -qO- https://127.0.0.1:443/; else wget -qO- http://127.0.0.1:80/; fi"]
       interval: 15s
       timeout: 5s
       start_period: 5s

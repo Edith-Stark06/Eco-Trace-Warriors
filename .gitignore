@@ -25,6 +25,12 @@ wallet/
 credentials/
 crypto-config/
 
+# Locally-generated TLS material (P9.1) — deployment/tls/generate_local_cert.sh
+# writes tls.crt/tls.key here; never commit generated cert/key material, even
+# self-signed local ones.
+deployment/tls/*.crt
+deployment/tls/*.key
+
 # Logs
 *.log
 
