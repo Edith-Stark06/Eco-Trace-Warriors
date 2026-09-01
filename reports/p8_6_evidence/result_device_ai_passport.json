@@ -1,0 +1,83 @@
+{
+  "name": "device_ai_passport_read",
+  "url": "http://localhost:8100/devices/DEV-2026-066B779C-01/passport",
+  "method": "GET",
+  "levels": [
+    {
+      "concurrency": 1,
+      "total_requests": 100,
+      "wall_elapsed_s": 1.8429,
+      "throughput_rps": 54.26,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "404": 100
+      },
+      "latency_ms": {
+        "min": 5.62,
+        "mean": 18.22,
+        "p50": 16.51,
+        "p95": 33.61,
+        "p99": 35.24,
+        "max": 36.14
+      }
+    },
+    {
+      "concurrency": 10,
+      "total_requests": 100,
+      "wall_elapsed_s": 0.3284,
+      "throughput_rps": 304.52,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "404": 100
+      },
+      "latency_ms": {
+        "min": 19.89,
+        "mean": 30.88,
+        "p50": 30.81,
+        "p95": 39.07,
+        "p99": 48.63,
+        "max": 57.44
+      }
+    },
+    {
+      "concurrency": 25,
+      "total_requests": 100,
+      "wall_elapsed_s": 0.3466,
+      "throughput_rps": 288.52,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "404": 100
+      },
+      "latency_ms": {
+        "min": 16.51,
+        "mean": 77.23,
+        "p50": 81.55,
+        "p95": 94.4,
+        "p99": 96.29,
+        "max": 104.29
+      }
+    },
+    {
+      "concurrency": 50,
+      "total_requests": 100,
+      "wall_elapsed_s": 0.3953,
+      "throughput_rps": 252.95,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "404": 100
+      },
+      "latency_ms": {
+        "min": 21.55,
+        "mean": 142.73,
+        "p50": 156.5,
+        "p95": 173.83,
+        "p99": 177.87,
+        "max": 183.06
+      }
+    }
+  ]
+}

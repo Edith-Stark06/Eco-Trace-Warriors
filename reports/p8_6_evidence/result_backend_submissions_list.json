@@ -1,0 +1,83 @@
+{
+  "name": "backend_submissions_list_db_query",
+  "url": "http://localhost:3000/api/v1/submissions?page=1&limit=20",
+  "method": "GET",
+  "levels": [
+    {
+      "concurrency": 1,
+      "total_requests": 100,
+      "wall_elapsed_s": 1.3359,
+      "throughput_rps": 74.86,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "429": 100
+      },
+      "latency_ms": {
+        "min": 4.16,
+        "mean": 13.14,
+        "p50": 11.15,
+        "p95": 30.11,
+        "p99": 33.24,
+        "max": 36.01
+      }
+    },
+    {
+      "concurrency": 10,
+      "total_requests": 100,
+      "wall_elapsed_s": 0.2694,
+      "throughput_rps": 371.15,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "429": 100
+      },
+      "latency_ms": {
+        "min": 14.45,
+        "mean": 23.42,
+        "p50": 22.65,
+        "p95": 33.01,
+        "p99": 36.45,
+        "max": 44.42
+      }
+    },
+    {
+      "concurrency": 25,
+      "total_requests": 100,
+      "wall_elapsed_s": 0.24,
+      "throughput_rps": 416.72,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "429": 100
+      },
+      "latency_ms": {
+        "min": 10.35,
+        "mean": 44.0,
+        "p50": 43.94,
+        "p95": 66.18,
+        "p99": 76.85,
+        "max": 77.86
+      }
+    },
+    {
+      "concurrency": 50,
+      "total_requests": 100,
+      "wall_elapsed_s": 0.2494,
+      "throughput_rps": 400.99,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "429": 100
+      },
+      "latency_ms": {
+        "min": 6.1,
+        "mean": 48.82,
+        "p50": 51.35,
+        "p95": 69.68,
+        "p99": 77.14,
+        "max": 87.54
+      }
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "name": "device_ai_health",
+  "url": "http://localhost:8100/health",
+  "method": "GET",
+  "levels": [
+    {
+      "concurrency": 1,
+      "total_requests": 100,
+      "wall_elapsed_s": 1.3934,
+      "throughput_rps": 71.76,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "200": 100
+      },
+      "latency_ms": {
+        "min": 5.09,
+        "mean": 13.75,
+        "p50": 8.94,
+        "p95": 30.59,
+        "p99": 31.78,
+        "max": 34.27
+      }
+    },
+    {
+      "concurrency": 10,
+      "total_requests": 100,
+      "wall_elapsed_s": 0.3077,
+      "throughput_rps": 324.98,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "200": 100
+      },
+      "latency_ms": {
+        "min": 13.99,
+        "mean": 28.71,
+        "p50": 28.54,
+        "p95": 37.52,
+        "p99": 47.08,
+        "max": 48.64
+      }
+    },
+    {
+      "concurrency": 25,
+      "total_requests": 100,
+      "wall_elapsed_s": 0.3666,
+      "throughput_rps": 272.77,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "200": 100
+      },
+      "latency_ms": {
+        "min": 16.24,
+        "mean": 82.25,
+        "p50": 70.59,
+        "p95": 140.18,
+        "p99": 146.13,
+        "max": 147.4
+      }
+    },
+    {
+      "concurrency": 50,
+      "total_requests": 100,
+      "wall_elapsed_s": 0.3621,
+      "throughput_rps": 276.17,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "200": 100
+      },
+      "latency_ms": {
+        "min": 21.25,
+        "mean": 129.12,
+        "p50": 139.52,
+        "p95": 174.02,
+        "p99": 176.55,
+        "max": 176.81
+      }
+    }
+  ]
+}

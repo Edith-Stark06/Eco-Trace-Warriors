@@ -1,0 +1,83 @@
+{
+  "name": "device_ai_trust_full",
+  "url": "http://localhost:8100/devices/DEV-2026-066B779C-01/trust/full",
+  "method": "GET",
+  "levels": [
+    {
+      "concurrency": 1,
+      "total_requests": 100,
+      "wall_elapsed_s": 1.5825,
+      "throughput_rps": 63.19,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "404": 100
+      },
+      "latency_ms": {
+        "min": 6.04,
+        "mean": 15.63,
+        "p50": 10.71,
+        "p95": 35.03,
+        "p99": 39.98,
+        "max": 40.93
+      }
+    },
+    {
+      "concurrency": 10,
+      "total_requests": 100,
+      "wall_elapsed_s": 0.415,
+      "throughput_rps": 240.99,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "404": 100
+      },
+      "latency_ms": {
+        "min": 17.48,
+        "mean": 39.19,
+        "p50": 39.22,
+        "p95": 50.37,
+        "p99": 54.2,
+        "max": 60.55
+      }
+    },
+    {
+      "concurrency": 25,
+      "total_requests": 100,
+      "wall_elapsed_s": 0.4043,
+      "throughput_rps": 247.37,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "404": 100
+      },
+      "latency_ms": {
+        "min": 44.67,
+        "mean": 90.96,
+        "p50": 93.27,
+        "p95": 111.7,
+        "p99": 114.37,
+        "max": 120.54
+      }
+    },
+    {
+      "concurrency": 50,
+      "total_requests": 100,
+      "wall_elapsed_s": 0.4461,
+      "throughput_rps": 224.16,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "404": 100
+      },
+      "latency_ms": {
+        "min": 57.98,
+        "mean": 175.56,
+        "p50": 180.17,
+        "p95": 217.15,
+        "p99": 226.08,
+        "max": 230.86
+      }
+    }
+  ]
+}
