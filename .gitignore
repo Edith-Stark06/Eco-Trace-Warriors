@@ -73,3 +73,10 @@ dataset_acquisition/evaluation/
 /check_model_attrs.py
 /test_class_weights.py
 /verify_output.json
+
+# P9.2 local/demo Hyperledger Fabric test-network bootstrap (never commit) —
+# vendored fabric-samples clone (~350MB), downloaded platform binaries, and
+# real (if local-only) generated CA identities/private keys/TLS material for
+# a disposable test network. Reproducible via
+# reports/P9_2_LIVE_FABRIC.md's documented bootstrap steps; never checked in.
+blockchain/fabric-network/bootstrap/
