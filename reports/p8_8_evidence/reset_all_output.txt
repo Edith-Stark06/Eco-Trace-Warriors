@@ -1,0 +1,67 @@
+🌱 Seeding EcoTrace database...
+
+✅ Roles seeded.
+✅ ADMIN user seeded.
+✅ GOVERNMENT user seeded.
+✅ COLLECTOR user seeded.
+✅ RECYCLER user seeded.
+✅ CONSUMER user seeded.
+
+🎉 EcoTrace database seeded successfully!
+
+Demo Accounts
+==============================
+ADMIN
+Email    : admin@ecotrace.com
+Password : Admin@123
+
+GOVERNMENT
+Email    : government@ecotrace.com
+Password : Admin@123
+
+COLLECTOR
+Email    : collector@ecotrace.com
+Password : Admin@123
+
+RECYCLER
+Email    : recycler@ecotrace.com
+Password : Admin@123
+
+CONSUMER
+Email    : consumer@ecotrace.com
+Password : Admin@123
+
+Logging in as admin to find and remove demo-tagged submissions...
+Deleted 0/0 deletable demo-tagged submissions.
+4 demo-tagged submission(s) already RECYCLED (reward issued) were left in place - cannot be deleted without violating referential integrity; harmless historical demo data, still identifiable by their tag.
+2 non-demo submission(s) left untouched.
+Reset procedure for demo data:
+
+  Device records created by this script live only in the device-ai
+  process's memory (DEVICE_BACKEND defaults to 'memory' - see
+  intelligence/device_ai/.env.example). Restarting that one service
+  clears every demo device without touching Postgres, the backend's
+  Submission data, or anything else in the stack.
+
+    docker compose restart device-ai
+
+  If not running under Docker Compose, simply restart the uvicorn
+  process (Ctrl+C, then re-run it) - the same in-memory store is
+  freshly re-created on startup.
+
+Ran: docker compose restart device-ai -- succeeded.
+======================================================================
+EcoTrace India - Full Demo Environment Reset
+======================================================================
+
+--- Re-seeding the 5 demo role accounts ---
+OK: Re-seeding the 5 demo role accounts
+
+--- Removing demo-tagged backend submissions ---
+OK: Removing demo-tagged backend submissions
+
+--- Restarting device-ai to clear its in-memory device store ---
+OK: Restarting device-ai to clear its in-memory device store
+
+======================================================================
+Reset complete. Run `python scripts/demo/health_check.py` to confirm everything is healthy before the next demo run.

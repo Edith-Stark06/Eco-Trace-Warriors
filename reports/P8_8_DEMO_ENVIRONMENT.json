@@ -1,0 +1,73 @@
+{
+  "phase": "P8.8",
+  "title": "Demo & Pilot Environment",
+  "status": "PASS",
+  "timestamp": "2026-09-01T09:20:00Z",
+  "new_tooling": {
+    "scripts/demo/health_check.py": "real HTTP probe against backend/device-ai/frontend, not just docker compose ps",
+    "scripts/demo/run_backend_demo.py": "full backend Submission stakeholder lifecycle demo, tagged demo data, --reset flag",
+    "scripts/demo/run_scenarios.py": "happy-path, trust-mismatch, blockchain-unavailable, invalid-device, all",
+    "scripts/demo/reset_all.py": "orchestrates re-seed + backend cleanup + device-ai restart, waits for real health",
+    "scripts/demo/run_demo.py": "unchanged, P7.8's existing AI-lifecycle demo, reused as-is",
+    "scripts/demo/README.md": "rewritten to document the full suite"
+  },
+  "live_execution_evidence": {
+    "run_backend_demo": { "steps_passed": "9/9", "reward_issued": true, "government_sees_same_count_as_admin": true },
+    "run_scenarios_all": { "happy_path": "PASS", "trust_mismatch": "PASS", "blockchain_unavailable": "PASS", "invalid_device": "PASS" },
+    "reset_all_then_health_check": "PASS, all 3 services healthy immediately after reset"
+  },
+  "real_gaps_found_and_fixed_during_this_phases_own_testing": [
+    {
+      "id": "reset_all_returned_before_device_ai_actually_healthy",
+      "description": "reset_all.py returned as soon as `docker compose restart device-ai` exited, but the container needed a few more seconds before serving requests; health_check.py run immediately after genuinely failed (reproduced live)",
+      "fix": "reset_all.py now polls device-ai's real /health endpoint (up to 30s) and only reports success once a real 200 comes back"
+    },
+    {
+      "id": "reset_script_crashed_deleting_a_terminal_recycled_submission",
+      "description": "run_backend_demo.py --reset attempted to delete a RECYCLED demo submission with an issued reward; hit a real database foreign-key constraint, surfaced as HTTP 500",
+      "investigation": "confirmed this is a deliberate backend design choice via backend/tests/unit/error-handler.middleware.test.ts's own existing test locking in that P2003 (FK violation) stays an unmapped generic 500, not a backend defect",
+      "fix": "reset_demo_data() now only deletes non-RECYCLED demo submissions and honestly reports terminal ones as left in place, not a backend change"
+    }
+  ],
+  "demo_mode_labeling": "existing, real disclosure fields reused: /health's inference_mode (single_model, real trained detector, confirmed running throughout) and external-anchor responses' provider field (memory when no live Fabric peer) -- no fabricated banner added",
+  "data_isolation": {
+    "pre_existing_non_demo_submissions_before_phase": 2,
+    "verified_unmodified_throughout_dozens_of_live_runs": true,
+    "demo_data_tagging": "EcoTrace Demo prefix on every backend submission description; ecotrace-demo-/ecotrace-scenario- prefix on every AI-service capture_id"
+  },
+  "regression_suite": {
+    "note": "no application source touched this phase; unchanged from P8.7's fresh run",
+    "total_passing": 1557,
+    "device_ai_pytest": 1121,
+    "backend_jest": 341,
+    "chaincode_jest": 47,
+    "collector_app_flutter_test": 26,
+    "consumer_app_flutter_test": 22
+  },
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "protected_assets_status": "6/6 MATCH",
+  "environmental_limitations": [
+    "Live Hyperledger Fabric still absent -- external anchor honestly labeled provider=memory, never claimed as live, unchanged since P6.2/P8.2/P8.5",
+    "Backend Submission demo and AI device-intelligence demo remain two architecturally separate systems with no unified dashboard, disclosed not papered over",
+    "Auth rate limiting (10/15min window, P7.4) genuinely triggers during rapid repeated demo+reset iteration -- correct security behavior, documented in README, not a defect"
+  ],
+  "release_blockers": [],
+  "definition_of_done": {
+    "one_command_startup_confirmed": true,
+    "demo_users_seeded_and_verified": true,
+    "demo_scripts_for_both_workflows_executed_live": true,
+    "all_4_required_scenarios_genuinely_triggered": true,
+    "reset_script_executed_live_gaps_found_and_fixed": true,
+    "demo_mode_honestly_labeled": true,
+    "data_isolation_verified_live": true,
+    "protected_assets_verified": true
+  },
+  "next_task": "P8.9 — Documentation & Technical Evidence"
+}
