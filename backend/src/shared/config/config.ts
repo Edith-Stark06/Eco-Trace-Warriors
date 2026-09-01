@@ -21,6 +21,11 @@ export interface AppConfig {
     /** Max requests permitted per IP within the window. */
     readonly max: number;
   };
+  /** General-purpose API rate limiting, applied globally (P7.4). */
+  readonly apiRateLimit: {
+    readonly windowMs: number;
+    readonly max: number;
+  };
   readonly isProduction: boolean;
   readonly isTest: boolean;
   /** Base URL of the Python `intelligence/device_ai` service (P6.5 blockchain proxy). */
@@ -60,6 +65,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     authRateLimit: {
       windowMs: parsed.AUTH_RATE_LIMIT_WINDOW_MS,
       max: parsed.AUTH_RATE_LIMIT_MAX,
+    },
+    apiRateLimit: {
+      windowMs: parsed.API_RATE_LIMIT_WINDOW_MS,
+      max: parsed.API_RATE_LIMIT_MAX,
     },
     isProduction: parsed.NODE_ENV === 'production',
     isTest: parsed.NODE_ENV === 'test',
