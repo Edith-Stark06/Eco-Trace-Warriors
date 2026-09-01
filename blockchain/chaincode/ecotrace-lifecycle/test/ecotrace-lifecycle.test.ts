@@ -425,6 +425,65 @@ describe('EcoTraceLifecycleContract', () => {
       expect(anchor.algorithm).toBe('sha256');
     });
 
+    it('is idempotent when re-anchored with the identical fingerprint (duplicate anchor, P8.2)', async () => {
+      const ctx = await registeredContext();
+      const fp = 'aa'.repeat(32);
+
+      const first = JSON.parse(await contract.AnchorDevicePassport(ctx, DEVICE_ID, fp, 'sha256'));
+      const second = JSON.parse(await contract.AnchorDevicePassport(ctx, DEVICE_ID, fp, 'sha256'));
+
+      // Same fingerprint, both succeed — no rejection, no corruption. Each
+      // submission still gets its own transactionId (a real ledger commit
+      // per call), but the stored anchor's fingerprint is unchanged.
+      expect(first.passportFingerprint).toBe(fp);
+      expect(second.passportFingerprint).toBe(fp);
+
+      const stored = JSON.parse(await contract.GetDeviceAnchor(ctx, DEVICE_ID));
+      expect(stored.passportFingerprint).toBe(fp);
+
+      const verify = JSON.parse(await contract.VerifyPassportFingerprint(ctx, DEVICE_ID, fp));
+      expect(verify.status).toBe(TrustVerificationStatus.MATCH);
+    });
+
+    it('replaces the anchor on a conflicting re-anchor with a different fingerprint, fully audited (P8.2)', async () => {
+      const ctx = await registeredContext();
+      const originalFp = 'bb'.repeat(32);
+      const conflictingFp = 'cc'.repeat(32);
+
+      await contract.AnchorDevicePassport(ctx, DEVICE_ID, originalFp, 'sha256');
+      const historyAfterFirst = JSON.parse(await contract.GetDeviceHistory(ctx, DEVICE_ID));
+      const anchorEventsAfterFirst = historyAfterFirst.history.filter(
+        (e: { eventType: string }) => e.eventType === 'DEVICE_EXTERNALLY_ANCHORED'
+      );
+
+      await contract.AnchorDevicePassport(ctx, DEVICE_ID, conflictingFp, 'sha256');
+
+      // The conflicting re-anchor is not silently dropped or merged — the
+      // stored anchor now reflects the newer fingerprint, and verifying
+      // against the original (now-superseded) fingerprint correctly
+      // reports a mismatch, not a stale false-positive match.
+      const stored = JSON.parse(await contract.GetDeviceAnchor(ctx, DEVICE_ID));
+      expect(stored.passportFingerprint).toBe(conflictingFp);
+
+      const verifyOld = JSON.parse(
+        await contract.VerifyPassportFingerprint(ctx, DEVICE_ID, originalFp)
+      );
+      expect(verifyOld.status).toBe(TrustVerificationStatus.MISMATCH);
+
+      const verifyNew = JSON.parse(
+        await contract.VerifyPassportFingerprint(ctx, DEVICE_ID, conflictingFp)
+      );
+      expect(verifyNew.status).toBe(TrustVerificationStatus.MATCH);
+
+      // The conflict is fully audited — a second DEVICE_EXTERNALLY_ANCHORED
+      // event exists, it is never silently absorbed into the first.
+      const historyAfterConflict = JSON.parse(await contract.GetDeviceHistory(ctx, DEVICE_ID));
+      const anchorEventsAfterConflict = historyAfterConflict.history.filter(
+        (e: { eventType: string }) => e.eventType === 'DEVICE_EXTERNALLY_ANCHORED'
+      );
+      expect(anchorEventsAfterConflict.length).toBe(anchorEventsAfterFirst.length + 1);
+    });
+
     it('rejects an unsupported algorithm and a malformed fingerprint', async () => {
       const ctx = await registeredContext();
       await expect(
