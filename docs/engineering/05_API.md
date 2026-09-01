@@ -242,8 +242,8 @@ recycler then processes the collected e-waste and records material recovery.
 | Method | Path                                 | Roles | Description                                                     |
 | ------ | ------------------------------------ | ----- | --------------------------------------------------------------- |
 | POST   | `/submissions`                       | C     | Create an e-waste pickup submission (status `PENDING`)          |
-| GET    | `/submissions`                       | *     | List submissions (consumer: own only; admin: all)               |
-| GET    | `/submissions/{id}`                  | *     | Submission detail (owner or admin only)                         |
+| GET    | `/submissions`                       | *     | List submissions (owner sees own only; admin/government see all — P8.5) |
+| GET    | `/submissions/{id}`                  | *     | Submission detail (owner, or any admin/government — P8.5)       |
 | PATCH  | `/submissions/{id}`                  | *     | Update a submission (owner while `PENDING`; admin always)       |
 | DELETE | `/submissions/{id}`                  | *     | Delete a submission (owner while `PENDING`; admin always)       |
 | PATCH  | `/submissions/{id}/assign`           | A, G  | Assign a collector (`PENDING → ASSIGNED`)                       |
@@ -452,16 +452,52 @@ Recycler only. Response `data`: an array of the authenticated recycler's **activ
 
 # Internal AI Service API
 
-The AI service (`08_AI.md`) exposes an internal HTTP API consumed **only by the backend** — never by clients:
+The AI service (`08_AI.md`, `intelligence/device_ai/`) exposes its own HTTP
+API on port 8100. **Corrected P8.9**: earlier revisions of this section
+described a `/internal/classify`/`/internal/forecast`/`/internal/fraud-check`
+contract that was never built — the real, shipped API is the device
+registration/passport/trust lifecycle below, verified live throughout
+P5–P8 (most recently P8.5's full E2E validation and P8.8's demo scripts).
+It is reached both by the backend's one, read-only proxy call
+(`GET /system/blockchain/health`, via `blockchain.service.ts`) **and**
+directly by evaluators/demo scripts (`scripts/demo/run_demo.py`,
+`scripts/demo/run_scenarios.py`) — the docker-compose stack maps this
+service's port to the host for exactly that reason (P7.5/P8.8), so "only
+the backend calls it" was also inaccurate and has been corrected.
 
-| Method | Path                    | Description                                    |
-| ------ | ----------------------- | ---------------------------------------------- |
-| POST   | `/internal/classify`    | Device image → category, condition, confidence |
-| POST   | `/internal/forecast`    | Historical volumes → demand forecast           |
-| POST   | `/internal/fraud-check` | Transaction context → fraud risk score         |
-| GET    | `/internal/health`      | Service health                                 |
+| Method | Path                                    | Description                                          |
+| ------ | ---------------------------------------- | ----------------------------------------------------- |
+| GET    | `/health`, `/version`, `/metrics`, `/`   | Service meta/health — always public (see auth below)  |
+| POST   | `/devices/register`                      | Register a device from one or more captured images    |
+| GET    | `/devices/{device_id}`                   | Device record read-back                               |
+| POST   | `/devices/{device_id}/confirm`           | `DETECTED → CONFIRMED`                                 |
+| POST   | `/devices/{device_id}/finalize`          | `CONFIRMED → REGISTERED`                               |
+| POST   | `/devices/{device_id}/enrich`            | Brand/condition/material/carbon intelligence           |
+| GET    | `/devices/{device_id}/intelligence`      | Enrichment read-back                                   |
+| GET    | `/devices/{device_id}/history`, `/events`| Audit trail                                            |
+| GET    | `/devices/{device_id}/passport`          | Generate/read the Device Passport                      |
+| GET    | `/devices/{device_id}/passport/verify`   | Local passport verification (recomputes fingerprint)   |
+| POST/GET | `/devices/{device_id}/passport/anchor` | Create / read the local Trust Anchor                   |
+| GET    | `/devices/{device_id}/passport/anchor/verify` | Local anchor vs. current passport — `VERIFIED\|MISMATCH` |
+| POST   | `/devices/{device_id}/passport/reanchor` | Re-anchor locally after a legitimate data change        |
+| POST/GET | `/devices/{device_id}/passport/external-anchor` | Create / read the external (blockchain-abstraction) Trust Anchor — **refuses** (`PASSPORT_NOT_ANCHORABLE`) if the local passport isn't `VERIFIED` (P8.5, live-verified) |
+| GET    | `/devices/{device_id}/passport/external-anchor/verify` | External anchor vs. current fingerprint |
+| GET    | `/devices/{device_id}/trust`, `/trust/full` | Local / full (local + external) trust status         |
+| GET    | `/system/blockchain/health`              | Fabric Gateway connectivity — public, no auth required |
 
 Internal APIs follow the same envelope and error contract as the public API.
+
+## Service authentication (P8.7)
+
+This service has **no auth of its own by default** — `Settings.
+service_api_key` is unset unless explicitly configured, matching every
+prior phase's local-dev/demo behavior. When it **is** set (required in
+`ENVIRONMENT=production`, enforced by `configs/settings.py`'s
+`_validate_production_safety`), every route above except the public meta
+endpoints and `/system/blockchain/health` requires a matching
+`X-Service-Api-Key` header, enforced by `api/service_auth.py`'s
+`ServiceApiKeyMiddleware` — see `reports/P8_7_SECURITY_AUDIT.md` §2 for
+the full rationale and live verification.
 
 ---
 

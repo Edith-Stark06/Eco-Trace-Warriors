@@ -124,12 +124,20 @@ flowchart TB
 
 # CI/CD Pipeline
 
-**Status: planned, not yet implemented** — no `.github/workflows/`
-directory exists in this repository as of P7.10. Every quality gate this
-section describes (lint, tests, Docker builds) is real and does run — via
-the manual commands documented in `10_TESTING.md` and exercised throughout
-P6/P7's own phase reports (`reports/`) — just not yet wired into an
-automated GitHub Actions pipeline. Left below as the intended design.
+**Corrected P8.9**: this section previously claimed no `.github/workflows/`
+directory existed — that was already inaccurate. A real workflow,
+`.github/workflows/backend-ci.yml`, runs on every push/PR to
+`develop`/`main` touching `backend/**` (plus manual dispatch): lint,
+typecheck, format check, `npm test`, `npm run build`, then a Docker image
+build — genuinely automated, not just documented as a manual command.
+**What remains aspirational**: no equivalent workflow exists yet for
+`frontend/`, `intelligence/device_ai`, `blockchain/chaincode/`, or the
+mobile apps; no automated E2E stage; no automated release/tag/deploy
+stage. Every quality gate for those other components is real and does
+run — via the manual commands documented in `10_TESTING.md` and exercised
+throughout every P6/P7/P8 phase report (`reports/`) — just not yet wired
+into CI. The diagram below is the intended full design, not the current
+reality; treat only the backend lane as implemented.
 
 GitHub Actions, triggered per the Git workflow in `02_PROJECT_RULES.md`:
 
@@ -197,9 +205,14 @@ an NGINX gateway layer.
   service (`configs/settings.py`, Pydantic `model_validator`) fail fast at
   startup when `NODE_ENV`/`ENVIRONMENT=production` is combined with an
   unsafe configuration (placeholder JWT secrets, a missing `DATABASE_URL`,
-  or `FABRIC_ENABLED=true` without TLS/identity material) — see
-  `backend/tests/unit/config.test.ts` and
-  `intelligence/device_ai/tests/test_p72_production_config_validation.py`.
+  `FABRIC_ENABLED=true` without TLS/identity material, or — since P8.7 —
+  a missing `SERVICE_API_KEY`) — see `backend/tests/unit/config.test.ts`
+  and `intelligence/device_ai/tests/test_p72_production_config_validation.py`.
+- `SERVICE_API_KEY` (P8.7, `intelligence/device_ai/.env.example`): unset
+  by default (open, matching every prior phase's local-dev/demo behavior
+  — `docker-compose.yml` passes it through empty). Set it for any
+  deployment reachable beyond a laptop; see `05_API.md` → Internal AI
+  Service API → Service authentication.
 - Mobile apps have no `.env` mechanism; the API base URL is a Flutter
   build-time `--dart-define=API_BASE_URL=...` (see
   `mobile/*/lib/core/config/app_config.dart`), not an environment file.
@@ -234,9 +247,27 @@ client library for a format nothing consumes was judged unnecessary
 
 # Backup & Recovery
 
-- `demo`/`prod`: scheduled PostgreSQL dumps (retention: 7 daily), restore procedure scripted and rehearsed before the IEEE demonstration.
-- Fabric ledger data volumes are persisted and included in the backup routine.
-- Recovery runbook lives in `deployment/runbooks/`.
+**Corrected P8.9** — this section previously described scheduled dumps,
+a rehearsed restore procedure, Fabric-ledger backup, and a
+`deployment/runbooks/` directory, none of which exist in this repository.
+Documented honestly here rather than left to mislead an evaluator:
+
+- **What genuinely exists**: Postgres data persists across container
+  restarts/recreates via the named Docker volume `postgres_data`
+  (`docker-compose.yml`) — verified this phase (`docker compose restart`/
+  `stop`+`start` throughout P8.5–P8.8 never lost data). Database schema
+  changes are forward-only (`04_DATABASE.md`): a bad migration is fixed
+  with a new corrective migration, never a manual rollback.
+- **What does not exist yet, and is a real gap for a genuine pilot
+  deployment**: no scheduled/automated PostgreSQL backup job, no rehearsed
+  restore procedure, no `deployment/runbooks/` directory, and — since no
+  live Hyperledger Fabric network exists anywhere in this environment
+  (P6.2/P8.2) — no Fabric ledger to back up in the first place.
+- **Disaster recovery today**: `docker compose down -v` destroys the
+  `postgres_data` volume irreversibly; there is currently no other copy.
+  A real pilot deployment needs, at minimum, a scheduled `pg_dump`
+  routine and a tested restore before going live — recorded here as a
+  Suggested Improvement, not fabricated as already in place.
 
 ---
 

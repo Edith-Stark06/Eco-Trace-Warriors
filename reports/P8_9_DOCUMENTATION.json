@@ -1,0 +1,70 @@
+{
+  "phase": "P8.9",
+  "title": "Documentation & Technical Evidence",
+  "status": "PASS",
+  "timestamp": "2026-09-01T09:55:00Z",
+  "major_finding": {
+    "description": "several core docs (08_AI.md, 05_API.md's internal AI section, 09_BLOCKCHAIN.md, 03_ARCHITECTURE.md's ADR-002/data-flow rules, 11_DEPLOYMENT.md's backup/CI sections, README.md, top-level repo structure claims) described an early pre-implementation plan that was never built and never reconciled with the real P5-P8 system",
+    "examples": [
+      "08_AI.md described a classification/forecasting/fraud ai/app/ service with /internal/classify endpoints; the real service is intelligence/device_ai/, confirmed ai/app/main.py is a 0-byte stub from the first commit",
+      "09_BLOCKCHAIN.md listed a fictional chaincode function list; verified the real 9-function contract directly against ecotrace-lifecycle.ts source",
+      "03_ARCHITECTURE.md's ADR-002 claimed backend is the sole Fabric client; verified blockchain.service.ts holds no Fabric connection at all -- the Python AI service is the real Gateway client (P6.2)",
+      "11_DEPLOYMENT.md described scheduled backups/rehearsed restores/a runbooks directory that do not exist anywhere in the repo (verified by search)",
+      "11_DEPLOYMENT.md claimed no CI workflow existed; a real .github/workflows/backend-ci.yml already existed, undocumented",
+      "README.md and 03_ARCHITECTURE.md pointed at ai/, dashboard/, database/, deployment/, testing/ as the real implementation; verified these are empty or stub directories, real code lives in backend/, frontend/, intelligence/device_ai/, mobile/, blockchain/chaincode/"
+    ],
+    "root_cause_classification": "genuine, disclosed documentation defect from early planning docs never reconciled with what shipped; not introduced by P8, fixed because P8.9 mandates documentation not claim non-existent features"
+  },
+  "files_changed": [
+    "README.md",
+    "QUICKSTART.md (new)",
+    "docs/engineering/05_API.md",
+    "docs/engineering/08_AI.md",
+    "docs/engineering/09_BLOCKCHAIN.md",
+    "docs/engineering/11_DEPLOYMENT.md",
+    "docs/engineering/03_ARCHITECTURE.md"
+  ],
+  "quickstart_live_verification": {
+    "docker_compose_up": true,
+    "health_check_all_pass": true,
+    "prisma_seed": true,
+    "run_scenarios_all_pass": true,
+    "frontend_serves_real_content": true,
+    "reset_then_health_check_pass": true
+  },
+  "not_deep_audited_this_phase_disclosed": [
+    "docs/engineering/04_DATABASE.md",
+    "docs/engineering/06_BACKEND.md",
+    "docs/engineering/07_FRONTEND.md",
+    "docs/engineering/12_ROADMAP.md"
+  ],
+  "regression_suite": {
+    "note": "no application source touched this phase; unchanged from P8.8",
+    "total_passing": 1557
+  },
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "protected_assets_status": "6/6 MATCH",
+  "environmental_limitations": [
+    "4 docs/engineering files not deep-audited this phase, disclosed not claimed clean",
+    "Device Lifecycle Flow sequence diagram in 03_ARCHITECTURE.md left as an illustrative target flow rather than rewritten to the real two-system split, a bounded scope decision",
+    "unused scaffold directories (ai/, dashboard/, database/, deployment/, testing/) disclosed but not deleted -- out of scope for a documentation phase"
+  ],
+  "release_blockers": [],
+  "definition_of_done": {
+    "every_correction_verified_against_real_source": true,
+    "quickstart_created_and_live_verified": true,
+    "readme_reflects_real_features": true,
+    "architecture_ai_blockchain_api_deployment_envvars_limitations_reviewed": true,
+    "no_features_claimed_that_dont_exist": true,
+    "unreviewed_areas_disclosed": true,
+    "protected_assets_verified": true
+  },
+  "next_task": "P8.10 - Final System Certification"
+}

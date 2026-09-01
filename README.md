@@ -1,265 +1,194 @@
 # ♻️ EcoTrace India
 
-> **AI-Powered Blockchain-Based E-Waste Lifecycle Management Platform**
+> **AI-Powered, Blockchain-Ready E-Waste Lifecycle Management Platform**
 
 [![IEEE YESIST 2026](https://img.shields.io/badge/IEEE-YESIST%202026-blue)](#)
-[![Status](https://img.shields.io/badge/Status-In%20Development-success)](#)
+[![Status](https://img.shields.io/badge/Status-Pilot%20Validated-success)](#)
 [![License](https://img.shields.io/badge/License-MIT-green)](#)
-[![Version](https://img.shields.io/badge/Version-v1.0-orange)](#)
 
 ---
 
 ## 🌍 Overview
 
-EcoTrace India is an intelligent e-waste lifecycle management platform designed to improve transparency, accountability, and sustainability in electronic waste management. The platform leverages Artificial Intelligence, Blockchain, and Modern Web & Mobile Technologies to track electronic devices from purchase through responsible recycling.
+EcoTrace India is an e-waste lifecycle management platform: a real Node
+backend, a real trained AI device-detection service, a real (chaincode +
+Gateway-client) Hyperledger Fabric integration, two Flutter mobile apps,
+and a React operator dashboard, connecting Consumers, Collectors,
+Recyclers, and Government/Admin oversight around one transparent
+submission-to-recycling workflow.
 
-Developed as part of the **IEEE YESIST 2026** competition, EcoTrace India aims to encourage responsible disposal, reduce illegal dumping, and support a circular economy by connecting consumers, collectors, recyclers, manufacturers, and regulatory authorities.
+Developed for **IEEE YESIST 2026**.
 
----
-
-## 🎯 Project Objectives
-
-- Improve e-waste traceability
-- Encourage responsible recycling
-- Reward sustainable disposal practices
-- Enable transparent recycling records
-- Provide data-driven insights using AI
-- Support government monitoring and reporting
+**New here? Start with [`QUICKSTART.md`](QUICKSTART.md)** — running demo
+in under 10 minutes.
 
 ---
 
-## 🚀 Key Features
+## ✅ Project Status
 
-### Consumer Application
+This repository has gone through 8 structured engineering phases (P1–P8),
+each producing a real, evidence-backed report under [`reports/`](reports/)
+— every claimed result in this README is backed by one of those reports,
+not asserted on its own.
 
-- User Registration
-- Device Registration
-- EcoID Generation
-- Collection Scheduling
-- GreenCoin Rewards
-- Recycling History
-- QR Code Support
-
----
-
-### Collector Application
-
-- Assigned Pickups
-- Route Optimization
-- Device Verification
-- Collection Confirmation
-- Real-time Status Updates
+| | |
+|---|---|
+| Regression suite | 1,557+ passing tests across backend (Jest), chaincode (Jest), the AI service (pytest), and both mobile apps (`flutter test`) — see `reports/P8_7_SECURITY_AUDIT.md` §12 for the current breakdown |
+| Live-verified | Full Docker Compose stack, real Postgres migrations, real AI inference, real chaincode tests, real E2E stakeholder scenarios — `reports/P8_1_REAL_DEPLOYMENT.md`, `reports/P8_5_COMPLETE_E2E.md` |
+| Security-audited | `reports/P8_7_SECURITY_AUDIT.md` — full threat model, 2 real gaps found and fixed |
+| Demo-ready | `python scripts/demo/run_scenarios.py all` — `reports/P8_8_DEMO_ENVIRONMENT.md` |
+| Known, disclosed limitation | No live Hyperledger Fabric peer exists in this environment — the chaincode and Gateway client are real and fully tested against a protocol-conformant fake server, but never against a live network. See "Honest Scope" below. |
 
 ---
 
-### Recycler Portal
+## 🚀 What actually works today
 
-- Device Intake
-- Material Recovery Tracking
-- Recycling Certification
-- Processing Reports
+### Consumer app (Flutter)
+
+Registration/login (role-checked), submitting e-waste for pickup, QR/id
+lookup of a submission's status, recycling history, GreenCoin reward
+balance, educational content.
+
+### Collector app (Flutter)
+
+Role-checked login, assigned-pickup queue, accept → start → complete
+workflow, offline sync queue (SQLite-backed, tested against real
+disconnect/reconnect scenarios).
+
+### Recycler workflow (via the API — no dedicated app yet)
+
+Assigned-submission queue, start/complete processing with recorded
+material recovery, which auto-issues the consumer's reward.
+
+### Admin & Government (React dashboard)
+
+Full submission audit trail (every user's submissions, not just their
+own — see `reports/P8_5_COMPLETE_E2E.md` for the authorization fix that
+guarantees this), collector/recycler assignment, blockchain connectivity
+status.
+
+### AI device intelligence (`intelligence/device_ai/`, Python)
+
+A real trained detector (register → confirm → finalize → enrich →
+Device Passport → local Trust Anchor → external/blockchain-abstraction
+Trust Anchor), reachable both through the backend's read-only proxy and
+directly for evaluation — see `scripts/demo/run_demo.py`.
+
+### Blockchain layer (`blockchain/chaincode/`)
+
+A real Hyperledger Fabric chaincode (device registration, lifecycle
+events, passport anchoring, fingerprint verification) and a real gRPC
+Gateway client, both fully tested (47/47 chaincode tests) — against a
+protocol-conformant fake Gateway server, since no live Fabric network
+exists in this environment (disclosed, not hidden — see `reports/
+P8_2_LIVE_BLOCKCHAIN.md`).
+
+### What is **not** built yet (disclosed, not silently dropped)
+
+- A live Hyperledger Fabric network (peer/orderer/CA) — the integration
+  code is real, the network to run it against is not.
+- Government analytics endpoints (national overview, demand forecast) —
+  the frontend already handles this "module not deployed" state
+  gracefully rather than faking data.
+- A dedicated Recycler mobile app (the workflow is fully functional via
+  the API, exercised in `scripts/demo/run_backend_demo.py`).
+- A unified view spanning both the AI device-intelligence lifecycle and
+  the backend's Submission lifecycle — they are two architecturally
+  separate systems today (see `docs/engineering/03_ARCHITECTURE.md`).
 
 ---
 
-### Government Dashboard
-
-- National Analytics
-- Recycling Statistics
-- Regional Reports
-- Illegal Dumping Insights
-- Environmental Impact Metrics
-
----
-
-### AI Engine
-
-- Device Image Classification
-- Device Condition Assessment
-- E-Waste Demand Forecasting
-- Fraud Detection
-- Analytics & Predictions
-
----
-
-### Blockchain Layer
-
-- EcoID Registration
-- Immutable Device Records
-- Collection Tracking
-- Recycling Verification
-- Audit Trail
-
----
-
-## 🏗 High-Level Architecture
+## 🏗 Architecture
 
 ```
-Flutter Mobile Apps
-        │
-        ▼
-REST API Gateway
-        │
-        ▼
-Node.js Backend
-        │
- ┌──────┼────────┐
- ▼      ▼        ▼
-PostgreSQL AI Engine Blockchain
+Flutter Mobile Apps (Collector, Consumer)     React Dashboard (Admin/Gov)
+              │                                        │
+              └──────────────┬─────────────────────────┘
+                              ▼
+                  Node.js Backend (Express + Prisma)
+                    │                        │
+                    ▼                        ▼
+               PostgreSQL          Python AI Service (device_ai)
+                                         │
+                                         ▼
+                          Blockchain abstraction (chaincode +
+                          Fabric Gateway client — real, tested
+                          against a fake server; no live peer here)
 ```
+
+See `docs/engineering/03_ARCHITECTURE.md` for the full, current
+architecture, and `docs/engineering/08_AI.md`/`09_BLOCKCHAIN.md` for the
+AI and blockchain subsystems specifically (both corrected in P8.9 to
+match what actually shipped, not an earlier plan).
 
 ---
 
 ## 🛠 Technology Stack
 
-### Frontend
-
-- Flutter
-- React
-- Tailwind CSS
-
-### Backend
-
-- Node.js
-- Express
-- TypeScript
-
-### Database
-
-- PostgreSQL
-- Prisma ORM
-
-### AI
-
-- Python
-- YOLOv8
-- Prophet
-- OpenCV
-
-### Blockchain
-
-- Hyperledger Fabric
-
-### DevOps
-
-- Docker
-- GitHub Actions
+| Layer | Stack |
+|---|---|
+| Mobile | Flutter, `flutter_riverpod`, `dio`, `flutter_secure_storage` |
+| Dashboard | React, TypeScript, Vite, Tailwind CSS |
+| Backend | Node.js, Express, TypeScript, Prisma ORM |
+| Database | PostgreSQL |
+| AI service | Python, FastAPI, a trained YOLO-family detector, OCR, CLIP embeddings |
+| Blockchain | Hyperledger Fabric chaincode (TypeScript) + a real gRPC Gateway client (Python) |
+| DevOps | Docker / Docker Compose; GitHub Actions CI for the backend (`.github/workflows/backend-ci.yml`) |
 
 ---
 
 ## 📂 Repository Structure
 
+Real, working code lives here:
+
 ```
-backend/
-mobile/
-dashboard/
-blockchain/
-ai/
-database/
-deployment/
-testing/
-docs/
+backend/                  Node/Express/Prisma API — the real product backend
+frontend/                 React admin/government dashboard
+intelligence/device_ai/   Python AI service — device lifecycle, passport, trust
+mobile/collector_app/     Flutter Collector app
+mobile/consumer_app/      Flutter Consumer app
+blockchain/chaincode/     Hyperledger Fabric chaincode (TypeScript, tested)
+scripts/demo/             Demo/pilot environment scripts (see QUICKSTART.md)
+docs/engineering/         Engineering standards & current architecture docs
+reports/                  Every phase's real, evidence-backed report
 ```
+
+`ai/`, `dashboard/`, `database/`, `deployment/`, `testing/` at the repo
+root are early pre-implementation scaffolding from the project's first
+commit — never built out, superseded by the directories above. Left in
+place rather than silently deleted during a documentation phase; not
+part of the working system.
 
 ---
 
 ## 📚 Documentation
 
-Project documentation is available inside:
-
-```
-docs/
-```
-
-Engineering documentation:
-
-```
-docs/engineering/
-```
-
-Project charter:
-
-```
-PROJECT.md
-```
-
-Repository rules:
-
-```
-CLAUDE.md
-```
-
-AI workflow:
-
-```
-AGENTS.md
-```
+- **[`QUICKSTART.md`](QUICKSTART.md)** — get the full stack running and
+  see it work, in under 10 minutes.
+- `docs/engineering/` — current architecture, API contract, database
+  schema, deployment, testing, and AI/blockchain subsystem docs.
+- `reports/` — one real, evidence-backed report per engineering phase
+  (P4 dataset work through P8 pilot validation).
+- `PROJECT.md` — the project charter.
+- `CLAUDE.md` — repository instructions for AI coding agents.
 
 ---
 
 ## 🚀 Development Workflow
 
 ```
-Feature Branch
-
-↓
-
-Development
-
-↓
-
-Testing
-
-↓
-
-Pull Request
-
-↓
-
-Develop Branch
-
-↓
-
-Release
-
-↓
-
-Main
+feature/<name> → Pull Request → develop → main
 ```
 
----
-
-## 📅 Roadmap
-
-- Repository Setup
-- Engineering Documentation
-- Backend Development
-- Mobile Applications
-- Dashboard
-- Blockchain Integration
-- AI Integration
-- Deployment
-- IEEE Demonstration
+Never committed directly to `main`; history is never rewritten (see
+`CLAUDE.md` → Git Workflow).
 
 ---
 
 ## 👥 Team
 
-**EcoTrace India Team**
-
-IEEE YESIST 2026
-
----
+**EcoTrace India Team** — IEEE YESIST 2026
 
 ## 📄 License
 
 MIT License
-
----
-
-## ⭐ Acknowledgements
-
-- IEEE YESIST 2026
-- Open Source Community
-- Hyperledger Foundation
-- PostgreSQL Community
-- Flutter Community
