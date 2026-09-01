@@ -1,0 +1,74 @@
+{
+  "phase": "P8.2",
+  "title": "Live Blockchain Environment",
+  "status": "MOCK_PASS_LIVE_BLOCKED",
+  "timestamp": "2026-09-01T00:00:00Z",
+  "environment_determination": {
+    "fabric_binaries_in_path": false,
+    "fabric_docker_images": false,
+    "fabric_samples_found": false,
+    "crypto_config_channel_artifacts_in_repo": false,
+    "conclusion": "no Hyperledger Fabric peer/orderer/CA binaries or channel artifacts exist anywhere in this repository or environment, re-verified fresh this phase, consistent with P6.2/P6.7/P7.1/P7.5/P7.9/P7.10"
+  },
+  "live_fabric_status": "BLOCKED_BY_ENVIRONMENT",
+  "mock_validation": {
+    "chaincode_jest": { "passed": 47, "total": 47, "note": "45 baseline + 2 new" },
+    "chaincode_lint_typecheck": "0 errors",
+    "fabric_gateway_client_tests": { "passed": 46, "total": 46 },
+    "failure_injection_tests": { "passed": 5, "total": 5 },
+    "backend_blockchain_tests": { "passed": 12, "total": 12, "note": "re-run twice; first run collided with this session's own live Docker stack on :8100, re-run clean after stopping it" }
+  },
+  "scenario_coverage": {
+    "successful_anchor": "PASS — pre-existing",
+    "duplicate_anchor": "PASS — NEW test this phase",
+    "conflicting_anchor": "PASS — NEW test this phase",
+    "invalid_device": "PASS — pre-existing",
+    "network_timeout": "PASS — P7.9",
+    "unavailable_peer": "PASS — P6.2",
+    "malformed_transaction": "PASS — pre-existing"
+  },
+  "design_question_resolved": {
+    "question": "AnchorDevicePassport always overwrites the stored anchor on re-anchor with no rejection — is this a trust-integrity gap?",
+    "resolution": "no — intentional, documented (P5.11/P6.2's reanchor endpoint), PLATFORM-role-gated, fully audited via DEVICE_EXTERNALLY_ANCHORED events on every call, and stale-fingerprint verification correctly fails closed (MISMATCH) after a conflicting re-anchor",
+    "action_taken": "no chaincode change; added 2 explicit tests proving the intentional behavior, since it was previously untested, not previously broken"
+  },
+  "environmental_artifact_disclosed": {
+    "description": "backend blockchain.test.ts's 'nothing listening on :8100' assumption collided with this session's own live docker-compose stack",
+    "resolution": "stack stopped, suite re-run clean (12/12)"
+  },
+  "tests": {
+    "chaincode_jest": { "passed": 47, "total": 47 },
+    "python_device_ai_full_suite": { "passed": 1110, "total": 1110 },
+    "backend_jest_full_suite": { "passed": 339, "total": 339 },
+    "system_total_passing": 1531
+  },
+  "security_considerations": [
+    "AnchorDevicePassport remains PLATFORM-role-gated, re-checked",
+    "new conflicting-anchor test proves stale-fingerprint verification fails closed, not open",
+    "no private key/wallet material touched this phase"
+  ],
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "protected_assets_status": "6/6 MATCH (before and after)",
+  "environmental_limitations": [
+    "No Hyperledger Fabric network (peer/orderer/CA) — real transaction submission, real ledger query, real endorsement policy enforcement, and real event delivery from an actual peer are all BLOCKED BY ENVIRONMENT, not attempted, not fabricated"
+  ],
+  "release_blockers": [],
+  "definition_of_done": {
+    "environment_determination_fresh_with_evidence": true,
+    "live_fabric_honestly_blocked_never_conflated": true,
+    "strongest_available_validation_rerun_fresh": true,
+    "every_checklist_scenario_covered_with_real_test": true,
+    "architectural_question_resolved_by_reading_system": true,
+    "environmental_artifact_disclosed": true,
+    "protected_assets_verified": true,
+    "no_chaincode_logic_changed_no_unrelated_files": true
+  },
+  "next_task": "P8.3 — Mobile Collector Pilot Validation"
+}
