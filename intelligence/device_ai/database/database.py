@@ -6,10 +6,10 @@ Manages engine lifecycle, connection pooling, and connection health.
 from __future__ import annotations
 
 from typing import Any
-from loguru import logger
-from sqlalchemy import Engine, create_engine
-from sqlalchemy.pool import QueuePool, StaticPool
 
+from loguru import logger
+from sqlalchemy import Engine, create_engine, text
+from sqlalchemy.pool import QueuePool, StaticPool
 
 _ENGINE_CACHE: dict[str, Engine] = {}
 
@@ -69,6 +69,28 @@ def get_engine(
     engine = create_engine(database_url, **engine_kwargs)
     _ENGINE_CACHE[database_url] = engine
     return engine
+
+
+def ping_engine(engine: Engine) -> bool:
+    """Run a trivial round-trip query to verify the database is reachable.
+
+    Used by the ``/health`` readiness check (P7.3). Never raises — any
+    connectivity failure is caught and reported as ``False`` so a database
+    outage degrades the health endpoint rather than crashing it.
+
+    Args:
+        engine: The engine to probe.
+
+    Returns:
+        ``True`` if a connection could be opened and ``SELECT 1`` executed.
+    """
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+        return True
+    except Exception as exc:
+        logger.warning("Database health probe failed: {}", exc)
+        return False
 
 
 def dispose_engines() -> None:

@@ -1044,3 +1044,77 @@ def test_full_trust_status_with_fabric_unavailable(
     assert full.external_status == "UNAVAILABLE"
     assert full.local_status == "VERIFIED"
     assert full.overall_status == "VERIFIED"
+
+
+# ---------------------------------------------------------------------------
+# 20. Observability — Fabric transaction metrics (P7.3)
+# ---------------------------------------------------------------------------
+
+
+def test_submit_transaction_alias_records_a_successful_metric(
+    fake_gateway: FakeFabricGateway, identity_files: tuple[Path, Path]
+) -> None:
+    """``submitTransaction`` — the real call surface used by
+    ``FabricExternalTrustLedger`` — records a succeeded transaction, proving
+    the P7.3 metrics hook observes genuine traffic through the same real
+    fake-server round trip P6.2's own tests use, not a mock of the client
+    itself."""
+    from device_ai.utils.metrics import get_metrics_registry
+
+    get_metrics_registry().reset()
+    cert_path, key_path = identity_files
+    client = FabricGatewayClient(_fabric_settings(fake_gateway, cert_path, key_path))
+
+    tx_id = client.submitTransaction(
+        "AnchorDevicePassport", "DEV-M1", "c" * 64, "sha256"
+    )
+
+    assert len(tx_id) == 64
+    snapshot = get_metrics_registry().snapshot()
+    assert snapshot["fabric"] == {"transactions": 1, "succeeded": 1, "failed": 0}
+
+
+def test_evaluate_transaction_alias_records_a_successful_metric(
+    fake_gateway: FakeFabricGateway, identity_files: tuple[Path, Path]
+) -> None:
+    from device_ai.utils.metrics import get_metrics_registry
+
+    get_metrics_registry().reset()
+    cert_path, key_path = identity_files
+    client = FabricGatewayClient(_fabric_settings(fake_gateway, cert_path, key_path))
+
+    client.evaluateTransaction("GetDeviceAnchor", "DEV-NOT-ANCHORED")
+
+    snapshot = get_metrics_registry().snapshot()
+    assert snapshot["fabric"] == {"transactions": 1, "succeeded": 1, "failed": 0}
+
+
+def test_submit_transaction_alias_records_a_failed_metric_and_still_raises(
+    identity_files: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """A connection failure is recorded as ``failed``, and the original
+    exception still propagates unchanged — the metrics hook must never
+    swallow an error."""
+    from device_ai.utils.metrics import get_metrics_registry
+
+    get_metrics_registry().reset()
+    cert_path, key_path = identity_files
+    fake_ca = tmp_path / "ca.pem"
+    fake_ca.write_bytes(generate_self_signed_identity("unused-ca").cert_pem)
+    settings = Settings(
+        fabric_enabled=True,
+        fabric_gateway_peer_endpoint="localhost:1",
+        fabric_peer_endpoint="localhost:1",
+        fabric_tls_cert_path=str(fake_ca),
+        fabric_identity_cert_path=str(cert_path),
+        fabric_identity_key_path=str(key_path),
+        fabric_timeout_seconds=0.5,
+        log_level="WARNING",
+    )
+    client = FabricGatewayClient(settings)
+
+    with pytest.raises(FabricConnectionError):
+        client.submitTransaction("AnchorDevicePassport", "DEV-FAIL", "d" * 64, "sha256")
+
+    snapshot = get_metrics_registry().snapshot()
+    assert snapshot["fabric"] == {"transactions": 1, "succeeded": 0, "failed": 1}

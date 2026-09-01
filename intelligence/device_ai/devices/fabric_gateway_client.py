@@ -79,6 +79,7 @@ from ..exceptions import (
     FabricTransactionError,
     FabricUnavailable,
 )
+from ..utils.metrics import get_metrics_registry
 
 # The compiled stubs under `devices/fabric_pb/` use bare top-level imports
 # (`from gateway import gateway_pb2`, `from common import common_pb2`, ...)
@@ -546,14 +547,38 @@ class FabricGatewayClient:
     def submitTransaction(  # noqa: N802 - external adapter contract
         self, name: str, *args: str
     ) -> str:
-        """Alias for :meth:`submit_transaction` (P5.11 adapter interface)."""
-        return self.submit_transaction(name, *args)
+        """Alias for :meth:`submit_transaction` (P5.11 adapter interface).
+
+        Also records a Fabric transaction outcome (P7.3) — this is the
+        actual call surface used by ``FabricExternalTrustLedger``, so it is
+        the one low-risk place to observe every real transaction attempt
+        without touching the underlying Endorse/sign/Submit/CommitStatus
+        implementation in :meth:`submit_transaction`.
+        """
+        try:
+            result = self.submit_transaction(name, *args)
+        except Exception:
+            get_metrics_registry().record_fabric_transaction(succeeded=False)
+            raise
+        get_metrics_registry().record_fabric_transaction(succeeded=True)
+        return result
 
     def evaluateTransaction(  # noqa: N802 - external adapter contract
         self, name: str, *args: str
     ) -> str:
-        """Alias for :meth:`evaluate_transaction` (P5.11 adapter interface)."""
-        return self.evaluate_transaction(name, *args)
+        """Alias for :meth:`evaluate_transaction` (P5.11 adapter interface).
+
+        Also records a Fabric transaction outcome (P7.3) — see
+        :meth:`submitTransaction` for why this wrapper, not the internal
+        implementation, is the observation point.
+        """
+        try:
+            result = self.evaluate_transaction(name, *args)
+        except Exception:
+            get_metrics_registry().record_fabric_transaction(succeeded=False)
+            raise
+        get_metrics_registry().record_fabric_transaction(succeeded=True)
+        return result
 
     # -----------------------------------------------------------------
     # Internals

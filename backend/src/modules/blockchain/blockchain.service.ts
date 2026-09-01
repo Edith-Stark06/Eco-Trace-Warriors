@@ -13,6 +13,10 @@ export interface BlockchainServiceDeps {
   /** Test seam: injectable fetch implementation. Defaults to global `fetch`
    *  (Node 18+ built-in — no new HTTP client dependency needed). */
   readonly fetchImpl?: typeof fetch;
+  /** Optional observability hook (P7.3): called with the resolved `status`
+   *  after every check, success or degraded alike. Decoupled from any
+   *  specific metrics implementation — the caller decides what to do with it. */
+  readonly onCheck?: (status: string) => void;
 }
 
 export interface BlockchainService {
@@ -32,59 +36,65 @@ const UNREACHABLE_MESSAGE = 'Could not reach the device intelligence / Fabric Ga
 export function createBlockchainService(deps: BlockchainServiceDeps): BlockchainService {
   const fetchFn = deps.fetchImpl ?? fetch;
 
+  async function checkHealth(): Promise<BlockchainHealth> {
+    const url = `${deps.deviceAiServiceUrl.replace(/\/+$/, '')}/system/blockchain/health`;
+
+    try {
+      const response = await fetchFn(url, {
+        method: 'GET',
+        signal: AbortSignal.timeout(deps.timeoutMs),
+      });
+
+      if (!response.ok) {
+        deps.logger.warn(
+          { url, status: response.status },
+          'Blockchain health proxy received a non-OK response',
+        );
+        return unreachable(`Device AI service responded with HTTP ${response.status}.`);
+      }
+
+      const body = (await response.json()) as {
+        health?: {
+          status?: string;
+          fabric_enabled?: boolean;
+          channel?: string;
+          chaincode?: string;
+          msp_id?: string;
+          peer_endpoint?: string;
+          message?: string;
+          checked_at?: string;
+          latency_ms?: number | null;
+        };
+      };
+
+      const health = body.health;
+      if (!health) {
+        deps.logger.warn({ url }, 'Blockchain health proxy received an unexpected payload shape');
+        return unreachable('Device AI service returned an unexpected response shape.');
+      }
+
+      return {
+        status: health.status ?? 'unavailable',
+        fabricEnabled: health.fabric_enabled ?? null,
+        channel: health.channel ?? null,
+        chaincode: health.chaincode ?? null,
+        mspId: health.msp_id ?? null,
+        peerEndpoint: health.peer_endpoint ?? null,
+        message: health.message ?? '',
+        checkedAt: health.checked_at ?? new Date().toISOString(),
+        latencyMs: health.latency_ms ?? null,
+      };
+    } catch (error) {
+      deps.logger.warn({ url, err: error }, 'Blockchain health proxy request failed');
+      return unreachable(UNREACHABLE_MESSAGE);
+    }
+  }
+
   return {
     async getHealth(): Promise<BlockchainHealth> {
-      const url = `${deps.deviceAiServiceUrl.replace(/\/+$/, '')}/system/blockchain/health`;
-
-      try {
-        const response = await fetchFn(url, {
-          method: 'GET',
-          signal: AbortSignal.timeout(deps.timeoutMs),
-        });
-
-        if (!response.ok) {
-          deps.logger.warn(
-            { url, status: response.status },
-            'Blockchain health proxy received a non-OK response',
-          );
-          return unreachable(`Device AI service responded with HTTP ${response.status}.`);
-        }
-
-        const body = (await response.json()) as {
-          health?: {
-            status?: string;
-            fabric_enabled?: boolean;
-            channel?: string;
-            chaincode?: string;
-            msp_id?: string;
-            peer_endpoint?: string;
-            message?: string;
-            checked_at?: string;
-            latency_ms?: number | null;
-          };
-        };
-
-        const health = body.health;
-        if (!health) {
-          deps.logger.warn({ url }, 'Blockchain health proxy received an unexpected payload shape');
-          return unreachable('Device AI service returned an unexpected response shape.');
-        }
-
-        return {
-          status: health.status ?? 'unavailable',
-          fabricEnabled: health.fabric_enabled ?? null,
-          channel: health.channel ?? null,
-          chaincode: health.chaincode ?? null,
-          mspId: health.msp_id ?? null,
-          peerEndpoint: health.peer_endpoint ?? null,
-          message: health.message ?? '',
-          checkedAt: health.checked_at ?? new Date().toISOString(),
-          latencyMs: health.latency_ms ?? null,
-        };
-      } catch (error) {
-        deps.logger.warn({ url, err: error }, 'Blockchain health proxy request failed');
-        return unreachable(UNREACHABLE_MESSAGE);
-      }
+      const health = await checkHealth();
+      deps.onCheck?.(health.status);
+      return health;
     },
   };
 }

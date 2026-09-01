@@ -1,4 +1,5 @@
 import '../../../core/config/app_config.dart';
+import '../../../core/diagnostics/app_logger.dart';
 import '../../../core/utils/result.dart';
 import '../../tasks/data/tasks_repository.dart';
 import '../../tasks/models/submission.dart';
@@ -63,6 +64,7 @@ class SyncManager {
     _isSyncing = true;
     try {
       final items = await _queueRepository.pendingItems();
+      AppLogger.info('sync', 'Draining sync queue', context: {'pendingCount': items.length});
       for (final item in items) {
         await _syncOne(item);
       }
@@ -81,12 +83,26 @@ class SyncManager {
     );
 
     if (resolved) {
+      AppLogger.info(
+        'sync',
+        'Queue item synced',
+        context: {'submissionId': item.submissionId, 'action': item.actionPath},
+      );
       await _queueRepository.remove(item.id);
       return;
     }
 
     final retryCount = item.retryCount + 1;
     final exhausted = retryCount >= AppConfig.maxSyncRetries;
+    AppLogger.warn(
+      'sync',
+      exhausted ? 'Queue item failed permanently' : 'Queue item retry scheduled',
+      context: {
+        'submissionId': item.submissionId,
+        'action': item.actionPath,
+        'retryCount': retryCount,
+      },
+    );
     await _queueRepository.updateItem(
       item.copyWith(
         status: exhausted ? 'failed' : 'pending',

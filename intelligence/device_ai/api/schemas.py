@@ -53,6 +53,19 @@ class VersionResponse(BaseModel):
     api: str = Field(description="API contract version tag.")
 
 
+class MetricsResponse(BaseModel):
+    """Response body for ``GET /metrics`` (P7.3).
+
+    ``metrics`` is a loosely-typed dict rather than a fully modeled schema:
+    its ``requests.by_route`` list grows one entry per distinct
+    (method, route) pair actually observed, which isn't fixed at schema
+    definition time — see ``utils/metrics.py: MetricsRegistry.snapshot()``.
+    """
+
+    success: bool = Field(default=True, description="Query execution status.")
+    metrics: dict = Field(description="In-process request/Fabric-transaction counters.")
+
+
 class ConditionPayload(BaseModel):
     """Condition assessment section of a prediction."""
 

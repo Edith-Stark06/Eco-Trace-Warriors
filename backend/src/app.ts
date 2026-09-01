@@ -13,6 +13,8 @@ import {
   requestLogger,
   securityHeaders,
 } from '@shared/middleware';
+import { createMetricsRegistry, metricsMiddleware } from '@shared/metrics';
+import type { MetricsRegistry } from '@shared/metrics';
 import { getAppName, getAppVersion } from '@shared/utils';
 import { getPrismaClient, pingDatabase } from '@infrastructure/prisma';
 import { createHealthController, createHealthRouter, createHealthService } from '@modules/health';
@@ -53,6 +55,7 @@ import {
   createBlockchainService,
 } from '@modules/blockchain';
 import type { BlockchainService } from '@modules/blockchain';
+import { createMetricsController, createMetricsRouter } from '@modules/metrics';
 
 /** Everything the app needs from the outside world, injected explicitly. */
 export interface AppDeps {
@@ -71,6 +74,8 @@ export interface AppDeps {
   readonly rewardRepository?: RewardRepository;
   /** Test seam: blockchain service override so tests don't make a real HTTP call. */
   readonly blockchainService?: BlockchainService;
+  /** Test seam: metrics registry override so tests can assert on recorded metrics directly. */
+  readonly metricsRegistry?: MetricsRegistry;
 }
 
 /**
@@ -86,8 +91,10 @@ export function createApp({
   submissionRepository,
   rewardRepository,
   blockchainService: blockchainServiceOverride,
+  metricsRegistry: metricsRegistryOverride,
 }: AppDeps): Express {
   const app = express();
+  const metricsRegistry = metricsRegistryOverride ?? createMetricsRegistry();
 
   app.disable('x-powered-by');
   app.use(securityHeaders());
@@ -95,6 +102,7 @@ export function createApp({
   app.use(express.json({ limit: '1mb' }));
   app.use(requestId());
   app.use(requestLogger(logger));
+  app.use(metricsMiddleware(metricsRegistry));
 
   // Module routers
   const healthService = createHealthService({
@@ -184,9 +192,15 @@ export function createApp({
       deviceAiServiceUrl: config.deviceAiServiceUrl,
       timeoutMs: config.deviceAiTimeoutMs,
       logger,
+      onCheck: (status) => metricsRegistry.recordBlockchainCheck(status),
     });
   const blockchainRouter = createBlockchainRouter(createBlockchainController(blockchainService));
   app.use(config.apiPrefix, blockchainRouter);
+
+  // Metrics module (P7.3) — in-process request/blockchain-check counters,
+  // no external scrape target required (see shared/metrics/metrics.ts).
+  const metricsRouter = createMetricsRouter(createMetricsController(metricsRegistry));
+  app.use(config.apiPrefix, metricsRouter);
 
   // Terminal handlers — must stay last
   app.use(notFoundHandler());
