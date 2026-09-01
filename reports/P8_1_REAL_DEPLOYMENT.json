@@ -1,0 +1,96 @@
+{
+  "phase": "P8.1",
+  "title": "Real Deployment Environment",
+  "status": "PASS",
+  "timestamp": "2026-09-01T00:00:00Z",
+  "baseline": {
+    "python_device_ai": { "passed": 1110, "total": 1110, "note": "pre-existing benchmark flake did not reproduce this run" },
+    "backend_jest": { "passed": 339, "total": 339 },
+    "chaincode_jest": { "passed": 45, "total": 45 },
+    "collector_flutter": { "passed": 22, "total": 22 },
+    "consumer_flutter": { "passed": 13, "total": 13 },
+    "frontend": "typecheck/lint 0 errors, build clean",
+    "total_passing": 1529
+  },
+  "docker_architecture": {
+    "services": ["postgres", "backend", "device-ai", "frontend"],
+    "compose_config_validated": true,
+    "dockerfiles_reviewed": ["backend/Dockerfile", "intelligence/device_ai/Dockerfile", "frontend/Dockerfile"],
+    "changes_needed": 0,
+    "note": "every requirement already correctly implemented in P7.5/P7.10, re-confirmed working this phase from scratch"
+  },
+  "live_verification": {
+    "full_rebuild": "all 3 images rebuilt from scratch this phase, not reused from P7 cache",
+    "all_4_services_healthy": true,
+    "logs_unexpected_errors": 0,
+    "api_smoke_tests": {
+      "frontend_root": 200,
+      "backend_health": 200,
+      "backend_ready": 200,
+      "backend_metrics": 200,
+      "backend_to_device_ai_cross_container_proxy": 200,
+      "device_ai_direct_health": 200,
+      "unknown_route": 404,
+      "unauthenticated_protected_route": 401
+    },
+    "frontend_backend_communication_confirmed": true
+  },
+  "database_migrations": {
+    "alembic": {
+      "disposable_database": "ecotrace_p8_migration_test, created and dropped this phase",
+      "upgrade_head": "001 -> 002 -> 003, clean",
+      "downgrade_base": "all 6 tables dropped, alembic_version empty",
+      "reupgrade_head": "re-applies cleanly, identical end state",
+      "p7_10_fix_confirmed_holding": true
+    },
+    "prisma": {
+      "disposable_database": "ecotrace_p8_prisma_test, created and dropped this phase",
+      "migrate_deploy": "all 6 migrations applied cleanly against a genuinely empty database",
+      "downgrade_model": "intentionally forward-only by Prisma design, not a gap"
+    },
+    "real_data_safety": "devices table = 35 rows, verified unchanged before, during, and after both round-trips"
+  },
+  "graceful_shutdown_restart": {
+    "docker_compose_down": "all containers stopped cleanly, no forced kills",
+    "docker_compose_up": "all 4 services reached healthy again",
+    "real_data_intact": "35 devices, unchanged throughout"
+  },
+  "environment_secrets": {
+    "hardcoded_secrets_in_compose": 0,
+    "production_safety_checks_proven_live": "backend container hardcodes NODE_ENV=production, required real-looking secrets to start",
+    "secret_scan_findings": 0
+  },
+  "findings": [],
+  "test_accounting": {
+    "previous_p7_final": 1528,
+    "added_this_phase": 0,
+    "removed_this_phase": 0,
+    "final_passed": 1529,
+    "failed": 0,
+    "pre_existing_baseline_failure": "test_benchmark_measures_latency_and_throughput — CPU-timer flake, did not reproduce this run, not suppressed or silently fixed"
+  },
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "protected_assets_status": "6/6 MATCH (before and after)",
+  "environmental_limitations": [],
+  "release_blockers": [],
+  "definition_of_done": {
+    "docker_architecture_inspected_fresh": true,
+    "compose_config_validated": true,
+    "images_rebuilt_from_scratch": true,
+    "full_stack_started_all_healthy": true,
+    "logs_checked_no_errors": true,
+    "real_api_smoke_tests": true,
+    "migration_round_trip_both_orms_disposable_db": true,
+    "graceful_shutdown_restart_verified": true,
+    "protected_assets_verified": true,
+    "no_destructive_ops_against_real_data": true
+  },
+  "next_task": "P8.2 — Live Blockchain Environment"
+}
