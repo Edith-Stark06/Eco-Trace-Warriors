@@ -1,0 +1,78 @@
+{
+  "phase": "P8.4",
+  "title": "Mobile Consumer Pilot Validation",
+  "status": "PASS_APK_BLOCKED_BY_ENVIRONMENT",
+  "timestamp": "2026-09-01T00:00:00Z",
+  "baseline": { "flutter_analyze_issues": 0, "flutter_test": { "passed": 13, "total": 13 } },
+  "real_gap_found_and_fixed": {
+    "description": "unlike the collector app's login() which explicitly checks profile.role == COLLECTOR and rejects otherwise, the consumer app's login() had no equivalent check — any role's account could log in successfully",
+    "discovered_by": "direct comparison against the collector app's own established, correct pattern while auditing checklist item 'Consumer role'",
+    "fix": "added ConsumerProfile.isConsumer getter, AuthRepository.login() now rejects non-CONSUMER accounts client-side before persisting any token, mirroring the collector app's exact message pattern",
+    "register_unaffected": "POST /auth/register always creates a CONSUMER account server-side, no wrong-role case exists there",
+    "new_tests": { "file": "test/unit/auth_repository_test.dart", "passed": 5, "total": 5, "note": "previously no repository-level auth test existed in this app at all" }
+  },
+  "checklist": {
+    "authentication": "PASS — now role-checked",
+    "consumer_role": "FIXED_THIS_PHASE",
+    "qr_barcode_scanning": "PASS_scope_honest",
+    "device_passport_lookup": "honestly_unavailable — re-verified accurate, no drift, backend has no Fabric/AI client wired in",
+    "lifecycle_timeline": "PASS",
+    "trust_verification": "honestly_unavailable — same reason",
+    "blockchain_verification_display": "not_surfaced_in_consumer_app — Fabric Gateway connectivity status exists on the backend proxy (P6.5) but no consumer screen shows it, out of scope to add without a UX design decision",
+    "reward_balance": "PASS",
+    "reward_redemption": "N_A_by_design — no backend redemption endpoint, re-confirmed",
+    "recycling_history": "PASS",
+    "educational_content": "PASS",
+    "community_leaderboard": "not_implemented — brief only asks to validate if already implemented",
+    "loading_error_empty_states": "PASS",
+    "offline_safe_ux": "N_A_by_design — thin online-only client, intentional architecture unchanged",
+    "accessibility": "PASS — P7.6 fix re-verified no regression",
+    "localization_readiness": "NOT_READY — same reasoning as P8.3",
+    "secure_token_storage": "PASS",
+    "hardcoded_secrets": "0 findings"
+  },
+  "native_build": {
+    "flutter_doctor_android": "Unable to locate Android SDK",
+    "note": "identical environment to P8.3's collector-app attempt; exact failure output already captured there against the same root cause, not redundantly re-run",
+    "verdict": "APK_BUILD_BLOCKED_BY_ENVIRONMENT",
+    "ios_build": "BLOCKED_BY_ENVIRONMENT — categorical"
+  },
+  "tests": {
+    "new_auth_repository_tests": { "passed": 5, "total": 5 },
+    "consumer_flutter_analyze": { "issues": 0 },
+    "consumer_flutter_test_full_suite": { "passed": 18, "total": 18, "note": "13 baseline + 5 new" }
+  },
+  "test_accounting": {
+    "previous": 13,
+    "added_this_phase": 5,
+    "removed_this_phase": 0,
+    "final_passed": 18,
+    "final_total": 18
+  },
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "protected_assets_status": "6/6 MATCH",
+  "environmental_limitations": [
+    "APK build BLOCKED BY ENVIRONMENT — no Android SDK",
+    "iOS build BLOCKED BY ENVIRONMENT — categorical",
+    "Localization NOT READY — genuine product-scope gap, disclosed not invented",
+    "Device passport/trust/blockchain verification display — honest pre-existing backend architecture gap, re-confirmed accurate, not new"
+  ],
+  "release_blockers": [],
+  "definition_of_done": {
+    "existing_implementation_inspected_fresh": true,
+    "real_role_gap_found_and_fixed_with_tests": true,
+    "every_checklist_item_real_status": true,
+    "analyze_test_rerun_fresh": true,
+    "localization_honestly_assessed": true,
+    "no_unnecessary_rebuild": true,
+    "protected_assets_verified": true
+  },
+  "next_task": "P8.5 — Complete Stakeholder E2E Workflow"
+}

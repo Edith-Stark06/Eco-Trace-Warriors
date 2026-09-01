@@ -28,6 +28,8 @@ class ConsumerProfile {
   final bool emailVerified;
   final DateTime createdAt;
 
+  bool get isConsumer => role == 'CONSUMER';
+
   factory ConsumerProfile.fromJson(Map<String, dynamic> json) {
     return ConsumerProfile(
       id: json['id'] as String,

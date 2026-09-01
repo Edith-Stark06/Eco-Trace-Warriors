@@ -55,7 +55,29 @@ class AuthRepository {
         '/auth/login',
         data: {'email': email, 'password': password},
       );
-      return await _persistAndReturn(response.data as Map<String, dynamic>);
+      final result = AuthResult.fromJson(
+        (response.data as Map<String, dynamic>)['data'] as Map<String, dynamic>,
+      );
+
+      if (!result.profile.isConsumer) {
+        // The backend authenticates any role; this app is consumer-only.
+        // Reject client-side rather than silently showing a collector/admin
+        // account inside consumer-shaped screens (rewards, submissions-as-
+        // owner) that don't match what that role actually does — the same
+        // pattern already used by the Collector app's login (P8.4; see
+        // mobile/collector_app/lib/features/auth/data/auth_repository.dart).
+        return Result.failure(
+          AppFailure.validation(
+            'This account is registered as ${result.profile.role}, not CONSUMER. '
+            'Use the EcoTrace Consumer app only with a consumer account.',
+          ),
+        );
+      }
+
+      await _secureStorage.saveAuthToken(result.tokens.accessToken);
+      await _secureStorage.saveRefreshToken(result.tokens.refreshToken);
+      await _secureStorage.saveUserId(result.profile.id);
+      return Result.success(result.profile);
     } on DioException catch (e) {
       return Result.failure(mapDioExceptionToFailure(e));
     }
