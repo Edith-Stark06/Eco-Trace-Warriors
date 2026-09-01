@@ -80,17 +80,26 @@ The hash link makes tampering detectable in either direction: the off-chain row 
 
 # Network Design
 
-Prototype topology (sized for IEEE YESIST 2026, structured to grow):
+**Corrected P8.9**: no live Hyperledger Fabric network exists anywhere in
+this repository or environment — confirmed repeatedly since P6.1
+(`blockchain/network/` is empty, 0 files) and re-confirmed live as
+recently as P8.2. The table below previously described a planned v1
+topology as if it were configured; it is genuinely still only a plan.
 
-| Element | v1 configuration |
+| Element | Planned v1 topology (not yet built) |
 |---|---|
 | Organizations | `EcoTraceOrg` (platform). Future: recycler & government orgs (`12_ROADMAP.md`) |
 | Peers | 1–2 peers, CouchDB state database |
 | Ordering service | Raft, single node in dev; 3 nodes in demo/prod profile |
-| Channel | `ecotrace-channel` (single channel in v1) |
-| Chaincode | `ecotrace-lifecycle` (single contract) |
+| Channel | `ecotrace-channel` (single channel — this name is already live in code, see below) |
+| Chaincode | `ecotrace-lifecycle` (real, built, and tested — see below) |
 
-The network definition (configtx, crypto config, docker compose) lives in `blockchain/network/` and is started via the deployment tooling (`11_DEPLOYMENT.md`).
+`EcoTraceOrgMSP`, the channel name `ecotrace-channel`, and the chaincode
+name `ecotrace-lifecycle` are already real, live default values in
+`intelligence/device_ai/configs/settings.py`'s Fabric client config and
+`blockchain/chaincode/ecotrace-lifecycle/`'s own package — the client and
+the chaincode are built and tested; only the network they'd connect to
+does not exist yet.
 
 ---
 
@@ -99,18 +108,31 @@ The network definition (configtx, crypto config, docker compose) lives in `block
 - **Language:** TypeScript (Fabric contract API) — consistent with backend skills.
 - **One contract, small surface.** Chaincode validates and records; it does not compute business outcomes.
 
+The real, shipped contract (`blockchain/chaincode/ecotrace-lifecycle/src/
+ecotrace-lifecycle.ts`, verified against source and 47/47 passing tests
+as of P8.2 — corrected P8.9 from an earlier, never-built function list):
+
 | Function | Type | Purpose |
 |---|---|---|
-| `RegisterDevice(ecoId, recordHash)` | submit | Create the on-chain device identity |
-| `RecordEvent(ecoId, eventType, recordHash)` | submit | Append a lifecycle event |
-| `IssueCertificate(certNumber, ecoId, certHash)` | submit | Anchor a recycling certificate |
-| `GetDeviceHistory(ecoId)` | evaluate | Full event history for a device |
-| `VerifyCertificate(certNumber)` | evaluate | Certificate existence + hash |
+| `RegisterDevice` | submit | Create the on-chain device identity (PLATFORM role only) |
+| `UpdateLifecycle` | submit | Advance/record a lifecycle state transition |
+| `AnchorDevicePassport` | submit | Anchor (or re-anchor) a passport fingerprint — PLATFORM only, fully audited via `DEVICE_EXTERNALLY_ANCHORED` events even on re-anchor (P8.2) |
+| `GetDevice` | evaluate | Read a device's current on-chain record |
+| `DeviceExists` | evaluate | Existence check |
+| `GetDeviceHistory` | evaluate | Full chronological event history for a device |
+| `VerifyPassportFingerprint` | evaluate | Fingerprint match/mismatch against the anchored record |
+| `GetDeviceAnchor` | evaluate | Read the currently anchored fingerprint |
+| `GetAllDeviceIds` | evaluate | List every registered device id |
 
 Chaincode rules:
 
-- Validates event ordering (e.g., `RECYCLED` requires prior `COLLECTED`) using the same lifecycle sequence as `04_DATABASE.md` → `LifecycleEventType`.
-- Rejects duplicate EcoIDs and duplicate certificate numbers.
+- Validates event ordering using the same lifecycle sequence as
+  `04_DATABASE.md` → `LifecycleEventType`; enforces per-transition role
+  gates (`requireRole()`), covered by dedicated authorization tests.
+- Re-anchoring with a different fingerprint always overwrites the stored
+  anchor rather than rejecting it — a deliberate, audited design (P8.2
+  investigated and confirmed this, adding dedicated idempotent- and
+  conflicting-reanchor tests), not an oversight.
 - Deterministic only: no timestamps from system clocks (use tx timestamp), no randomness, no external calls.
 
 ---
@@ -182,15 +204,19 @@ The retry queue drains in order per device to preserve event sequence.
 
 # Directory Layout
 
+**Corrected P8.9** — real, as of this phase:
+
 ```
 blockchain/
-├── network/            # configtx, crypto-config, compose profiles
-├── chaincode/
-│   └── ecotrace-lifecycle/
-│       ├── src/
-│       └── test/
-├── scripts/            # channel creation, chaincode deploy
-└── docs/               # network runbooks
+├── chaincode/ecotrace-lifecycle/   # real, tested (47/47) — src/ + test/
+├── fabric-protos/                  # real: vendored authentic Fabric
+│                                   # Gateway .proto definitions the
+│                                   # Python gRPC client (P6.2) is built
+│                                   # against — 17 files
+├── network/                        # empty — no configtx/crypto-config
+├── fabric-network/                 # empty — no compose profile
+├── scripts/                        # empty — no deploy tooling yet
+└── docs/                           # empty
 ```
 
 ---

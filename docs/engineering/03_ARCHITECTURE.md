@@ -87,19 +87,23 @@ Key rule: **clients talk only to the backend REST API.** No client communicates 
 
 # Component Architecture
 
-| Component | Directory | Technology | Responsibility |
+**Corrected P8.9** — real directories, as verified live throughout P5–P8
+(the `ai/`, `dashboard/`, `database/`, `deployment/` paths below were an
+early plan never built out; see `README.md` → Repository Structure):
+
+| Component | Real directory | Technology | Responsibility |
 |---|---|---|---|
-| Mobile apps | `mobile/` | Flutter | Consumer, collector, and recycler user experiences |
-| Dashboard | `dashboard/` | React + Tailwind | Admin and government analytics and management |
-| Backend API | `backend/` | Node.js, Express, TypeScript | Business logic, orchestration, authentication, API contracts |
-| Database | `database/`, backend Prisma | PostgreSQL + Prisma | System of record for application data |
-| AI service | `ai/` | Python (FastAPI, YOLOv8, Prophet, OpenCV) | Classification, condition assessment, forecasting, fraud detection |
-| Blockchain | `blockchain/` | Hyperledger Fabric | Immutable lifecycle records, verification, audit trail |
-| Deployment | `deployment/` | Docker, NGINX, GitHub Actions | Packaging, environments, CI/CD |
+| Mobile apps | `mobile/collector_app/`, `mobile/consumer_app/` | Flutter | Consumer and collector user experiences (Recycler workflow is API-only today, no dedicated app — `06_BACKEND.md`) |
+| Dashboard | `frontend/` | React + Tailwind (Vite) | Admin and government submission audit/assignment; analytics module not yet deployed (frontend degrades this honestly) |
+| Backend API | `backend/` | Node.js, Express, TypeScript, Prisma | Business logic, orchestration, authentication, API contracts, Submission lifecycle |
+| Database | `backend/prisma/`, PostgreSQL | PostgreSQL + Prisma (backend); optionally also `intelligence/device_ai` via `DEVICE_BACKEND=postgres` | System of record for application data |
+| AI service | `intelligence/device_ai/` | Python, FastAPI, a trained YOLO-family detector, OCR, CLIP | Device registration, condition/material intelligence, Device Passport, local + external Trust Anchors |
+| Blockchain | `blockchain/chaincode/`, `intelligence/device_ai` (Gateway client) | Hyperledger Fabric chaincode (TypeScript) + gRPC client (Python) | Immutable lifecycle records, verification, audit trail — real and tested, no live network in this environment (`09_BLOCKCHAIN.md`) |
+| Deployment | `docker-compose.yml`, each service's own `Dockerfile` | Docker, GitHub Actions (backend only so far) | Packaging, local/demo environment, CI (`11_DEPLOYMENT.md`) |
 
-The backend is a **modular monolith**: one deployable process, internally separated by module (auth, device, collection, rewards, recycler, analytics). See `06_BACKEND.md`.
+The backend is a **modular monolith**: one deployable process, internally separated by module (auth, users, submission, rewards, blockchain proxy, metrics). See `06_BACKEND.md`.
 
-The AI service is a **separate process** with its own HTTP interface, called only by the backend. See `08_AI.md`.
+The AI service is a **separate process** with its own HTTP interface — reached by the backend's one read-only proxy call **and** directly by evaluators/demo scripts (its port is host-mapped for exactly that reason, P7.5/P8.8); "called only by the backend" was inaccurate and has been corrected. See `08_AI.md`.
 
 ---
 
@@ -158,11 +162,16 @@ Lifecycle states are defined canonically in `04_DATABASE.md` (device status enum
 
 # Data Flow & Integration Rules
 
+**Corrected P8.9**: rules #2 and #5 below described a design that was
+superseded during real implementation without the doc being updated —
+fixed to match what actually ships (verified P6.2, re-verified live
+P8.2/P8.5/P8.7).
+
 1. **Synchronous REST** is the default integration style (backend ↔ AI, clients ↔ backend).
-2. **Blockchain writes are backend-only.** The backend is the sole Fabric client; it submits transactions after the database write succeeds.
-3. **Blockchain writes must not block the user path indefinitely** — failures are retried; the database remains the system of record for application state, the ledger for verification.
-4. **AI calls are advisory.** If the AI service is unavailable, flows degrade gracefully (e.g., manual device categorization) rather than failing.
-5. **No shared databases.** The AI service and blockchain never read PostgreSQL directly; all data crosses component boundaries through APIs.
+2. **The Python AI service (`intelligence/device_ai`) is the Fabric client, not the backend.** `backend/`'s own `blockchain.service.ts` explicitly holds no Fabric connection — it only proxies one read-only health check to the AI service. Local and external (blockchain-abstraction) Trust Anchors are created directly against the AI service's own API (`scripts/demo/run_demo.py`), never routed through the backend.
+3. **Blockchain writes must not block the user path indefinitely** — the external anchor step degrades honestly (never fabricates a status) when unreachable, verified live in P8.5 §9/§10.
+4. **AI calls are advisory** where the backend does call the AI service (its one health proxy): if unreachable, the backend's own health stays unaffected — no cascading failure (P8.5 §9, live-verified).
+5. **The AI service may optionally use PostgreSQL** (`DEVICE_BACKEND=postgres`/`TRUST_ANCHOR_BACKEND=postgres`) but defaults to an isolated in-memory store — it never shares the backend's own Postgres tables/schema either way; "never reads PostgreSQL directly" was inaccurate as an absolute claim and has been corrected.
 
 ---
 
@@ -201,10 +210,15 @@ Significant decisions are recorded here as concise ADRs. New ADRs are appended w
 - **Decision:** One Express application with internal modules, not microservices.
 - **Rationale:** Small team, competition timeline, simpler deployment and debugging; module boundaries preserve a path to later extraction.
 
-## ADR-002 — Backend as sole blockchain gateway
+## ADR-002 — Backend as sole blockchain gateway (SUPERSEDED, P8.9)
 
-- **Decision:** Only the backend holds Fabric identities and submits transactions.
-- **Rationale:** Centralizes credential management and validation; clients stay thin and untrusted.
+- **Original decision:** Only the backend holds Fabric identities and submits transactions.
+- **What actually shipped instead (P6.2):** the Python AI service
+  (`intelligence/device_ai`) holds the Fabric identity and is the actual
+  Gateway client; the backend never connects to Fabric at all, only
+  proxying one read-only health check. Recorded here rather than left
+  silently wrong — an ADR that no longer matches reality is worse than no
+  ADR. See `09_BLOCKCHAIN.md` and `reports/P8_2_LIVE_BLOCKCHAIN.md`.
 
 ## ADR-003 — PostgreSQL as system of record
 
