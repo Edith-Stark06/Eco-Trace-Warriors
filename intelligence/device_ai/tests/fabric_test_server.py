@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import datetime
 import sys
+import time
 from collections.abc import Callable
 from concurrent import futures
 from dataclasses import dataclass
@@ -112,6 +113,11 @@ class FakeGatewayBehavior:
     commit_error: grpc.StatusCode | None = None
     on_evaluate: Callable[[gateway_pb2.EvaluateRequest], None] | None = None
     on_submit: Callable[[gateway_pb2.SubmitRequest], None] | None = None
+    #: Artificial delay (seconds) before Evaluate responds — simulates a slow
+    #: peer so a client-configured `fabric_timeout_seconds` genuinely trips
+    #: (grpc.StatusCode.DEADLINE_EXCEEDED), distinct from the peer simply
+    #: being unreachable (P7.9).
+    evaluate_delay_seconds: float = 0.0
 
 
 def _extract_function_and_args(proposal_bytes: bytes) -> tuple[str, list[str]]:
@@ -142,6 +148,8 @@ class FakeGatewayServicer(gateway_pb2_grpc.GatewayServicer):
     def Evaluate(  # noqa: N802
         self, request: gateway_pb2.EvaluateRequest, context: grpc.ServicerContext
     ) -> gateway_pb2.EvaluateResponse:
+        if self.behavior.evaluate_delay_seconds > 0:
+            time.sleep(self.behavior.evaluate_delay_seconds)
         if self.behavior.on_evaluate is not None:
             self.behavior.on_evaluate(request)
         if self.behavior.evaluate_error is not None:
