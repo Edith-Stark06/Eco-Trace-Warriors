@@ -1,0 +1,11 @@
+=== S9.1 Blockchain health while device-ai is UP ===
+{"success":true,"data":{"status":"disabled","fabricEnabled":false,"channel":"ecotrace-channel","chaincode":"ecotrace-lifecycle","mspId":"EcoTraceOrgMSP","peerEndpoint":"localhost:7051","message":"Fabric Gateway integration is disabled (FABRIC_ENABLED=false).","checkedAt":"2026-09-01T05:10:45.130663+00:00","latencyMs":null}}
+=== S9.2 Stopping device-ai container ===
+ Container ecotrace-device-ai  Stopping
+ Container ecotrace-device-ai  Stopped
+=== S9.3 Blockchain health via backend proxy while device-ai is DOWN (expect graceful degradation, NOT 5xx) ===
+{"success":true,"data":{"status":"proxy_unreachable","fabricEnabled":null,"channel":null,"chaincode":null,"mspId":null,"peerEndpoint":null,"message":"Could not reach the device intelligence / Fabric Gateway service.","checkedAt":"2026-09-01T05:10:53.448Z","latencyMs":null}}
+HTTP_STATUS:200
+=== S9.4 Backend's own health endpoint still OK despite device-ai being down (no cascading failure) ===
+{"success":true,"data":{"status":"ok","service":"ecotrace-backend","version":"0.1.0","environment":"production","uptime":108.955523086,"timestamp":"2026-09-01T05:10:53.544Z"}}
+HTTP_STATUS:200
