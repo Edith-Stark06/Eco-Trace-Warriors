@@ -94,9 +94,15 @@ services:
     # intelligence/device_ai/.env.example) — Postgres is available to this
     # service but not required unless explicitly switched to "postgres"
     # here.
+    #
+    # SERVICE_API_KEY (P8.7): this service has no auth layer of its own —
+    # empty here (open) matches every prior phase's local/demo behavior.
+    # Set it for anything beyond `docker compose up` on a laptop; see
+    # intelligence/device_ai/.env.example and api/service_auth.py.
     environment:
       ENVIRONMENT: ${DEVICE_AI_ENVIRONMENT:-development}
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-ecotrace}:${POSTGRES_PASSWORD:-ecotrace123}@postgres:5432/${POSTGRES_DB:-ecotrace}
+      SERVICE_API_KEY: ${SERVICE_API_KEY:-}
 
     ports:
       - "${DEVICE_AI_PORT:-8100}:8100"

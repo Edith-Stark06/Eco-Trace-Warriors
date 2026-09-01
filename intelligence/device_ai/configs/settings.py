@@ -738,6 +738,26 @@ class Settings(BaseSettings):
         description="Fixed window length (seconds) for the /predict rate limit.",
     )
 
+    # --- Service-to-service authentication (P8.7) ---------------------------
+    # This service has no application-level authentication of its own — the
+    # backend's JWT/RBAC layer never sits in front of it. In this project's
+    # docker-compose stack its port is reachable both via the internal
+    # Compose network AND a host port mapping (developer/demo convenience),
+    # so anyone who can reach it can drive the whole device lifecycle —
+    # including creating local/external trust anchors — with no credential
+    # at all. Opt-in and backward-compatible: unset (the default) preserves
+    # every pre-P8.7 caller (local dev, the demo script, the full test
+    # suite) unchanged; set it to require every non-public route to present
+    # a matching X-Service-Api-Key header (api/service_auth.py).
+    service_api_key: str | None = Field(
+        default=None,
+        description=(
+            "Optional shared-secret required via the X-Service-Api-Key header "
+            "on every route except the public health/meta endpoints. Unset by "
+            "default (open, unchanged pre-P8.7 behavior); required in production."
+        ),
+    )
+
     @field_validator("min_images")
     @classmethod
     def _min_not_greater_than_max(cls, value: int, info: ValidationInfo) -> int:
@@ -800,6 +820,12 @@ class Settings(BaseSettings):
                     + ", ".join(missing)
                     + " to be set in production"
                 )
+        if not self.service_api_key:
+            errors.append(
+                "SERVICE_API_KEY is required in production so this service's "
+                "unauthenticated device/trust/blockchain-anchor routes cannot "
+                "be driven by an unauthenticated caller (P8.7)"
+            )
         if errors:
             raise ValueError("; ".join(errors))
         return self

@@ -1,0 +1,123 @@
+{
+  "phase": "P8.7",
+  "title": "Security & Privacy Audit",
+  "status": "PASS",
+  "timestamp": "2026-09-01T08:45:00Z",
+  "real_gaps_found_and_fixed": [
+    {
+      "id": "device_ai_zero_authentication",
+      "severity": "HIGH",
+      "description": "intelligence/device_ai had no authentication on any route (register/confirm/finalize/enrich/passport/anchor/reanchor/trust) -- backend JWT/RBAC never sits in front of it, and its port is host-mapped in docker-compose.yml for demo convenience",
+      "discovered_by": "P8.7 authentication-category audit (grep across api/*.py and application.py for auth dependencies -- zero hits)",
+      "fix": "opt-in, backward-compatible ServiceApiKeyMiddleware (api/service_auth.py) gated by new Settings.service_api_key (default None = open, unchanged pre-P8.7 behavior); required in production via the existing _validate_production_safety validator; public allowlist for health/meta/blockchain-health routes",
+      "files": [
+        "intelligence/device_ai/configs/settings.py",
+        "intelligence/device_ai/application.py",
+        "intelligence/device_ai/api/service_auth.py",
+        "intelligence/device_ai/.env.example",
+        "docker-compose.yml"
+      ],
+      "tests_added": 11,
+      "live_verified": true,
+      "live_verification": "rebuilt device-ai container; default (no key) unchanged (404 not 401); isolated throwaway container with SERVICE_API_KEY set: no-header=401, wrong-key=401, correct-key=404 (reached handler), /health-no-header=200"
+    },
+    {
+      "id": "mobile_no_release_https_guard",
+      "severity": "MEDIUM",
+      "description": "both mobile apps' AppConfig.apiBaseUrl defaults to http://10.0.2.2:3000 (Android emulator alias) with no enforcement that a release build actually override it to https://",
+      "discovered_by": "P8.7 mobile-security-category audit",
+      "fix": "new assertSecureApiUrl({url, isReleaseMode}) in lib/core/config/secure_url_guard.dart (both apps), throws InsecureApiUrlError when isReleaseMode && !url.startsWith('https://'); wired into main() before runApp; debug/profile builds unaffected",
+      "files": [
+        "mobile/collector_app/lib/core/config/secure_url_guard.dart",
+        "mobile/collector_app/lib/main.dart",
+        "mobile/consumer_app/lib/core/config/secure_url_guard.dart",
+        "mobile/consumer_app/lib/main.dart"
+      ],
+      "tests_added": 8
+    }
+  ],
+  "authorization_matrix_built": {
+    "note": "full 5-role x every backend route matrix built from source (every authorize() call read directly, not inferred)",
+    "roles": ["ADMIN", "GOVERNMENT", "COLLECTOR", "RECYCLER", "CONSUMER"],
+    "no_unreviewed_routes": true
+  },
+  "categories_reviewed": {
+    "authentication": "PASS, re-verified (bcrypt, JWT, auth rate limiter live-triggered by P8.6's own load test)",
+    "authorization_5_roles": "full matrix built this phase, see report SS5",
+    "api_security_injection": "PASS, re-confirmed by grep",
+    "api_security_oversized_payloads": "PASS (express.json 1mb limit, image validator limits)",
+    "api_security_rate_limiting": "PASS, re-confirmed present + live-triggered",
+    "api_security_cors": "PASS (allowlist-based, no wildcard)",
+    "api_security_headers": "PASS (Helmet, CSP deliberately off for JSON API, documented)",
+    "api_security_error_leakage": "PASS (generic messages, no stack traces to client)",
+    "api_security_correlation": "PASS (X-Request-ID, length-capped, threaded through logs)",
+    "database": "PASS (Prisma parameterized queries; informational: postgres port host-exposed in demo compose, not fixed, documented rationale)",
+    "blockchain": "PASS, re-verified + extended with P8.2/P8.5 live evidence citations",
+    "mobile": "1 real gap found and fixed (secure_url_guard); secrets/token-storage/debug-logging all PASS",
+    "containers": "PASS, verified LIVE via docker exec whoami/ps aux on all 4 running containers (not assumed from base image reputation)",
+    "dependencies": "fresh scan across Python/Node/TS/Dart -- 1 accepted residual (deepmerge-ts in @prisma/config, no safe fix), 0 elsewhere"
+  },
+  "regression_suite": {
+    "device_ai_pytest": { "passed": 1121, "total": 1121, "added_this_phase": 11, "note": "previously-documented flaky test_benchmark_measures_latency_and_throughput did not fail this run (timing-dependent, unchanged)" },
+    "backend_jest": { "passed": 341, "total": 341, "unchanged": true },
+    "backend_lint_typecheck_errors": 0,
+    "chaincode_jest": { "passed": 47, "total": 47, "unchanged": true },
+    "collector_app_flutter_test": { "passed": 26, "total": 26, "added_this_phase": 4, "analyze_issues": 0 },
+    "consumer_app_flutter_test": { "passed": 22, "total": 22, "added_this_phase": 4, "analyze_issues": 0 },
+    "frontend": { "typecheck_errors": 0, "lint_errors": 0, "unchanged": true },
+    "total_passing": 1557
+  },
+  "test_accounting": {
+    "previous": 1537,
+    "added_this_phase": 20,
+    "removed_this_phase": 0,
+    "final_passing": 1557
+  },
+  "dependency_scan": {
+    "backend_prod": { "tool": "npm audit --omit=dev", "high": 3, "note": "all deepmerge-ts under @prisma/config (CLI/codegen tooling, not reachable from the running service) -- accepted residual risk, unchanged since P7.4" },
+    "frontend": { "tool": "npm audit", "vulnerabilities": 0 },
+    "chaincode": { "tool": "npm audit", "vulnerabilities": 0 },
+    "device_ai": { "tool": "pip-audit --local", "vulnerabilities": 0 },
+    "mobile": { "tool": "flutter pub outdated", "direct_deps_status": "all up to date", "cve_scanning": "no equivalent tool exists for Dart/Flutter, disclosed limitation" }
+  },
+  "container_security_live_verified": {
+    "ecotrace-backend": { "base_image": "node:20-alpine", "runs_as": "node (non-root)" },
+    "ecotrace-device-ai": { "base_image": "python:3.12-slim", "runs_as": "appuser (dedicated non-root)" },
+    "ecotrace-frontend": { "base_image": "nginx:1.27-alpine", "worker_processes_run_as": "nginx (non-root)", "master_process_pid1_runs_as": "root (standard nginx design, needed only to bind port 80 / manage workers)" },
+    "ecotrace-postgres": { "base_image": "postgres:16", "server_and_connection_processes_run_as": "postgres (non-root)" },
+    "secrets_baked_into_images": false
+  },
+  "informational_findings_not_fixed": [
+    {
+      "finding": "docker-compose.yml maps Postgres port 5432 directly to the host",
+      "rationale": "acceptable for this file's documented 'local/demo full-stack compose' scope; a production deployment should use a compose overlay omitting this mapping; changing it here would break local psql-debugging ergonomics this file is explicitly for",
+      "recommended_as": "Suggested Improvement for a production-topology compose overlay"
+    }
+  ],
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "protected_assets_status": "6/6 MATCH",
+  "environmental_limitations": [
+    "Live Hyperledger Fabric MSP/endorsement-policy enforcement still not verifiable against a real peer, unchanged since P6.2/P8.2",
+    "deepmerge-ts/@prisma/config accepted residual dependency risk has no safe fix without a Prisma major-version bump, unchanged since P7.4",
+    "No CVE-scanning tool exists for Dart/Flutter dependencies, unchanged limitation since P7.4"
+  ],
+  "release_blockers": [],
+  "definition_of_done": {
+    "all_categories_reviewed_against_current_source": true,
+    "two_real_gaps_found_fixed_tested": true,
+    "high_severity_fix_live_verified": true,
+    "findings_classified_by_severity": true,
+    "fresh_dependency_scan_all_components": true,
+    "regression_suite_fresh_no_fabrication": true,
+    "protected_assets_verified": true,
+    "no_unrelated_refactoring": true
+  },
+  "next_task": "P8.8 — Demo & Pilot Environment"
+}
