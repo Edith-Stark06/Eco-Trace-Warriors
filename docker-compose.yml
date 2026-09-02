@@ -65,7 +65,17 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-ecotrace}:${POSTGRES_PASSWORD:-ecotrace123}@postgres:5432/${POSTGRES_DB:-ecotrace}?schema=public
       JWT_SECRET: ${JWT_SECRET:-compose-local-dev-access-secret-CHANGE-ME-0}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-compose-local-dev-refresh-secret-CHANGE-ME}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+      # cors.middleware.ts is a strict allowlist (no wildcard/pattern
+      # support, by design — see its own comment), so every browser origin
+      # this compose stack is expected to serve must be listed explicitly.
+      # Default covers every local-dev frontend that talks to this backend:
+      # the Vite dashboard (8080 prod-style preview, 5173 `vite dev`, plus
+      # the LAN IP Vite prints for device testing) and Expo Web's Collector
+      # app, which binds 8081 normally but falls back to 8082 when 8081 is
+      # already in use (both are listed so either works without reconfig).
+      # A real deployment overrides CORS_ORIGINS with its actual origin(s)
+      # — this default is never appropriate beyond a laptop.
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:5173,http://10.13.29.243:5173,http://localhost:8081,http://localhost:8082}
       DEVICE_AI_SERVICE_URL: http://device-ai:8100
 
     ports:
