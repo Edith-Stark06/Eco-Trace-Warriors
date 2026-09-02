@@ -1,0 +1,111 @@
+{
+  "phase": "P9.4",
+  "title": "Mobile Backend Integration Hardening",
+  "status": "PASS",
+  "scope": "Audit every mobile API call against real backend/device_ai contracts, harden the shared apiClient with timeout/retry/offline-detection, expand offline sync queue failure handling, add real tests, run full-system regression.",
+  "api_contract_audit": "Every API call in both apps re-verified against real route definitions (backend/src/modules/*/*.routes.ts, intelligence/device_ai/api/*.py) established in P9.3. No mock API calls exist. P9.3's Collector-cannot-create-submissions fix re-confirmed; no further mismatches found.",
+  "client_hardening": {
+    "timeout": "AbortController-based, default 15000ms, overridable per call, surfaced as ApiError code TIMEOUT",
+    "offline_precheck": "NetInfo.fetch() checked before every request (except refresh call); fails fast with NETWORK_ERROR if confirmed offline",
+    "bounded_retry": "GET requests retry up to 2x with jittered exponential backoff on network/timeout error only; never on 4xx/5xx; never for POST/PATCH/DELETE",
+    "custom_headers": "RequestOptions.headers merges extra headers without dropping Content-Type/Authorization",
+    "ApiError_changes": "isNetworkError now covers NETWORK_ERROR and TIMEOUT; new isTimeout getter"
+  },
+  "idempotency_investigation": {
+    "finding": "Backend has zero HTTP-level idempotency-key support (verified via grep -rn -i idempotency backend/src/ — only match is an unrelated internal reward-issuance dedup guard)",
+    "decision": "Did not add a non-functional X-Idempotency-Key header that the backend would silently ignore — disclosed honestly as a limitation rather than claimed as solved",
+    "mitigation": "syncingRef serializes the sync batch (one in-flight submission at a time); an item is only removed from the queue after a confirmed 2xx response"
+  },
+  "real_defect_found_and_fixed": {
+    "id": 1,
+    "description": "useNetworkStatus initialized isOnline optimistically to true, so a cold app start while genuinely offline let useSyncManager's reconnect effect fire once and burn a sync attempt (and retry count) against unconfirmed connectivity",
+    "discovery_method": "writing a real test for useSyncManager that actually exercised mount-time behavior, not just steady-state",
+    "fix": "added useKnownNetworkStatus() — tri-state (true|false|null), starts null ('not yet known'), resolves via NetInfo.fetch() on mount; useSyncManager gates sync attempts on knownIsOnline===true; isOnline returned to callers still defaults true to avoid UI banner flicker",
+    "verified": true,
+    "verification": "test 'does not attempt to sync while offline from cold start' fails against old code, passes against the fix"
+  },
+  "offline_queue_hardening": {
+    "queue_states": ["pending", "syncing", "failed", "(removed = synced)"],
+    "bounded_retry": "5 attempts before failed (unchanged from P9.3, re-verified by test)",
+    "no_infinite_loops": "verified — non-network failure increments attempts to bound then fails; network failure stops the whole batch, not just one item"
+  },
+  "new_tests": {
+    "client_test_ts_both_apps": {
+      "count": 9,
+      "covers": ["Bearer token attach", "offline pre-check fail-fast", "timeout", "GET retry-then-succeed", "no-retry on POST network error", "no-retry on 4xx/5xx", "401 refresh retry", "refresh-failure clears tokens", "custom header merge"]
+    },
+    "useSyncManager_test_ts_both_apps": {
+      "count": 5,
+      "covers": ["successful sync + queue removal", "bounded-retry pending state", "failed after max attempts", "network-error batch-stop", "cold-start-offline no-sync-attempt"]
+    },
+    "ApiError_test_ts_expanded": {
+      "count": 2,
+      "covers": ["isNetworkError covers TIMEOUT", "isTimeout getter"]
+    },
+    "mobile_test_totals": {
+      "collector_app": "27/27",
+      "consumer_app": "26/26",
+      "previous_p9_3_totals": "12/10",
+      "new_tests_added": 31
+    }
+  },
+  "security_review": [
+    "No hardcoded secrets — grep for credential-shaped literals across both apps: zero matches",
+    "No insecure HTTP in release config — only http:// literals are dev-only defaults gated by assertSecureApiUrl()",
+    "No tokens in logs — zero console.log/warn/error calls anywhere in either app's source",
+    "No unnecessary sensitive persistence — AsyncStorage used only by non-sensitive sync queues; tokens exclusively in expo-secure-store"
+  ],
+  "environmental_limitations": [
+    {
+      "item": "Full duplicate-submission prevention",
+      "classification": "Architectural limitation, disclosed",
+      "detail": "Requires a backend idempotency-key mechanism that does not currently exist; mitigated but not fully solved on the mobile side alone"
+    },
+    {
+      "item": "Real device/emulator testing",
+      "classification": "BLOCKED — ENVIRONMENT",
+      "detail": "No Android SDK or macOS/Xcode in this environment (unchanged from P9.3)"
+    }
+  ],
+  "full_system_regression": {
+    "backend": "341/341",
+    "chaincode": "47/47",
+    "device_ai": "1121/1121, 0 errors, 0 failures (junitxml authoritative)",
+    "frontend": "typecheck clean, lint clean (untouched this phase)",
+    "collector_mobile": "27/27",
+    "consumer_mobile": "26/26",
+    "files_outside_mobile_modified": 0
+  },
+  "protected_asset_verification": {
+    "p442_yolo11n": {"expected": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92", "result": "MATCH"},
+    "p411_yolo11n_targeted_aug": {"expected": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c", "result": "MATCH"},
+    "p412_yolo11s": {"expected": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc", "result": "MATCH"},
+    "p414_yolo11n_targeted_aug": {"expected": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81", "result": "MATCH"},
+    "p45_data_yaml": {"expected": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b", "result": "MATCH"},
+    "p47_final_data_yaml": {"expected": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284", "result": "MATCH"},
+    "all_match": true
+  },
+  "files_changed": [
+    "mobile/collector_app/src/api/client.ts",
+    "mobile/collector_app/src/api/ApiError.ts",
+    "mobile/collector_app/src/api/client.test.ts",
+    "mobile/collector_app/src/api/ApiError.test.ts",
+    "mobile/collector_app/src/hooks/useNetworkStatus.ts",
+    "mobile/collector_app/src/hooks/useSyncManager.ts",
+    "mobile/collector_app/src/hooks/useSyncManager.test.ts",
+    "mobile/collector_app/jest.setup.js",
+    "mobile/collector_app/tsconfig.json",
+    "mobile/consumer_app/src/api/client.ts",
+    "mobile/consumer_app/src/api/ApiError.ts",
+    "mobile/consumer_app/src/api/client.test.ts",
+    "mobile/consumer_app/src/api/ApiError.test.ts",
+    "mobile/consumer_app/src/hooks/useNetworkStatus.ts",
+    "mobile/consumer_app/src/hooks/useSyncManager.ts",
+    "mobile/consumer_app/src/hooks/useSyncManager.test.ts",
+    "mobile/consumer_app/jest.setup.js",
+    "mobile/consumer_app/tsconfig.json",
+    "reports/P9_4_MOBILE_BACKEND_INTEGRATION.md",
+    "reports/P9_4_MOBILE_BACKEND_INTEGRATION.json"
+  ],
+  "final_verdict": "PASS"
+}
