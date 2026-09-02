@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { deviceAiApi } from '../api/deviceAiApi';
 import { syncQueueStorage } from '../storage/syncQueue';
-import { useNetworkStatus } from './useNetworkStatus';
+import { useKnownNetworkStatus } from './useNetworkStatus';
 import { ApiError } from '../api/ApiError';
 import type { SyncQueueItem } from '../types/syncQueue';
 
@@ -12,9 +12,17 @@ const MAX_ATTEMPTS = 5;
  * online, retrying `finalize` for each queued device. A non-network
  * ApiError (e.g. the device no longer exists) marks the item 'failed'
  * after MAX_ATTEMPTS rather than retrying forever.
+ *
+ * Uses `useKnownNetworkStatus` (not the optimistic-default
+ * `useNetworkStatus`) to gate sync attempts: `knownIsOnline === true` is
+ * required, so a cold app start never burns a sync attempt (and its
+ * associated retry count) against a still-unconfirmed "probably online"
+ * guess. The `isOnline` returned to callers still defaults to `true`
+ * while unknown, so a UI banner never flickers "offline" for an
+ * actually-online user during that same brief window.
  */
 export function useSyncManager() {
-  const isOnline = useNetworkStatus();
+  const knownIsOnline = useKnownNetworkStatus();
   const [queue, setQueue] = useState<SyncQueueItem[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const syncingRef = useRef(false);
@@ -24,7 +32,7 @@ export function useSyncManager() {
   }, []);
 
   const syncNow = useCallback(async () => {
-    if (syncingRef.current || !isOnline) return;
+    if (syncingRef.current || knownIsOnline !== true) return;
     syncingRef.current = true;
     setIsSyncing(true);
     try {
@@ -50,7 +58,7 @@ export function useSyncManager() {
       setIsSyncing(false);
       await refresh();
     }
-  }, [isOnline, refresh]);
+  }, [knownIsOnline, refresh]);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,13 +71,13 @@ export function useSyncManager() {
   }, []);
 
   useEffect(() => {
-    if (isOnline) {
+    if (knownIsOnline === true) {
       void syncNow();
     }
-  }, [isOnline, syncNow]);
+  }, [knownIsOnline, syncNow]);
 
   const pendingCount = queue.filter((i) => i.status === 'pending' || i.status === 'syncing').length;
   const failedCount = queue.filter((i) => i.status === 'failed').length;
 
-  return { queue, isOnline, isSyncing, pendingCount, failedCount, syncNow, refresh };
+  return { queue, isOnline: knownIsOnline ?? true, isSyncing, pendingCount, failedCount, syncNow, refresh };
 }

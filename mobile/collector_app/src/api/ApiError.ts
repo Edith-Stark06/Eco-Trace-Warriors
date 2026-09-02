@@ -15,8 +15,18 @@ export class ApiError extends Error {
     this.details = options.details;
   }
 
-  /** True for a connectivity failure (device offline, host unreachable) rather than a real API error. */
+  /**
+   * True for a connectivity failure (device offline, host unreachable) or a
+   * request timeout — i.e. we don't know whether the server ever saw the
+   * request, as opposed to a real API error response. Both are safe to
+   * retry for idempotent (GET) requests.
+   */
   get isNetworkError(): boolean {
-    return this.code === 'NETWORK_ERROR';
+    return this.code === 'NETWORK_ERROR' || this.code === 'TIMEOUT';
+  }
+
+  /** True specifically for a request that was aborted after exceeding its timeout. */
+  get isTimeout(): boolean {
+    return this.code === 'TIMEOUT';
   }
 }
