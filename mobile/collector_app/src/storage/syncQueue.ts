@@ -30,6 +30,7 @@ export const syncQueueStorage = {
       attempts: 0,
       lastError: null,
       createdAt: new Date().toISOString(),
+      nextRetryAt: null,
     };
     await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify([...items, item]));
     return item;

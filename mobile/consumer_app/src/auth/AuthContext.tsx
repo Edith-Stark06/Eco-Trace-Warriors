@@ -1,8 +1,11 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { authApi } from '../api/authApi';
+import { setSessionExpiredHandler } from '../api/client';
 import { secureStorage } from '../storage/secureStorage';
 import { ApiError } from '../api/ApiError';
 import type { PublicUser, RegisterInput } from '../types/auth';
+
+const SESSION_EXPIRED_MESSAGE = 'Your session has expired. Please sign in again.';
 
 interface AuthState {
   status: 'loading' | 'authenticated' | 'unauthenticated';
@@ -28,9 +31,26 @@ function assertConsumerRole(user: PublicUser): void {
   }
 }
 
-/** Session lifecycle for the Consumer app — parallels the Collector app's AuthContext, plus registration. */
+/**
+ * Session lifecycle for the Consumer app — parallels the Collector app's
+ * AuthContext, plus registration.
+ *
+ * Registers `setSessionExpiredHandler` (P9.5) so that when `apiClient`'s
+ * background token refresh genuinely fails — a refresh token existed and
+ * the server rejected it, not merely "never logged in" — this context
+ * reacts immediately: flips to `unauthenticated` with a clear message,
+ * rather than leaving the app parked on authenticated screens issuing
+ * 401s with no path back to the login screen.
+ */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({ status: 'loading', user: null, error: null });
+
+  useEffect(() => {
+    setSessionExpiredHandler(() => {
+      setState({ status: 'unauthenticated', user: null, error: SESSION_EXPIRED_MESSAGE });
+    });
+    return () => setSessionExpiredHandler(null);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

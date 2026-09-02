@@ -24,6 +24,30 @@ const MAX_NETWORK_RETRIES = 2;
 const RETRY_BASE_DELAY_MS = 500;
 
 let refreshPromise: Promise<AuthTokens | null> | null = null;
+let sessionExpiredHandler: (() => void) | null = null;
+
+/**
+ * Registers a callback invoked when a *real* session genuinely expires —
+ * a refresh token existed and the server rejected it — as opposed to
+ * there being no refresh token at all (a caller who was never logged in,
+ * not an expiry). `AuthContext` registers this on mount so it can flip
+ * to `unauthenticated` with a clear "session expired" message instead of
+ * silently leaving the app on authenticated screens issuing 401s that
+ * never resolve, with no path back to the login screen.
+ */
+export function setSessionExpiredHandler(handler: (() => void) | null): void {
+  sessionExpiredHandler = handler;
+}
+
+/**
+ * Invokes the registered session-expired handler, if any. Exported
+ * (rather than inlined at each call site) so tests can verify a
+ * registered handler actually fires, without needing to fabricate a
+ * real rejected-refresh HTTP round trip.
+ */
+export function triggerSessionExpired(): void {
+  sessionExpiredHandler?.();
+}
 
 /** Exchanges the stored refresh token for a new pair, deduped across concurrent 401s. */
 async function refreshTokens(): Promise<AuthTokens | null> {
@@ -44,11 +68,14 @@ async function refreshTokens(): Promise<AuthTokens | null> {
       const json = (await res.json()) as ApiResponse<AuthTokens>;
       if (!res.ok || !json.success) {
         await secureStorage.clearTokens();
+        triggerSessionExpired();
         return null;
       }
       await secureStorage.setTokens(json.data.accessToken, json.data.refreshToken);
       return json.data;
     } catch {
+      // A network/timeout failure during refresh is not a real expiry —
+      // don't sign the user out over a dropped connection.
       return null;
     }
   })();
