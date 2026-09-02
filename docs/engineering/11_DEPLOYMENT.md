@@ -124,20 +124,35 @@ flowchart TB
 
 # CI/CD Pipeline
 
-**Corrected P8.9**: this section previously claimed no `.github/workflows/`
-directory existed — that was already inaccurate. A real workflow,
-`.github/workflows/backend-ci.yml`, runs on every push/PR to
-`develop`/`main` touching `backend/**` (plus manual dispatch): lint,
-typecheck, format check, `npm test`, `npm run build`, then a Docker image
-build — genuinely automated, not just documented as a manual command.
-**What remains aspirational**: no equivalent workflow exists yet for
-`frontend/`, `intelligence/device_ai`, `blockchain/chaincode/`, or the
-mobile apps; no automated E2E stage; no automated release/tag/deploy
-stage. Every quality gate for those other components is real and does
-run — via the manual commands documented in `10_TESTING.md` and exercised
-throughout every P6/P7/P8 phase report (`reports/`) — just not yet wired
-into CI. The diagram below is the intended full design, not the current
-reality; treat only the backend lane as implemented.
+**Updated P9.8**: four real, independently-triggered workflows now exist —
+`backend-ci.yml`, `device-ai-ci.yml`, `chaincode-ci.yml`, `frontend-ci.yml` —
+each path-filtered to its own module plus manual dispatch, running on every
+push/PR to `develop`/`main`:
+
+| Workflow | Blocking gates | Informational (non-blocking) gates |
+|---|---|---|
+| `backend-ci.yml` | lint, typecheck, format check, test, build, Docker build | — |
+| `device-ai-ci.yml` | pytest, Docker build | ruff, mypy (see below) |
+| `chaincode-ci.yml` | lint, build, test | — |
+| `frontend-ci.yml` | lint, typecheck, build, Docker build | format check (see below) |
+
+**Honestly disclosed (P9.8)**: wiring up `device-ai-ci.yml` and
+`frontend-ci.yml` for the first time surfaced real, pre-existing debt that
+had never been CI-gated before — ~1,450 `ruff` violations and ~200 `mypy`
+errors across `intelligence/device_ai` (concentrated in the vendored/generated
+`devices/fabric_pb/` protobuf stubs and pre-P9.8 test files, not this phase's
+own changes), and 161 files not matching the frontend's current Prettier
+config. Mass-fixing that debt is out of scope for a CI/CD-hardening phase —
+those specific gates run as `continue-on-error: true` (visible in CI output,
+never blocking) until a dedicated cleanup phase tightens them to blocking.
+Every other gate listed above is real, currently green, and blocking.
+
+**What remains aspirational**: no CI workflow for the mobile apps yet; no
+automated E2E stage; no automated release/tag/deploy stage (the actual
+deploy step, `scripts/deployment/deploy.sh`, exists and is environment-gated
+— see Release Process below — but isn't yet invoked automatically by a
+workflow). The diagram below is the intended full design, not the current
+reality.
 
 GitHub Actions, triggered per the Git workflow in `02_PROJECT_RULES.md`:
 
@@ -247,27 +262,44 @@ client library for a format nothing consumes was judged unnecessary
 
 # Backup & Recovery
 
-**Corrected P8.9** — this section previously described scheduled dumps,
-a rehearsed restore procedure, Fabric-ledger backup, and a
-`deployment/runbooks/` directory, none of which exist in this repository.
-Documented honestly here rather than left to mislead an evaluator:
+**Updated P9.8** — real, working backup/restore scripts now exist and were
+genuinely rehearsed against the live stack, closing the gap P8.9 honestly
+disclosed:
 
-- **What genuinely exists**: Postgres data persists across container
-  restarts/recreates via the named Docker volume `postgres_data`
-  (`docker-compose.yml`) — verified this phase (`docker compose restart`/
-  `stop`+`start` throughout P8.5–P8.8 never lost data). Database schema
-  changes are forward-only (`04_DATABASE.md`): a bad migration is fixed
-  with a new corrective migration, never a manual rollback.
-- **What does not exist yet, and is a real gap for a genuine pilot
-  deployment**: no scheduled/automated PostgreSQL backup job, no rehearsed
-  restore procedure, no `deployment/runbooks/` directory, and — since no
-  live Hyperledger Fabric network exists anywhere in this environment
-  (P6.2/P8.2) — no Fabric ledger to back up in the first place.
-- **Disaster recovery today**: `docker compose down -v` destroys the
-  `postgres_data` volume irreversibly; there is currently no other copy.
-  A real pilot deployment needs, at minimum, a scheduled `pg_dump`
-  routine and a tested restore before going live — recorded here as a
-  Suggested Improvement, not fabricated as already in place.
+- **`scripts/deployment/backup_postgres.sh [output-dir]`** — runs a real
+  `pg_dump` (custom format) against the running `ecotrace-postgres`
+  container and copies it to the host.
+- **`scripts/deployment/restore_postgres.sh <backup-file> [--into <db>] [--yes]`**
+  — restores a backup via `pg_restore`. Defaults to a new, disposable
+  database name (never the live one) unless `--into` names one explicitly;
+  restoring into an *existing* database additionally requires `--yes`, so an
+  operator cannot accidentally overwrite live data with a single mistyped
+  command.
+- **Genuinely rehearsed this phase, not just written**: backed up the live
+  demo database (9 users, 8 submissions, 35 devices), restored it into a
+  disposable database via the script, and verified row counts and a sample
+  row's exact byte content (UUID + email) matched the source precisely. Full
+  evidence in `reports/P9_8_PRODUCTION_DEPLOYMENT_CICD.md`.
+- **Still real gaps, honestly disclosed**: neither script is wired to a
+  scheduler (cron/Task Scheduler/CI) yet — running a backup is a manual
+  operator action, not yet automated on a cadence. No `deployment/runbooks/`
+  directory exists yet for broader incident procedures beyond database
+  backup/restore specifically.
+- **Fabric ledger backup**: P9.2 proved a real local Hyperledger Fabric
+  network is achievable in this environment (superseding this section's
+  earlier "no live network exists" statement), but it is an explicitly
+  local, throwaway, single-machine test network — its crypto material and
+  ledger state live in Docker volumes and a gitignored bootstrap directory
+  by design, not a production ledger warranting its own backup procedure.
+  A genuine multi-org production Fabric deployment's backup strategy is a
+  distinct, larger undertaking than this local pilot's scope.
+- **Underlying persistence** (unchanged from P8.9): Postgres data persists
+  across container restarts/recreates via the named Docker volume
+  `postgres_data`; `docker compose down -v` still destroys it irreversibly
+  — the scripts above are exactly the mitigation for that, now real rather
+  than aspirational. Database schema changes remain forward-only
+  (`04_DATABASE.md`): a bad migration is fixed with a new corrective
+  migration, never a manual rollback.
 
 ---
 
@@ -278,3 +310,16 @@ Documented honestly here rather than left to mislead an evaluator:
 3. Merge tags a version (`v<major>.<minor>.<patch>`) and publishes images.
 4. Deploy to `demo`; smoke tests verify.
 5. Rollback = redeploy previous image tag; database rollbacks follow the forward-only migration policy (`04_DATABASE.md`) — write a corrective migration rather than reverting.
+
+**Environment-gated deploys (P9.8)**: `scripts/deployment/deploy.sh <environment>`
+is the single entrypoint every deploy goes through:
+
+| Environment | Behavior |
+|---|---|
+| `local`, `demo` | Real: `docker compose up -d --build` against this repo — genuinely tested this phase, all services healthy afterward. |
+| `staging` | `BLOCKED — ENVIRONMENT`: refuses with exit code 2 and a clear message. No staging host, DNS, TLS, or credentials exist. |
+| `production` | `BLOCKED — ENVIRONMENT`, same reason, plus a deliberate standing refusal: this script will not deploy to production without a separate, reviewed change to the gate itself — the explicit point being to make an accidental production deploy structurally impossible, not just discouraged. |
+
+No release stage currently invokes this script automatically — it is a
+manual operator command today, same as the rest of the release process
+above.
