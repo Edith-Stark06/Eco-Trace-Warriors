@@ -1,0 +1,83 @@
+name: Device AI CI
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches: [develop, main]
+    paths:
+      - 'intelligence/device_ai/**'
+      - '.github/workflows/device-ai-ci.yml'
+
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - 'intelligence/device_ai/**'
+      - '.github/workflows/device-ai-ci.yml'
+
+defaults:
+  run:
+    working-directory: intelligence/device_ai
+
+jobs:
+  quality:
+    name: Lint, Types, Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: intelligence/device_ai/requirements-dev.txt
+
+      - name: Install dependencies
+        # requirements-models.txt (torch/ultralytics) is deliberately not
+        # installed here: the test suite exercises the real business logic
+        # against fakes/mocks for the heavy model dependency, exactly as it
+        # runs in every local/CI-equivalent run throughout this project's
+        # P4-P9 phases — keeps CI fast without skipping real coverage.
+        run: pip install -r requirements-dev.txt
+
+      - name: Lint (ruff) — informational
+        # P9.8: a full-repo ruff pass found ~1,450 pre-existing violations,
+        # accumulated across P4-P9 and never previously CI-gated (this is
+        # the first device_ai CI workflow at all). Fixing that debt is a
+        # dedicated cleanup effort, out of scope for this phase — reported
+        # here for visibility (continue-on-error) rather than either
+        # silently omitted or dishonestly made a blocking gate that would
+        # fail on day one for pre-existing, unrelated debt.
+        run: ruff check .
+        continue-on-error: true
+
+      - name: Type check (mypy) — informational
+        # P9.8: same story — ~200 pre-existing mypy errors, concentrated in
+        # the vendored/generated devices/fabric_pb/ protobuf stubs (mypy
+        # can't see the runtime sys.path bootstrap fabric_gateway_client.py
+        # documents) and pre-P9.8 test files. Not this phase's scope to
+        # fix; informational until a dedicated typing-debt phase tightens
+        # this to blocking.
+        working-directory: intelligence
+        run: mypy device_ai
+        continue-on-error: true
+
+      - name: Test (pytest) — blocking
+        run: python -m pytest -q
+
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: intelligence/device_ai
+          push: false
+          tags: ecotrace-device-ai:ci
