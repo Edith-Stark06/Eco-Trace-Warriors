@@ -25,24 +25,30 @@ export default defineConfig({
         // each group actually changes, not by package name (P7.7 — mobile
         // browser support: smaller, better-cached initial loads matter
         // most on slower connections).
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-data': ['@tanstack/react-query', 'axios', 'zod', 'react-hook-form'],
-          'vendor-ui': [
-            '@radix-ui/react-avatar',
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-scroll-area',
-            '@radix-ui/react-select',
-            '@radix-ui/react-separator',
-            '@radix-ui/react-slot',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-tooltip',
-            'lucide-react',
-            'class-variance-authority',
-            'clsx',
-            'tailwind-merge',
-          ],
+        //
+        // Matched by node_modules path (function form), not the object-form
+        // package-name array: a bare package name only pins that package's
+        // resolved entry point, not its internal submodules. React ships its
+        // real implementation behind an internal cjs/react.production.js
+        // require that isn't the package entry point, so name-only matching
+        // let it drift into vendor-ui and form a circular chunk import with
+        // vendor-react at runtime. Path matching keeps every submodule of a
+        // package in the same chunk regardless of which group imports it.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+          if (/[\\/]node_modules[\\/](react|react-dom|react-router-dom)[\\/]/.test(id)) {
+            return 'vendor-react';
+          }
+          if (/[\\/]node_modules[\\/](@tanstack[\\/]react-query|axios|zod|react-hook-form)[\\/]/.test(id)) {
+            return 'vendor-data';
+          }
+          if (
+            /[\\/]node_modules[\\/](@radix-ui|lucide-react|class-variance-authority|clsx|tailwind-merge)[\\/]/.test(
+              id,
+            )
+          ) {
+            return 'vendor-ui';
+          }
         },
       },
     },
