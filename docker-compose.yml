@@ -103,6 +103,17 @@ services:
       ENVIRONMENT: ${DEVICE_AI_ENVIRONMENT:-development}
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-ecotrace}:${POSTGRES_PASSWORD:-ecotrace123}@postgres:5432/${POSTGRES_DB:-ecotrace}
       SERVICE_API_KEY: ${SERVICE_API_KEY:-}
+      # Selects the mounted checkpoint below; resolved relative to MODEL_DIR
+      # (/app/models, set in the Dockerfile) when not absolute.
+      DETECTOR_WEIGHTS: best.pt
+
+    # The P4.4.2 YOLO11n reference checkpoint (single_model inference mode,
+    # see configs/settings.py) lives in dataset_acquisition/ at the repo
+    # root, outside this service's ./intelligence/device_ai build context —
+    # it is a protected training artifact, not application code, so it is
+    # mounted read-only rather than copied into the image.
+    volumes:
+      - ./dataset_acquisition/training/p4_4_2_bulk_balance_v1/runs/p442_yolo11n/weights/best.pt:/app/models/best.pt:ro
 
     ports:
       - "${DEVICE_AI_PORT:-8100}:8100"

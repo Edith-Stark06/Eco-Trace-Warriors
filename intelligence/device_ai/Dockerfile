@@ -54,6 +54,23 @@ COPY requirements.txt .
 RUN pip install --no-index --find-links=/wheels -r requirements.txt \
     && rm -rf /wheels
 
+# Detector runtime: torch/ultralytics back the real YOLO detector. Installed
+# from the index rather than the wheelhouse above, which holds only the core
+# dependencies. Without these the service finds no usable backend and serves
+# the deterministic mock detector regardless of the checkpoint provisioned
+# under MODEL_DIR.
+#
+# ultralytics depends on the GUI build of opencv-python, which overwrites the
+# headless `cv2` and then fails to import against this slim base (no libxcb).
+# Both builds expose the same API, so drop the GUI one and restore the pinned
+# headless build last. The constraint keeps that pin in requirements-detector.txt
+# rather than duplicating it here.
+COPY requirements-detector.txt .
+RUN pip install -r requirements-detector.txt \
+    && pip uninstall -y opencv-python \
+    && pip install --force-reinstall --no-deps \
+       -c requirements-detector.txt opencv-python-headless
+
 # Copy the application package into an importable location.
 # The service is imported as `device_ai.app:app`.
 COPY . /app/device_ai
