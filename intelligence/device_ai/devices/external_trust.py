@@ -54,6 +54,13 @@ class ExternalTrustAnchor:
     anchored_at: str = field(default_factory=lambda: _utc_now().isoformat())
     status: str = "ANCHORED"
     metadata: dict[str, Any] = field(default_factory=dict)
+    # P9.7: carried through so FabricExternalTrustLedger can register a
+    # device on-chain (RegisterDevice) before anchoring it, when the
+    # chaincode has never seen this device before. Optional/None for the
+    # in-memory ledger and every pre-P9.7 caller, which never needed them.
+    device_eco_id: str | None = None
+    device_class_id: int | None = None
+    device_type: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert external trust anchor to a JSON-serializable dictionary."""
@@ -346,6 +353,42 @@ class FabricExternalTrustLedger:
                 "Hyperledger Fabric external ledger is currently unavailable (not connected to live network).",
                 details={"provider": self._provider, "network": self._network, "channel": self._channel},
             )
+
+        # P9.7: the chaincode's AnchorDevicePassport rejects any device that
+        # was never separately registered on-chain (RegisterDevice) — found
+        # live during P9.6 (the peer's own log: "Device ... not found"). No
+        # caller ever invoked RegisterDevice, so best-effort, idempotent
+        # on-chain registration happens here first when the caller supplied
+        # the device metadata it needs. "Already exists on-chain" (the
+        # expected steady-state outcome once a device has been anchored
+        # once) and any other registration-time failure are both swallowed
+        # here deliberately: the AnchorDevicePassport call immediately below
+        # remains the single authoritative source of truth for whether this
+        # anchor genuinely succeeds, so a real, non-duplicate failure still
+        # surfaces correctly to the caller rather than being masked.
+        if (
+            self._client is not None
+            and anchor.device_eco_id is not None
+            and anchor.device_class_id is not None
+            and anchor.device_type is not None
+        ):
+            try:
+                self._client.submitTransaction(
+                    "RegisterDevice",
+                    anchor.device_id,
+                    anchor.device_eco_id,
+                    str(anchor.device_class_id),
+                    anchor.device_type,
+                    anchor.passport_fingerprint,
+                    "{}",
+                )
+                logger.bind(device_id=anchor.device_id).info(
+                    "Device registered on-chain prior to external anchoring."
+                )
+            except Exception:  # noqa: BLE001 - deliberately best-effort, see comment above
+                logger.bind(device_id=anchor.device_id).debug(
+                    "On-chain RegisterDevice pre-step did not succeed (commonly: already registered)."
+                )
 
         # Gateway invocation when live client is present
         try:

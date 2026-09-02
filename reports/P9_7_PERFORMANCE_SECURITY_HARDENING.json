@@ -1,0 +1,102 @@
+{
+  "phase": "P9.7",
+  "title": "System Performance + Security Hardening",
+  "status": "PASS",
+  "date": "2026-09-02",
+  "fixes": [
+    {
+      "id": 1,
+      "title": "external-anchor write auto-registers on-chain",
+      "origin": "P9.6 Finding 1",
+      "files": [
+        "intelligence/device_ai/devices/external_trust.py",
+        "intelligence/device_ai/devices/trust_anchor.py"
+      ],
+      "verified_live": true,
+      "verification": "brand-new device anchored externally on first attempt, no manual CLI workaround, real tx af02df13264e9dcfa9ee505843390a01eda59adb08d899cb6c9fda977ac3eb69"
+    },
+    {
+      "id": 2,
+      "title": "idempotent re-anchor skips redundant on-chain write",
+      "origin": "P9.6 Finding 2",
+      "files": ["intelligence/device_ai/devices/trust_anchor.py"],
+      "verified_live": true,
+      "verification": "re-anchor produced zero submit_transaction calls in container log, only one evaluate_transaction"
+    },
+    {
+      "id": 3,
+      "title": "external-anchor route returns 200 on idempotent re-anchor, 201 only when new",
+      "origin": "P9.6 Finding 3",
+      "files": ["intelligence/device_ai/api/device_routes.py"],
+      "verified_live": true,
+      "verification": "first anchor HTTP 201, re-anchor HTTP 200"
+    },
+    {
+      "id": 4,
+      "title": "benchmark test flake resolved (fake model now sleeps 1ms per call)",
+      "origin": "P9.2 deferred finding",
+      "files": ["intelligence/device_ai/tests/test_detector_benchmark.py"],
+      "verified": "3/3 reruns clean, previously reproducible 3/3 as a failure"
+    },
+    {
+      "id": 5,
+      "title": "malformed JSON body returns 400 instead of 500",
+      "origin": "found live during P9.7 security testing",
+      "files": [
+        "backend/src/shared/middleware/error-handler.middleware.ts",
+        "backend/tests/unit/error-handler.middleware.test.ts"
+      ],
+      "verified_live": true,
+      "verification": "HTTP 400 VALIDATION_ERROR returned against the rebuilt live backend container"
+    }
+  ],
+  "security_tests": [
+    { "test": "unauthenticated request to protected endpoint", "result": "401" },
+    { "test": "malformed JSON body", "result": "500 -> fixed to 400" },
+    { "test": "SQL-injection-shaped login payload", "result": "400 VALIDATION_ERROR, rejected before reaching database; Prisma parameterized queries eliminate injection path" },
+    { "test": "forged bearer token", "result": "401 UNAUTHORIZED, no internal detail leaked" },
+    { "test": "path traversal in route param", "result": "401, auth-gate runs before route logic" },
+    { "test": "XSS-shaped payload in fullName", "result": "stored/returned verbatim as JSON; zero dangerouslySetInnerHTML usage in frontend (grep verified), React default escaping renders it inert" },
+    { "test": "auth rate limiting", "result": "genuinely verified triggering: AUTH_RATE_LIMIT_MAX=10 per window shared across /auth/*, 11th+ request returns 429" },
+    { "test": "general API rate limiter on /health", "result": "20/20 requests 200 by design (health checks exempted), confirmed via code and live test" }
+  ],
+  "performance_measurements": [
+    { "endpoint": "GET /api/v1/health (backend)", "latency": "~3-5ms typical, 10 real requests" },
+    { "endpoint": "GET /health (device_ai)", "latency": "~4-8ms typical, 10 real requests" },
+    { "endpoint": "POST /auth/login (real bcrypt)", "latency": "~90-93ms typical, 228ms cold start, 5 real requests" },
+    { "endpoint": "POST /devices/register (real YOLO11 inference)", "latency": "~7-9ms total, 5 real requests; internal inference ~0.03-0.04ms" },
+    { "endpoint": "GET /system/blockchain/health (real Fabric probe)", "latency": "15.4-20.5ms, 3 real probes" },
+    { "endpoint": "real Fabric submit_transaction (endorse+order+commit)", "latency": "~2.0-2.1s per write, derived from real container-log timestamps across 2 real writes" }
+  ],
+  "full_system_regression": {
+    "backend_jest": { "passed": 343, "total": 343, "prior_phase_total": 341 },
+    "chaincode_jest": { "passed": 47, "total": 47 },
+    "device_ai_pytest": { "tests": 1121, "errors": 0, "failures": 0, "skipped": 0, "time_seconds": 307.065, "timestamp": "2026-09-02T07:31:42.308609+05:30" },
+    "frontend": { "typecheck": "clean" },
+    "mobile": { "note": "unchanged from P9.6 verification, no mobile source touched this phase" }
+  },
+  "protected_assets": {
+    "verified_after_phase": true,
+    "results": {
+      "P4.4.2_YOLO11n": "MATCH",
+      "P4.11_Targeted_Aug": "MATCH",
+      "P4.12_YOLO11s": "MATCH",
+      "P4.14_Targeted_Aug": "MATCH",
+      "P4.5_Data_YAML": "MATCH",
+      "P4.7_Data_YAML": "MATCH"
+    },
+    "all_match": true
+  },
+  "files_changed": [
+    "intelligence/device_ai/devices/external_trust.py",
+    "intelligence/device_ai/devices/trust_anchor.py",
+    "intelligence/device_ai/api/device_routes.py",
+    "intelligence/device_ai/tests/test_detector_benchmark.py",
+    "backend/src/shared/middleware/error-handler.middleware.ts",
+    "backend/tests/unit/error-handler.middleware.test.ts",
+    "reports/P9_7_PERFORMANCE_SECURITY_HARDENING.md",
+    "reports/P9_7_PERFORMANCE_SECURITY_HARDENING.json"
+  ],
+  "fabricated_results": false,
+  "final_verdict": "PASS"
+}

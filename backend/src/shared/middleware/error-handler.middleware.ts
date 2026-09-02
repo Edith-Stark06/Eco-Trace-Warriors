@@ -50,6 +50,29 @@ export function errorHandler(logger: Logger): ErrorRequestHandler {
       return;
     }
 
+    // express.json() throws a SyntaxError (status 400, type
+    // 'entity.parse.failed') for a malformed request body. Without this
+    // check it falls through to the generic 500 below (found live during
+    // P9.7 security testing) — a client mistake should never be reported
+    // as a server error.
+    if (
+      err instanceof SyntaxError &&
+      'status' in err &&
+      (err as SyntaxError & { status?: number }).status === 400 &&
+      'type' in err &&
+      (err as SyntaxError & { type?: string }).type === 'entity.parse.failed'
+    ) {
+      const body: ErrorResponse = {
+        success: false,
+        error: {
+          code: ErrorCodes.VALIDATION_ERROR,
+          message: 'The request body is not valid JSON.',
+        },
+      };
+      res.status(400).json(body);
+      return;
+    }
+
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       const mapped = PRISMA_ERROR_MAP[err.code];
       if (mapped) {

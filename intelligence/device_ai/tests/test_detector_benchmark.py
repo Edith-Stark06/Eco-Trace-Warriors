@@ -8,6 +8,7 @@ shape.
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 
 import pytest
@@ -19,17 +20,27 @@ from device_ai.training.detector.benchmark import (
 
 
 class _FakeModel:
-    """A fake model recording how many times it was called."""
+    """A fake model recording how many times it was called.
+
+    ``predict``/``__call__`` sleep briefly so measured latency is reliably
+    nonzero regardless of host speed (P9.7: without this, a near-zero-cost
+    mock call can round to exactly 0.000ms on a fast/idle machine, failing
+    the ``latency_ms > 0`` assertion below — a real, reproducible test
+    fragility found live during P9.2, root-caused here rather than in the
+    production rounding logic, which is correct).
+    """
 
     def __init__(self) -> None:
         self.call_count = 0
 
     def predict(self, sample: object, **kwargs: object) -> None:
         """Mimic Ultralytics' predict API."""
+        time.sleep(0.001)
         self.call_count += 1
 
     def __call__(self, sample: object) -> None:
         """Mimic the direct-call fallback."""
+        time.sleep(0.001)
         self.call_count += 1
 
 
