@@ -721,7 +721,7 @@ class DevicePassportTrustService:
             ExternalLedgerUnavailableError: If external ledger is unreachable.
         """
         # 1. Device existence
-        self._device_service.get_device(device_id)
+        device = self._device_service.get_device(device_id)
 
         # 2. Local trust validation
         local_trust = self.get_device_trust_status(device_id)
@@ -750,6 +750,16 @@ class DevicePassportTrustService:
         existing = self._external_ledger.get_anchor(device_id)
         is_new = existing is None or existing.passport_fingerprint != fingerprint
 
+        # P9.7: an unchanged fingerprint against an already-anchored device is
+        # a no-op by definition — skip the ledger call entirely rather than
+        # submitting a redundant write (on a live Fabric backend, every write
+        # costs a real endorsement/ordering round trip; P9.6 found this
+        # submitting a second real on-chain transaction for identical data).
+        # `overwrite` still forces a real write, matching the existing
+        # semantics of that flag elsewhere in this class.
+        if existing is not None and not is_new and not overwrite:
+            return existing, False
+
         ext_anchor = ExternalTrustAnchor(
             external_anchor_id=f"ext-anc-{uuid.uuid4().hex[:12]}",
             device_id=device_id,
@@ -761,6 +771,9 @@ class DevicePassportTrustService:
             anchored_at=_utc_now().isoformat(),
             status="ANCHORED",
             metadata=metadata or {},
+            device_eco_id=device.metadata.get("eco_id"),
+            device_class_id=device.class_id,
+            device_type=device.device_type,
         )
 
         saved = self._external_ledger.anchor(ext_anchor, overwrite=overwrite)

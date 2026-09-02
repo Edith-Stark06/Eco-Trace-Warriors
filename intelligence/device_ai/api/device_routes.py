@@ -785,18 +785,24 @@ def reanchor_device_passport(
 @router.post(
     "/{device_id}/passport/external-anchor",
     response_model=ExternalTrustAnchorResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_200_OK,
 )
 def anchor_device_passport_externally(
     request: Request,
+    response: Response,
     device_id: str,
     trust_service: Annotated[DevicePassportTrustService, Depends(get_trust_service)],
     body: AnchorPassportRequest | None = None,
 ) -> ExternalTrustAnchorResponse:
     """Submit and record an external / blockchain trust anchor for a locally verified passport (P5.11).
 
+    Status codes (P9.7, matching the sibling ``/passport/anchor`` route):
+    - 201 Created: When a new external anchor is created.
+    - 200 OK: When returning an existing idempotent anchor.
+
     Args:
         request: Active HTTP request.
+        response: Active HTTP response (to set 201 status code on new anchor creation).
         device_id: Public device identifier.
         trust_service: Injected DevicePassportTrustService.
         body: Optional anchor request with metadata.
@@ -811,6 +817,9 @@ def anchor_device_passport_externally(
         device_id=device_id,
         metadata=metadata,
     )
+
+    if is_new:
+        response.status_code = status.HTTP_201_CREATED
 
     return ExternalTrustAnchorResponse(
         success=True,

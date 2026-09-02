@@ -72,6 +72,43 @@ describe('errorHandler — Prisma error mapping', () => {
   });
 });
 
+describe('errorHandler — malformed JSON body (P9.7)', () => {
+  /** Builds the SyntaxError shape express.json() actually throws for bad JSON. */
+  function bodyParserSyntaxError(): SyntaxError {
+    const err = new SyntaxError('Unexpected token o in JSON at position 1') as SyntaxError & {
+      status?: number;
+      type?: string;
+    };
+    err.status = 400;
+    err.type = 'entity.parse.failed';
+    return err;
+  }
+
+  it('maps a malformed-JSON body-parser error to 400 VALIDATION_ERROR, not 500', () => {
+    const { res, status, json } = buildRes();
+
+    errorHandler(logger)(bodyParserSyntaxError(), req, res, jest.fn());
+
+    expect(status).toHaveBeenCalledWith(400);
+    expect(json).toHaveBeenCalledWith({
+      success: false,
+      error: { code: 'VALIDATION_ERROR', message: expect.any(String) },
+    });
+  });
+
+  it('does not treat an unrelated SyntaxError as a malformed body', () => {
+    const { res, status, json } = buildRes();
+
+    errorHandler(logger)(new SyntaxError('unrelated'), req, res, jest.fn());
+
+    expect(status).toHaveBeenCalledWith(500);
+    expect(json).toHaveBeenCalledWith({
+      success: false,
+      error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred.' },
+    });
+  });
+});
+
 describe('errorHandler — precedence and fallback', () => {
   it('honours AppError over the Prisma branch and preserves its status/code', () => {
     const { res, status, json } = buildRes();
