@@ -22,7 +22,8 @@ export function SubmissionHistoryScreen({ navigation }: Props) {
   if (status === 'error') return <ErrorState message={error ?? 'Unable to load history.'} onRetry={refresh} />;
 
   const failedQueueItems = queue.filter((item) => item.status === 'failed');
-  const pendingQueueItems = queue.filter((item) => item.status !== 'failed');
+  const conflictQueueItems = queue.filter((item) => item.status === 'conflict');
+  const pendingQueueItems = queue.filter((item) => item.status === 'pending' || item.status === 'syncing');
 
   return (
     <View style={styles.container}>
@@ -43,6 +44,19 @@ export function SubmissionHistoryScreen({ navigation }: Props) {
           >
             <Text style={styles.retryButtonText}>{isSyncing ? 'Retrying…' : 'Retry all'}</Text>
           </Pressable>
+        </View>
+      )}
+
+      {conflictQueueItems.length > 0 && (
+        <View style={styles.conflictSection}>
+          <Text style={styles.conflictSectionTitle}>Needs your attention ({conflictQueueItems.length})</Text>
+          {conflictQueueItems.map((item) => (
+            <View key={item.id} style={styles.conflictRow}>
+              <Text style={styles.conflictText} accessibilityRole="alert">
+                {item.deviceType} was already finalized elsewhere — check its current status; retrying will not help.
+              </Text>
+            </View>
+          ))}
         </View>
       )}
 
@@ -81,6 +95,10 @@ const styles = StyleSheet.create({
   failedText: { fontSize: 13, color: '#991B1B' },
   retryButton: { marginHorizontal: 16, marginTop: 8, backgroundColor: '#B91C1C', borderRadius: 6, paddingVertical: 8, alignItems: 'center', minHeight: 40 },
   retryButtonText: { color: '#FFFFFF', fontWeight: '600', fontSize: 13 },
+  conflictSection: { backgroundColor: '#FEF3C7', paddingBottom: 8 },
+  conflictSectionTitle: { fontSize: 14, fontWeight: '700', color: '#92400E', margin: 16, marginBottom: 4 },
+  conflictRow: { paddingHorizontal: 16, paddingVertical: 4 },
+  conflictText: { fontSize: 13, color: '#92400E' },
   pendingNote: { fontSize: 13, color: '#92400E', backgroundColor: '#FEF3C7', padding: 12 },
   row: { paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#F3F4F6', minHeight: 44 },
   rowTitle: { fontSize: 15, fontWeight: '600', color: '#111827' },

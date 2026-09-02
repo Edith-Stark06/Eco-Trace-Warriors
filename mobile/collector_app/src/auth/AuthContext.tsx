@@ -1,8 +1,11 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { authApi } from '../api/authApi';
+import { setSessionExpiredHandler } from '../api/client';
 import { secureStorage } from '../storage/secureStorage';
 import { ApiError } from '../api/ApiError';
 import type { PublicUser } from '../types/auth';
+
+const SESSION_EXPIRED_MESSAGE = 'Your session has expired. Please sign in again.';
 
 interface AuthState {
   status: 'loading' | 'authenticated' | 'unauthenticated';
@@ -21,12 +24,24 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 /**
  * Session lifecycle for the Collector app: persists tokens in secure
  * storage (P8.7 pattern), restores the session on cold start via GET
- * /auth/me, and exposes login/logout to the rest of the app. Mirrors the
- * Flutter app's AuthProvider/auth_repository split but as a single
- * context, matching this codebase's simpler screen count.
+ * /auth/me, and exposes login/logout to the rest of the app.
+ *
+ * Registers `setSessionExpiredHandler` (P9.5) so that when `apiClient`'s
+ * background token refresh genuinely fails — a refresh token existed and
+ * the server rejected it, not merely "never logged in" — this context
+ * reacts immediately: flips to `unauthenticated` with a clear message,
+ * rather than leaving the app parked on authenticated screens issuing
+ * 401s with no path back to the login screen.
  */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({ status: 'loading', user: null, error: null });
+
+  useEffect(() => {
+    setSessionExpiredHandler(() => {
+      setState({ status: 'unauthenticated', user: null, error: SESSION_EXPIRED_MESSAGE });
+    });
+    return () => setSessionExpiredHandler(null);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

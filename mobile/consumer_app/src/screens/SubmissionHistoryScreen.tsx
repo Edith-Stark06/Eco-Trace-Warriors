@@ -15,7 +15,8 @@ export function SubmissionHistoryScreen() {
   if (status === 'error') return <ErrorState message={error ?? 'Unable to load your submissions.'} onRetry={refresh} />;
 
   const failed = queue.filter((i) => i.status === 'failed');
-  const pending = queue.filter((i) => i.status !== 'failed');
+  const conflicted = queue.filter((i) => i.status === 'conflict');
+  const pending = queue.filter((i) => i.status === 'pending' || i.status === 'syncing');
 
   return (
     <View style={styles.container}>
@@ -24,6 +25,14 @@ export function SubmissionHistoryScreen() {
           <Text style={styles.failedText}>{failed.length} report(s) failed to submit</Text>
           <Text onPress={syncNow} accessibilityRole="button" accessibilityLabel="Retry" style={styles.retryLink}>
             {isSyncing ? 'Retrying…' : 'Retry'}
+          </Text>
+        </View>
+      )}
+      {conflicted.length > 0 && (
+        <View style={styles.conflictBanner} accessibilityRole="alert">
+          <Text style={styles.conflictText}>
+            {conflicted.length} report(s) could not be submitted — this may already have been recorded. Check your
+            submission history before reporting again.
           </Text>
         </View>
       )}
@@ -52,6 +61,8 @@ const styles = StyleSheet.create({
   failedBanner: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FEE2E2', padding: 12 },
   failedText: { color: '#991B1B', fontSize: 13 },
   retryLink: { color: '#B91C1C', fontWeight: '700', fontSize: 13 },
+  conflictBanner: { backgroundColor: '#FEF3C7', padding: 12 },
+  conflictText: { color: '#92400E', fontSize: 13 },
   pendingNote: { fontSize: 13, color: '#92400E', backgroundColor: '#FEF3C7', padding: 12 },
   row: { paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#F3F4F6', minHeight: 44 },
   rowTitle: { fontSize: 15, fontWeight: '600', color: '#111827' },
