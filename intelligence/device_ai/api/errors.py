@@ -10,6 +10,7 @@ shape.
 from __future__ import annotations
 
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from loguru import logger
@@ -68,12 +69,17 @@ def register_exception_handlers(app: FastAPI) -> None:
         request: Request, exc: RequestValidationError
     ) -> JSONResponse:
         logger.warning("Request validation failed")
+        # Pydantic v2 puts the raw exception instance in some errors' `ctx`
+        # (e.g. a failed UploadFile check) — not JSON-serializable, so this
+        # response would itself throw and fall through to the generic 500
+        # handler below without jsonable_encoder here (mirrors FastAPI's own
+        # built-in validation handler, which does the same for this reason).
         return _envelope(
             code="REQUEST_VALIDATION_ERROR",
             message="Request payload failed validation.",
             status_code=422,
             request_id=_request_id(request),
-            details={"errors": exc.errors()},
+            details={"errors": jsonable_encoder(exc.errors())},
         )
 
     @app.exception_handler(StarletteHTTPException)

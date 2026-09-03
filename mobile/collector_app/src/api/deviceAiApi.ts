@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { env } from '../config/env';
 import { ApiError } from './ApiError';
 import type {
@@ -59,11 +60,38 @@ export interface CapturedImage {
   type: string;
 }
 
-function toFormData(images: CapturedImage[], captureId?: string): FormData {
+/**
+ * Converts a captured image into the value FormData.append() needs on this
+ * platform.
+ *
+ * Native (iOS/Android): React Native's fetch FormData polyfill accepts the
+ * `{ uri, name, type }` shape directly and streams from the native file URI
+ * — this is the RN-specific upload convention, not a real Blob/File.
+ *
+ * Web: the browser's real FormData.append() only accepts a Blob, File, or
+ * string. A plain `{ uri, name, type }` object is silently coerced to the
+ * string "[object Object]" instead of being rejected — no error, just a
+ * multipart text field with no image bytes in it (CHANGE-009). CaptureScreen
+ * hands web a data:/blob: URI (from expo-camera's canvas-based web capture),
+ * which `fetch()` can read directly and turn into a real Blob.
+ */
+async function toFormPart(image: CapturedImage): Promise<Blob | { uri: string; name: string; type: string }> {
+  if (Platform.OS !== 'web') {
+    return { uri: image.uri, name: image.name, type: image.type };
+  }
+  const res = await fetch(image.uri);
+  return res.blob();
+}
+
+async function toFormData(images: CapturedImage[], captureId?: string): Promise<FormData> {
   const form = new FormData();
   for (const image of images) {
-    // React Native's fetch FormData accepts this { uri, name, type } shape directly.
-    form.append('images', { uri: image.uri, name: image.name, type: image.type } as unknown as Blob);
+    const part = await toFormPart(image);
+    if (part instanceof Blob) {
+      form.append('images', part, image.name);
+    } else {
+      form.append('images', part as unknown as Blob);
+    }
   }
   if (captureId) {
     form.append('capture_id', captureId);
@@ -72,11 +100,9 @@ function toFormData(images: CapturedImage[], captureId?: string): FormData {
 }
 
 export const deviceAiApi = {
-  registerDevices(images: CapturedImage[], captureId?: string): Promise<DeviceRegistrationResponse> {
-    return deviceAiRequest<DeviceRegistrationResponse>('/devices/register', {
-      method: 'POST',
-      body: toFormData(images, captureId),
-    });
+  async registerDevices(images: CapturedImage[], captureId?: string): Promise<DeviceRegistrationResponse> {
+    const body = await toFormData(images, captureId);
+    return deviceAiRequest<DeviceRegistrationResponse>('/devices/register', { method: 'POST', body });
   },
   confirm(deviceId: string): Promise<DeviceStateUpdateResponse> {
     return deviceAiRequest<DeviceStateUpdateResponse>(`/devices/${deviceId}/confirm`, { method: 'POST' });
