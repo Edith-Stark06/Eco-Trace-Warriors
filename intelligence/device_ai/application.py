@@ -11,6 +11,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
 from . import __version__
@@ -77,6 +78,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Opt-in service-to-service auth (P8.7) — allows every request when
     # settings.service_api_key is unset, matching pre-P8.7 behavior exactly.
     app.add_middleware(ServiceApiKeyMiddleware, settings=settings)
+    # Added last so it is the outermost middleware (Starlette wraps in
+    # reverse add order): handles OPTIONS preflight before it would ever
+    # reach ServiceApiKeyMiddleware/routing, and attaches CORS headers to
+    # every response — including error responses (4xx/5xx) — not just
+    # successful ones. Exact-origin allowlist only, never "*" (CHANGE-009).
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     register_exception_handlers(app)
     app.include_router(router)

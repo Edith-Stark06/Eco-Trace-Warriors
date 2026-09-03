@@ -9,6 +9,7 @@ Environment variables
 ---------------------
 ``HOST``            Interface the server binds to.
 ``PORT``            TCP port the server listens on.
+``CORS_ORIGINS``    Comma-separated allowlist of browser origins permitted by CORS.
 ``MODEL_DIR``       Root directory holding versioned model artifacts.
 ``UPLOAD_DIR``      Directory for transient upload persistence (optional use).
 ``DATASET_DIR``     Root directory holding the managed dataset sub-folders.
@@ -52,7 +53,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, ValidationInfo, field_validator, model_validator
+from pydantic import Field, ValidationInfo, computed_field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Media types accepted by the prediction endpoint. Declared here (single
@@ -136,6 +137,12 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
+        # cors_origins_raw below aliases to CORS_ORIGINS (so the env var name
+        # stays stable while the Python attribute name stays free for the
+        # parsed-list computed property); this lets callers construct
+        # Settings(cors_origins_raw=...) directly (tests, this module) as well
+        # as via the alias (env parsing), instead of only the alias.
+        populate_by_name=True,
     )
 
     # --- Service identity ------------------------------------------------
@@ -151,6 +158,31 @@ class Settings(BaseSettings):
     # --- Networking ------------------------------------------------------
     host: str = Field(default="0.0.0.0", description="Bind interface.")
     port: int = Field(default=8100, ge=1, le=65535, description="Bind port.")
+    # Stored as the raw string, not list[str]: pydantic-settings tries to
+    # JSON-decode any env value bound to a list-typed field before any
+    # model validator runs, so a plain comma-separated value here (not a
+    # JSON array) would fail to even construct Settings — crash-looping the
+    # service on every startup, not just a bad request. See cors_origins
+    # below for the parsed, exact-match allowlist consumers should use.
+    cors_origins_raw: str = Field(
+        default="",
+        alias="CORS_ORIGINS",
+        description=(
+            "Comma-separated allowlist of browser origins permitted by CORS. "
+            "Exact-match only (no wildcard/pattern support) — every origin a "
+            "frontend is actually served from must be listed explicitly. "
+            "Empty by default (no browser origin allowed) so a forgotten "
+            "override fails closed, not open. Mirrors the Node backend's "
+            "CORS_ORIGINS convention (backend/src/shared/config/env.schema.ts) "
+            "so both services read the same environment variable shape."
+        ),
+    )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def cors_origins(self) -> list[str]:
+        """The parsed, trimmed, non-empty CORS origin allowlist."""
+        return [origin.strip() for origin in self.cors_origins_raw.split(",") if origin.strip()]
 
     # --- Filesystem locations -------------------------------------------
     model_dir: Path = Field(

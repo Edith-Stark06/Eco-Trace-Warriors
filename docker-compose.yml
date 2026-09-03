@@ -116,6 +116,11 @@ services:
       # Selects the mounted checkpoint below; resolved relative to MODEL_DIR
       # (/app/models, set in the Dockerfile) when not absolute.
       DETECTOR_WEIGHTS: best.pt
+      # Same allowlist and rationale as the backend service's CORS_ORIGINS
+      # above (CHANGE-009) — the Collector app calls this service directly
+      # from the browser (POST /devices/register etc.), not only through
+      # the Node backend, so it needs the same origin allowlist.
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:5173,http://10.13.29.243:5173,http://localhost:8081,http://localhost:8082}
 
     # The P4.4.2 YOLO11n reference checkpoint (single_model inference mode,
     # see configs/settings.py) lives in dataset_acquisition/ at the repo
