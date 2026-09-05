@@ -41,8 +41,10 @@ import sys
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
-# Flip to False only after this recovery step's own dry-run has re-verified
-# the fixed runtime-YAML dataset resolution (see section 4b below).
+# Resting state is always True. The one authorized real training run
+# (kernel version 5, 2026-09-06) was pushed from a local copy with this
+# flipped to False — see README.md's "Real training result" section for
+# the outcome. Never commit this as False.
 # ---------------------------------------------------------------------------
 DRY_RUN = True
 
@@ -489,16 +491,48 @@ if DRY_RUN:
     print("Sections 9-14 (validation/evaluation/comparison/export) require a")
     print("real training run and are not executed in this phase.")
 else:
-    # Immediate pre-train recheck: sections 5's gate already ran above, but
-    # the recipe explicitly requires re-verifying right before model.train()
-    # rather than trusting a check that happened a few sections earlier.
-    _recheck_names = [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())]
+    # Immediate pre-train rechecks: sections 4b/5's gates already ran above,
+    # but the recipe explicitly requires re-verifying right before
+    # model.train() rather than trusting checks that happened a few
+    # sections earlier.
+    if not torch.cuda.is_available():
+        _fail("Pre-train recheck failed: CUDA no longer available.")
+    _recheck_count = torch.cuda.device_count()
+    _recheck_names = [torch.cuda.get_device_name(i) for i in range(_recheck_count)]
     if not all("T4" in name for name in _recheck_names):
         _fail(
             f"Pre-train GPU recheck failed: expected T4-class GPU(s), got "
             f"{_recheck_names}. Refusing to start training."
         )
-    print(f"Pre-train GPU recheck passed: {_recheck_names}")
+    try:
+        _ra = torch.randn(64, 64, device="cuda")
+        _rb = torch.randn(64, 64, device="cuda")
+        _ = (_ra @ _rb).sum().item()
+    except RuntimeError as exc:
+        _fail(f"Pre-train functional CUDA smoke test FAILED: {exc}")
+    print(f"Pre-train GPU recheck passed: count={_recheck_count}, names={_recheck_names}, "
+          "functional CUDA smoke test PASSED")
+
+    # Re-verify the runtime dataset YAML resolves identically, right before
+    # training — the exact same proof as section 4b, repeated here so a
+    # training start is never gated on a check performed sections earlier.
+    _pretrain_resolved = check_det_dataset(str(runtime_yaml_path))
+    _pretrain_counts = {}
+    for split in ("train", "val", "test"):
+        entry = _pretrain_resolved.get(split)
+        paths = entry if isinstance(entry, list) else [entry]
+        paths = [Path(p) for p in paths if p is not None]
+        if any(not p.is_dir() for p in paths):
+            _fail(f"Pre-train dataset recheck failed for split '{split}': {paths}")
+        _pretrain_counts[split] = sum(len(list(p.glob("*.jpg"))) for p in paths)
+    if _pretrain_counts != EXPECTED_COUNTS:
+        _fail(f"Pre-train dataset recheck: counts {_pretrain_counts} != {EXPECTED_COUNTS}")
+    _pretrain_nc = _pretrain_resolved.get("nc")
+    _pretrain_names = {int(k): v for k, v in (_pretrain_resolved.get("names") or {}).items()}
+    if _pretrain_nc != 8 or _pretrain_names != EXPECTED_CLASS_NAMES:
+        _fail(f"Pre-train dataset recheck: taxonomy mismatch nc={_pretrain_nc} names={_pretrain_names}")
+    print(f"Pre-train dataset recheck passed: counts={_pretrain_counts}, "
+          f"nc=8, taxonomy matches {EXPECTED_CLASS_NAMES}")
 
     import time as _time
 
@@ -610,7 +644,12 @@ else:
     val_box = val_results.box
     run_summary = {
         "train_duration_seconds": train_duration_seconds,
-        "epochs_completed": int(results.epoch) + 1 if hasattr(results, "epoch") else None,
+        # `results` (model.train()'s return value) carries final validation
+        # metrics, not an epoch counter; the trainer itself tracks the last
+        # completed epoch (0-indexed) as model.trainer.epoch.
+        "epochs_completed": (
+            int(model.trainer.epoch) + 1 if getattr(model, "trainer", None) is not None else None
+        ),
         "best_pt": {
             "path": str(best_path),
             "sha256": candidate_sha256,
