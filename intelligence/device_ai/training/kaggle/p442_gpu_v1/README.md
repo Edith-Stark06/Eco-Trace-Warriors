@@ -115,5 +115,36 @@ clean end-to-end: resolved runtime yaml `path` =
 `/kaggle/input/datasets/edithstark/ecotrace-p442-yolo11n-gpu-v1`, resolved
 `train`/`val`/`test` counts `763/164/92` (exact match), `nc==8` + exact
 class names confirmed via the resolver's own output, GPU hard gate passed
-(`2x Tesla T4`). `model.train()` correctly skipped (dry-run) — real training
-has not yet been re-attempted pending explicit authorization.
+(`2x Tesla T4`).
+
+## Real training result (2026-09-06, kernel version 5, candidate — NOT production)
+
+Under explicit authorization, a local copy with `DRY_RUN=False` (plus a
+repeat of the section 4b/5 gates immediately before `model.train()`, added
+for this run) was pushed as version 5. All 50 epochs completed normally —
+`patience=20` never triggered early stopping. Wall-clock training duration:
+~1003s (~16.7 min); total kernel run ~1051s (~17.5 min).
+
+- **Candidate checkpoint**: `best.pt` SHA256
+  `4a441d0a64519eadf5a72a79422e723929c11b2b5065d9bdc3567745d86412fb`
+  (5,444,954 bytes) — best epoch 46 of 50 by validation mAP50-95.
+  **Different from, and never derived from, the production checkpoint.**
+- **Test-split metrics** (92 images): precision 0.580, recall 0.538,
+  mAP50 0.612, mAP50-95 0.447.
+- **Weakest classes**: smartphone (AP50 0.316, precision 0.163, recall 0.20)
+  and laptop (AP50 0.347) — both far below the others. Strongest: printer
+  (AP50 0.870), monitor (AP50 0.809, precision 0.864).
+- **No same-test-set baseline exists** to compare against — the P4.4.2
+  production checkpoint has never been evaluated on this exact 92-image
+  test split under a documented procedure (the only documented production
+  evaluation is against the separate P4.5 real-world set), so no baseline
+  comparison is reported rather than inferring one.
+- Production checkpoint SHA256 re-verified unchanged after this run:
+  `c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92`.
+- Candidate artifacts (best.pt/last.pt, results.csv, args.yaml, plots,
+  confusion matrices, run_summary.json) remain under
+  `/kaggle/working/ecotrace_p442_gpu_v1/` on Kaggle only — never promoted,
+  copied, or committed into this repository.
+
+This is one experimental candidate result, not a production decision.
+Promotion (if ever warranted) is a separate, explicit, human-approved step.
