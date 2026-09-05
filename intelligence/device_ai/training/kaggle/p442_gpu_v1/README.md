@@ -36,34 +36,32 @@ PYTHONUTF8=1 python -m kaggle kernels output edithstark/ecotrace-p4-4-2-gpu-dry-
 log-writing code on Windows — otherwise `output` fails with a `UnicodeEncodeError`
 before writing anything.)
 
-## Known blocker (2026-09-05, kernel versions 1-5)
+## GPU history
 
-**Real training cannot proceed yet.** This account's Kaggle GPU accelerator
-pool currently assigns a **Tesla P100 (compute capability sm_60)**, but the
-pre-installed PyTorch build on Kaggle's Python image is `2.10.0+cu128`, which
-only supports `sm_70` and above. `torch.cuda.is_available()` returns `True`
-(the device is *visible*), but any real CUDA op fails:
+**Script-kernel dry runs (2026-09-05, `ecotrace-p4-4-2-gpu-dry-run-v1`,
+versions 1-5)**: this account's GPU accelerator pool assigned a **Tesla P100
+(compute capability sm_60)**, incompatible with Kaggle's pre-installed
+PyTorch build (`2.10.0+cu128`, supports `sm_70`+ only). `torch.cuda.is_available()`
+returned `True` (device *visible*) but any real CUDA op failed:
+`CUDA error: no kernel image is available for execution on the device`.
+Confirmed deterministic across two separate pushes (versions 3 and 5), not
+transient. The functional smoke test (an actual GPU matmul, not just
+`is_available()`) caught this and hard-stopped rather than training on CPU
+or crashing mid-run.
 
-```
-CUDA error: no kernel image is available for execution on the device
-```
+**Resolved (2026-09-06, notebook `notebook0bbb1ac713`, version 2)**: a real
+Kaggle *notebook* (not a script kernel) was created via the web UI with
+`machine_shape: NvidiaTeslaT4` explicitly set, and the private dataset
+attached. Pushing this same `train_p442_gpu.py` logic (embedded as the
+notebook's one code cell — same file, unchanged recipe, not a second
+divergent script) to that notebook produced a clean run: **2x Tesla T4**,
+`sm_75`, functional smoke test passed. A second, explicit named hard gate
+was added (`gpu_names`/`"T4" in name` check, not just the functional test)
+per instruction, so a future P100 reallocation fails loudly and immediately
+even if some future PyTorch build happens to support `sm_60`.
 
-This is deterministic, not transient — confirmed identically on two separate
-pushes (versions 3 and 5). The script's section-1 functional smoke test
-(an actual GPU matmul, not just `is_available()`) catches this and hard-stops
-in section 5 rather than silently training on CPU or crashing mid-run.
-
-Before Phase 4 (real training), one of these needs to happen:
-- Request a different accelerator for the kernel (e.g. a T4 x2, which this
-  PyTorch build does support) — the CLI/metadata schema used here
-  (`enable_gpu: "true"`) does not expose a specific-accelerator-type field;
-  this may require the Kaggle web UI's notebook editor accelerator picker,
-  or a `--accelerator` CLI value discovered/tested separately.
-- Or install a PyTorch build with `sm_60` support in the kernel before
-  importing `ultralytics`.
-
-Do not attempt to route around this by disabling the functional check —
-training would silently corrupt or crash.
+Do not attempt to route around either check by disabling it — training on
+an unverified accelerator would silently corrupt or crash.
 
 ## Dataset path discovery
 
