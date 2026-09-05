@@ -41,7 +41,8 @@ import sys
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
-# Flip to False only in Phase 4, after Phase 3's dry run has passed cleanly.
+# Flip to False only after this recovery step's own dry-run has re-verified
+# the fixed runtime-YAML dataset resolution (see section 4b below).
 # ---------------------------------------------------------------------------
 DRY_RUN = True
 
@@ -278,6 +279,94 @@ print("Zero missing image/label pairs, zero orphan labels, zero invalid class id
 
 
 # ---------------------------------------------------------------------------
+# 4b. Runtime dataset YAML + real Ultralytics dataset-resolution proof
+#
+# ROOT CAUSE of kernel version 3's infrastructure failure (0 epochs, no
+# weights): the attached dataset's own data.yaml has `path: .`. Ultralytics'
+# check_det_dataset() resolves that relative `path` against the CURRENT
+# WORKING DIRECTORY the training process runs from (/kaggle/working), not
+# against data.yaml's own directory — so it looked for
+# /kaggle/working/images/val instead of the real
+# /kaggle/input/datasets/<owner>/<slug>/images/val. The Phase 3 dry-run never
+# caught this because its own validation above reads images/labels directly
+# off `dataset_root` (an absolute path), never exercising Ultralytics' own
+# yaml-driven path resolution.
+#
+# Fix: write a SEPARATE runtime copy of the yaml, under /kaggle/working/
+# (never touching the source Kaggle dataset), with `path` rewritten to the
+# discovered absolute dataset_root and train/val/test/nc/names preserved
+# exactly as authored. Then PROVE — with Ultralytics' own resolver, not just
+# our own os.path checks — that this runtime yaml resolves correctly before
+# ever reaching model.train().
+# ---------------------------------------------------------------------------
+print("\n" + "=" * 70)
+print("4b. RUNTIME DATASET YAML + ULTRALYTICS RESOLUTION PROOF")
+print("=" * 70)
+
+runtime_data_cfg = dict(data_cfg)
+runtime_data_cfg["path"] = str(dataset_root.resolve())
+# train/val/test/nc/names are carried over unchanged from the source yaml —
+# only `path` is rewritten to an absolute value.
+
+runtime_yaml_path = Path("/kaggle/working/ecotrace_p442_runtime_data.yaml")
+runtime_yaml_path.parent.mkdir(parents=True, exist_ok=True)
+with runtime_yaml_path.open("w", encoding="utf-8") as fh:
+    yaml.safe_dump(runtime_data_cfg, fh, sort_keys=False)
+
+print(f"Runtime YAML written to: {runtime_yaml_path}")
+print("Runtime YAML contents:")
+print(runtime_yaml_path.read_text(encoding="utf-8"))
+
+# Real Ultralytics dataset resolution test — the exact function
+# model.train() itself calls internally (ultralytics.data.utils.
+# check_det_dataset), invoked here standalone against the runtime yaml,
+# so a resolution failure is caught now rather than mid-model.train().
+from ultralytics.data.utils import check_det_dataset
+
+resolved = check_det_dataset(str(runtime_yaml_path))
+
+resolved_split_paths = {}
+resolved_split_counts = {}
+for split in ("train", "val", "test"):
+    entry = resolved.get(split)
+    paths = entry if isinstance(entry, list) else [entry]
+    paths = [Path(p) for p in paths if p is not None]
+    resolved_split_paths[split] = [str(p) for p in paths]
+
+    missing = [p for p in paths if not p.is_dir()]
+    if missing:
+        _fail(
+            f"Ultralytics dataset-resolution proof FAILED for split '{split}': "
+            f"resolved path(s) {[str(p) for p in paths]} do not exist as "
+            f"directories (missing: {[str(p) for p in missing]}). The runtime "
+            "YAML fix did not work — refusing to proceed to training."
+        )
+    image_count = sum(len(list(p.glob("*.jpg"))) for p in paths)
+    resolved_split_counts[split] = image_count
+    print(f"Resolved '{split}' path(s): {[str(p) for p in paths]} -> {image_count} images")
+
+if resolved_split_counts != EXPECTED_COUNTS:
+    _fail(
+        f"Ultralytics-resolved image counts {resolved_split_counts} do not "
+        f"match the expected {EXPECTED_COUNTS}. Refusing to proceed."
+    )
+print(f"\nUltralytics dataset-resolution proof PASSED: resolved counts "
+      f"{resolved_split_counts} match {EXPECTED_COUNTS} exactly, using the "
+      "SAME resolver model.train() uses internally — not just this "
+      "script's own os.path checks.")
+
+resolved_nc = resolved.get("nc")
+resolved_names = resolved.get("names") or {}
+resolved_names = {int(k): v for k, v in resolved_names.items()}
+if resolved_nc != 8 or resolved_names != EXPECTED_CLASS_NAMES:
+    _fail(
+        f"Ultralytics-resolved nc={resolved_nc}/names={resolved_names} do "
+        f"not match the expected 8-class taxonomy {EXPECTED_CLASS_NAMES}."
+    )
+print("Ultralytics-resolved nc==8 and class names match exactly:", EXPECTED_CLASS_NAMES)
+
+
+# ---------------------------------------------------------------------------
 # 5. GPU validation (hard stop if unavailable — never silently fall back to CPU)
 # ---------------------------------------------------------------------------
 print("\n" + "=" * 70)
@@ -345,8 +434,10 @@ print("=" * 70)
 # Byte-for-byte the P4.4.2 recipe except the two GPU-infrastructure fields
 # called out at the top of this file (device, workers) — see the module
 # docstring. Nothing else here differs from the production run's args.yaml.
+# `data` points at the runtime YAML (section 4b), not the source dataset's
+# own data.yaml — same train/val/test/nc/names, only `path` made absolute.
 TRAIN_KWARGS = dict(
-    data=str(data_yaml_path),
+    data=str(runtime_yaml_path),
     epochs=50,
     imgsz=512,
     batch=8,
@@ -398,14 +489,32 @@ if DRY_RUN:
     print("Sections 9-14 (validation/evaluation/comparison/export) require a")
     print("real training run and are not executed in this phase.")
 else:
+    # Immediate pre-train recheck: sections 5's gate already ran above, but
+    # the recipe explicitly requires re-verifying right before model.train()
+    # rather than trusting a check that happened a few sections earlier.
+    _recheck_names = [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())]
+    if not all("T4" in name for name in _recheck_names):
+        _fail(
+            f"Pre-train GPU recheck failed: expected T4-class GPU(s), got "
+            f"{_recheck_names}. Refusing to start training."
+        )
+    print(f"Pre-train GPU recheck passed: {_recheck_names}")
+
+    import time as _time
+
+    train_start = _time.time()
     results = model.train(**TRAIN_KWARGS)  # noqa: F841 - Phase 4 only
+    train_duration_seconds = _time.time() - train_start
+    print(f"\nTraining wall-clock duration: {train_duration_seconds:.1f}s "
+          f"({train_duration_seconds / 60:.1f} min)")
 
     # -----------------------------------------------------------------
     # 9. Validation / 10. Test evaluation / 11. Per-class metrics
     # -----------------------------------------------------------------
     best_path = OUTPUT_DIR / "runs" / "p442_yolo11n_gpu" / "weights" / "best.pt"
-    val_results = model.val(data=str(data_yaml_path), split="val")
-    test_results = model.val(data=str(data_yaml_path), split="test")
+    last_path = OUTPUT_DIR / "runs" / "p442_yolo11n_gpu" / "weights" / "last.pt"
+    val_results = model.val(data=str(runtime_yaml_path), split="val")
+    test_results = model.val(data=str(runtime_yaml_path), split="test")
 
     per_class = {}
     box = test_results.box
@@ -420,20 +529,51 @@ else:
     print("Per-class test metrics:", json.dumps(per_class, indent=2))
 
     # -----------------------------------------------------------------
-    # 12. Artifact hashing — the candidate is hashed and recorded, never
-    # compared for equality with the production checkpoint and never
-    # copied over docker_data/device_ai/models/best.pt.
+    # 12. Artifact hashing/sizing/latency — the candidate is hashed and
+    # recorded, never compared for equality with the production checkpoint
+    # and never copied over docker_data/device_ai/models/best.pt.
     # -----------------------------------------------------------------
+    candidate_sha256 = None
+    last_sha256 = None
+    best_size_bytes = None
+    last_size_bytes = None
     if best_path.exists():
         candidate_sha256 = sha256_file(best_path)
+        best_size_bytes = best_path.stat().st_size
         print(f"Candidate best.pt SHA256: {candidate_sha256}")
         print(f"Candidate best.pt path: {best_path}")
+        print(f"Candidate best.pt size: {best_size_bytes} bytes")
         print(
             "This SHA256 is DIFFERENT from the production checkpoint's "
             "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92 "
             "by construction — it is a new training run, and the production "
             "file was never read as input."
         )
+    if last_path.exists():
+        last_sha256 = sha256_file(last_path)
+        last_size_bytes = last_path.stat().st_size
+        print(f"Candidate last.pt SHA256: {last_sha256}")
+        print(f"Candidate last.pt size: {last_size_bytes} bytes")
+
+    # Inference latency: average single-image forward-pass time on the
+    # trained candidate, over the test split's images (warmup + timed runs).
+    inference_latency_ms = None
+    if best_path.exists():
+        latency_model = YOLO(str(best_path))
+        test_images = sorted((dataset_root / "images" / "test").glob("*.jpg"))[:20]
+        if test_images:
+            for warmup_img in test_images[:3]:
+                latency_model.predict(str(warmup_img), device=0, verbose=False)
+            _lat_start = _time.time()
+            for img in test_images:
+                latency_model.predict(str(img), device=0, verbose=False)
+            inference_latency_ms = (
+                (_time.time() - _lat_start) / len(test_images) * 1000
+            )
+            print(
+                f"Mean inference latency over {len(test_images)} test images: "
+                f"{inference_latency_ms:.1f} ms/image"
+            )
 
     # -----------------------------------------------------------------
     # 13. Baseline comparison — structure only; the actual baseline
@@ -462,6 +602,38 @@ else:
     with comparison_path.open("w", encoding="utf-8") as fh:
         json.dump(comparison, fh, indent=2)
     print(f"Comparison scaffold written to {comparison_path}")
+
+    # -----------------------------------------------------------------
+    # Full run summary — everything the final structured report needs,
+    # in one file, alongside the run's own results.csv/args.yaml/plots.
+    # -----------------------------------------------------------------
+    val_box = val_results.box
+    run_summary = {
+        "train_duration_seconds": train_duration_seconds,
+        "epochs_completed": int(results.epoch) + 1 if hasattr(results, "epoch") else None,
+        "best_pt": {
+            "path": str(best_path),
+            "sha256": candidate_sha256,
+            "size_bytes": best_size_bytes,
+        },
+        "last_pt": {
+            "path": str(last_path),
+            "sha256": last_sha256,
+            "size_bytes": last_size_bytes,
+        },
+        "inference_latency_ms_per_image": inference_latency_ms,
+        "val_metrics": {
+            "precision": float(val_box.mp) if hasattr(val_box, "mp") else None,
+            "recall": float(val_box.mr) if hasattr(val_box, "mr") else None,
+            "map50": float(val_box.map50) if hasattr(val_box, "map50") else None,
+            "map50_95": float(val_box.map) if hasattr(val_box, "map") else None,
+        },
+        "test_metrics": comparison["candidate"]["metrics"],
+    }
+    run_summary_path = OUTPUT_DIR / "run_summary.json"
+    with run_summary_path.open("w", encoding="utf-8") as fh:
+        json.dump(run_summary, fh, indent=2)
+    print(f"Run summary written to {run_summary_path}")
 
     # -----------------------------------------------------------------
     # 14. Candidate export — the candidate stays under OUTPUT_DIR only.

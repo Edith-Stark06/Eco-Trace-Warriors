@@ -77,3 +77,43 @@ Dataset discovery, directory presence, `nc==8` + exact class names, and
 train/val/test counts (`763/164/92`, zero missing/orphan labels, zero
 invalid class ids) all passed — matching Phase 2's manifest exactly. GPU
 quota consumed across all 5 dry-run attempts: 0.03h of 30h weekly.
+
+## Real-training infrastructure failure and fix (2026-09-06, notebook versions 3-4)
+
+**Version 3** (`DRY_RUN=False`, first real-training attempt) errored after
+~51s with **0 epochs completed** and no weights produced:
+```
+RuntimeError: Dataset '.../ecotrace-p442-yolo11n-gpu-v1/data.yaml' error ❌
+Dataset '.../data.yaml' images not found, missing path '/kaggle/working/images/val'
+```
+Root cause: the attached dataset's `data.yaml` has `path: .` (relative).
+Ultralytics' `check_det_dataset()` resolves that `.` against the **process's
+current working directory** (`/kaggle/working`, where the notebook runs),
+not against `data.yaml`'s own directory — so it looked for
+`/kaggle/working/images/val` instead of the real
+`/kaggle/input/datasets/edithstark/ecotrace-p442-yolo11n-gpu-v1/images/val`.
+The Phase 3/4 dry-runs never caught this because the script's own validation
+(section 3-4) reads images/labels directly off the discovered absolute
+`dataset_root`, never exercising Ultralytics' own yaml-driven resolution —
+that only happens inside `model.train()`/`model.val()` itself.
+
+**Fix (section 4b in the script)**: write a separate runtime copy of the
+yaml under `/kaggle/working/ecotrace_p442_runtime_data.yaml` (never touching
+the source Kaggle dataset) with `path` rewritten to the discovered absolute
+`dataset_root`, and `train`/`val`/`test`/`nc`/`names` preserved unchanged.
+`TRAIN_KWARGS["data"]` and the later `model.val()` calls all point at this
+runtime yaml instead of the source one.
+
+**Proof, not assumption**: section 4b calls
+`ultralytics.data.utils.check_det_dataset()` directly against the runtime
+yaml — the same resolver `model.train()` uses internally — and hard-fails
+unless every resolved train/val/test path exists on disk and its image
+count matches the expected `763/164/92`.
+
+**Version 4** (recovery dry-run, `DRY_RUN=True`, same fixed script) ran
+clean end-to-end: resolved runtime yaml `path` =
+`/kaggle/input/datasets/edithstark/ecotrace-p442-yolo11n-gpu-v1`, resolved
+`train`/`val`/`test` counts `763/164/92` (exact match), `nc==8` + exact
+class names confirmed via the resolver's own output, GPU hard gate passed
+(`2x Tesla T4`). `model.train()` correctly skipped (dry-run) — real training
+has not yet been re-attempted pending explicit authorization.
