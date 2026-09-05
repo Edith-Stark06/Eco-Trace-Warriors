@@ -68,6 +68,14 @@ dataset_acquisition/staging/
 dataset_acquisition/training/
 dataset_acquisition/evaluation/
 
+# NTFS-side Docker mirror (2026-09) — a narrow, gitignored copy of just the
+# protected checkpoint(s) Docker actually mounts, kept alongside the repo
+# because Docker Desktop's WSL2 backend cannot bind-mount file contents from
+# the exFAT/removable drive that holds the authoritative dataset
+# (ECOTRACE_DATASET_ROOT). See docker-compose.yml's device-ai mount comment.
+# Already covered by the *.pt rule above; explicit for clarity.
+docker_data/
+
 # Temporary scratch scripts and debug files at repo root (never commit)
 /tmp_*.py
 /check_model_attrs.py
