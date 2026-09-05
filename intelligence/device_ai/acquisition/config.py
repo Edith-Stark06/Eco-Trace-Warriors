@@ -20,6 +20,7 @@ the package) is cheap and side-effect free.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -54,6 +55,41 @@ def repo_root() -> Path:
     three levels up from this file's package directory.
     """
     return Path(__file__).resolve().parents[3]
+
+
+def dataset_acquisition_root(*, root: Path | None = None) -> Path:
+    """Resolve the ``dataset_acquisition/`` tree's actual location.
+
+    The ~29GB of acquired training/staging/evaluation data was migrated
+    (2026-09) to an external drive to keep it out of the repository. If
+    ``ECOTRACE_DATASET_ROOT`` is set, it wins; otherwise this falls back to
+    ``<repo_root>/dataset_acquisition`` — the original in-repo layout, so a
+    machine that still has the data there (or a fresh clone that hasn't
+    migrated yet) keeps working unchanged. Callers that need the data to
+    exist should check for it themselves and fail with a clear message
+    naming the resolved path — this function only resolves the root, it
+    never validates it.
+
+    An explicit ``root`` always wins over ``ECOTRACE_DATASET_ROOT``: passing
+    ``root`` means "resolve as if this were the repository root" (test
+    isolation — e.g. a sandboxed ``tmp_path``), a different, more specific
+    intent than "the dataset lives at this absolute location regardless of
+    repo root". Honoring the env var over an explicit root would silently
+    point a sandboxed test at the real external dataset.
+
+    Args:
+        root: Repository root override. When given, resolves under it
+            directly and ``ECOTRACE_DATASET_ROOT`` is not consulted.
+
+    Returns:
+        The resolved dataset_acquisition root, absolute.
+    """
+    if root is not None:
+        return root / "dataset_acquisition"
+    override = os.environ.get("ECOTRACE_DATASET_ROOT")
+    if override:
+        return Path(override)
+    return repo_root() / "dataset_acquisition"
 
 
 #: Read-only protected data roots, relative to ``dataset_acquisition/``. These
@@ -217,8 +253,7 @@ class AcquisitionConfig:
         Returns:
             A fully-populated :class:`AcquisitionConfig`.
         """
-        base = root or repo_root()
-        acq = base / "dataset_acquisition"
+        acq = dataset_acquisition_root(root=root)
         review = acq / "review" / "p4_3_7_source_expansion"
         return cls(
             target_class=TARGET_CLASS_NAME,
@@ -261,8 +296,7 @@ class AcquisitionConfig:
         if target.name == TARGET_CLASS_NAME and wave == WAVE_ID:
             return cls.default(root=root)
 
-        base = root or repo_root()
-        acq = base / "dataset_acquisition"
+        acq = dataset_acquisition_root(root=root)
         review = acq / "review" / "p4_3_8_multiclass_acquisition" / target.name
         return cls(
             target_class=target.name,

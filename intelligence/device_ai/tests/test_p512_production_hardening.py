@@ -26,6 +26,7 @@ from PIL import Image
 import pytest
 from sqlalchemy import create_engine
 
+from device_ai.acquisition.config import dataset_acquisition_root
 from device_ai.api import dependencies
 from device_ai.application import create_app
 from device_ai.configs.settings import Settings
@@ -511,31 +512,33 @@ def test_alembic_chain_001_002_003_complete_cycle(tmp_path: Path) -> None:
 def test_protected_assets_sha256_verification() -> None:
     """Audit that all 6 protected ML checkpoints and dataset manifests match exact SHA-256 digests."""
     targets = {
-        "dataset_acquisition/training/p4_4_2_bulk_balance_v1/runs/p442_yolo11n/weights/best.pt": (
+        "training/p4_4_2_bulk_balance_v1/runs/p442_yolo11n/weights/best.pt": (
             "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92"
         ),
-        "dataset_acquisition/training/p4_11_multisource_targeted_aug_v1/runs/p411_yolo11n_targeted_aug/weights/best.pt": (
+        "training/p4_11_multisource_targeted_aug_v1/runs/p411_yolo11n_targeted_aug/weights/best.pt": (
             "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c"
         ),
-        "dataset_acquisition/training/p4_12_model_scale_v1/runs/p412_yolo11s/weights/best.pt": (
+        "training/p4_12_model_scale_v1/runs/p412_yolo11s/weights/best.pt": (
             "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc"
         ),
-        "dataset_acquisition/training/p4_14_targeted_ood_robustness_v1/runs/p414_yolo11n_targeted_aug/weights/best.pt": (
+        "training/p4_14_targeted_ood_robustness_v1/runs/p414_yolo11n_targeted_aug/weights/best.pt": (
             "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81"
         ),
-        "dataset_acquisition/evaluation/p4_5_real_world_v1/p45_data.yaml": (
+        "evaluation/p4_5_real_world_v1/p45_data.yaml": (
             "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b"
         ),
-        "dataset_acquisition/evaluation/p4_7_wikimedia_ood_v1/p47_final_data.yaml": (
+        "evaluation/p4_7_wikimedia_ood_v1/p47_final_data.yaml": (
             "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
         ),
     }
 
-    # Resolve paths relative to workspace root (2 levels up from intelligence/device_ai)
-    workspace_root = Path(__file__).resolve().parents[3]
+    # Resolve paths against the dataset_acquisition root (ECOTRACE_DATASET_ROOT
+    # if set — the ~29GB acquired dataset was migrated off-repo in 2026-09 —
+    # else the original in-repo <repo_root>/dataset_acquisition location).
+    acq_root = dataset_acquisition_root()
 
     for rel_path, expected_hash in targets.items():
-        full_path = workspace_root / rel_path
+        full_path = acq_root / rel_path
         assert full_path.exists(), f"Protected asset missing at {full_path}"
         actual_hash = hashlib.sha256(full_path.read_bytes()).hexdigest()
         assert actual_hash == expected_hash, (

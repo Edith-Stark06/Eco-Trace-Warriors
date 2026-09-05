@@ -123,12 +123,28 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:5173,http://10.13.29.243:5173,http://localhost:8081,http://localhost:8082}
 
     # The P4.4.2 YOLO11n reference checkpoint (single_model inference mode,
-    # see configs/settings.py) lives in dataset_acquisition/ at the repo
-    # root, outside this service's ./intelligence/device_ai build context —
-    # it is a protected training artifact, not application code, so it is
-    # mounted read-only rather than copied into the image.
+    # see configs/settings.py) lives under dataset_acquisition/ — a protected
+    # training artifact, not application code, so it is mounted read-only
+    # rather than copied into the image. dataset_acquisition/ itself was
+    # migrated off-repo (2026-09, ~29GB) to ECOTRACE_DATASET_ROOT; the
+    # default below falls back to the original in-repo path for a machine
+    # that hasn't migrated. Only this one run's weights/ directory is
+    # mounted (best.pt + last.pt) — never the full dataset root.
+    #
+    # KNOWN LIMITATION: Docker Desktop's WSL2 backend cannot reliably
+    # bind-mount file contents from an exFAT-formatted removable drive
+    # (confirmed 2026-09) — directory listings inside the container come
+    # back empty even though the same files are correct and hash-verified
+    # from native Windows/git-bash tools, and neither a container restart
+    # nor `wsl --shutdown` fixes it. If ECOTRACE_DATASET_ROOT points at such
+    # a drive, this mount silently comes up empty and the detector falls
+    # back to its mock implementation (see yolo_detector.py) — check
+    # `docker exec <container> ls /app/models` after any such change.
     volumes:
-      - ./dataset_acquisition/training/p4_4_2_bulk_balance_v1/runs/p442_yolo11n/weights/best.pt:/app/models/best.pt:ro
+      - type: bind
+        source: ${ECOTRACE_DATASET_ROOT:-./dataset_acquisition}/training/p4_4_2_bulk_balance_v1/runs/p442_yolo11n/weights
+        target: /app/models
+        read_only: true
 
     ports:
       - "${DEVICE_AI_PORT:-8100}:8100"

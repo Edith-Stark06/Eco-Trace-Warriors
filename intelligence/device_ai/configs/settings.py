@@ -531,24 +531,28 @@ class Settings(BaseSettings):
     )
     ensemble_model_a_weights: str = Field(
         default=(
-            "dataset_acquisition/training/"
+            "training/"
             "p4_11_multisource_targeted_aug_v1/runs/"
             "p411_yolo11n_targeted_aug/weights/best.pt"
         ),
         description=(
             "P4.11 YOLO11n checkpoint for ensemble Model A. Resolved "
-            "relative to the repository root when not absolute."
+            "relative to the dataset_acquisition root (see acquisition."
+            "config.dataset_acquisition_root — ECOTRACE_DATASET_ROOT if "
+            "set, else <repo_root>/dataset_acquisition) when not absolute."
         ),
     )
     ensemble_model_b_weights: str = Field(
         default=(
-            "dataset_acquisition/training/"
+            "training/"
             "p4_12_model_scale_v1/runs/"
             "p412_yolo11s/weights/best.pt"
         ),
         description=(
             "P4.12 YOLO11s checkpoint for ensemble Model B. Resolved "
-            "relative to the repository root when not absolute."
+            "relative to the dataset_acquisition root (see acquisition."
+            "config.dataset_acquisition_root — ECOTRACE_DATASET_ROOT if "
+            "set, else <repo_root>/dataset_acquisition) when not absolute."
         ),
     )
     ensemble_weights_a: float = Field(
