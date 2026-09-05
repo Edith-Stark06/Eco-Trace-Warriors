@@ -123,26 +123,30 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:5173,http://10.13.29.243:5173,http://localhost:8081,http://localhost:8082}
 
     # The P4.4.2 YOLO11n reference checkpoint (single_model inference mode,
-    # see configs/settings.py) lives under dataset_acquisition/ — a protected
-    # training artifact, not application code, so it is mounted read-only
-    # rather than copied into the image. dataset_acquisition/ itself was
-    # migrated off-repo (2026-09, ~29GB) to ECOTRACE_DATASET_ROOT; the
-    # default below falls back to the original in-repo path for a machine
-    # that hasn't migrated. Only this one run's weights/ directory is
-    # mounted (best.pt + last.pt) — never the full dataset root.
+    # see configs/settings.py) is a protected training artifact, not
+    # application code, so it is mounted read-only rather than copied into
+    # the image.
     #
-    # KNOWN LIMITATION: Docker Desktop's WSL2 backend cannot reliably
-    # bind-mount file contents from an exFAT-formatted removable drive
-    # (confirmed 2026-09) — directory listings inside the container come
-    # back empty even though the same files are correct and hash-verified
-    # from native Windows/git-bash tools, and neither a container restart
-    # nor `wsl --shutdown` fixes it. If ECOTRACE_DATASET_ROOT points at such
-    # a drive, this mount silently comes up empty and the detector falls
-    # back to its mock implementation (see yolo_detector.py) — check
-    # `docker exec <container> ls /app/models` after any such change.
+    # This does NOT mount from ECOTRACE_DATASET_ROOT (the authoritative
+    # dataset location — see acquisition/config.py — currently an external
+    # exFAT/removable drive). Docker Desktop's WSL2 backend cannot reliably
+    # bind-mount file contents from that filesystem type (confirmed
+    # 2026-09): directory listings inside the container come back empty
+    # even though the same files are correct and hash-verified from native
+    # Windows/git-bash tools, and neither a container restart nor `wsl
+    # --shutdown` fixes it. If this ever silently mounts empty again and
+    # the detector falls back to its mock implementation (yolo_detector.py),
+    # check `docker exec <container> ls /app/models` first.
+    #
+    # Instead, docker_data/device_ai/models/ is a small NTFS-side mirror
+    # (gitignored — see .gitignore) holding only this one checkpoint, kept
+    # in sync manually when the authoritative copy changes. It is NOT the
+    # dataset, just the one artifact this service needs; ECOTRACE_DATASET_ROOT
+    # stays a Python/application-side setting only and is never referenced
+    # here.
     volumes:
       - type: bind
-        source: ${ECOTRACE_DATASET_ROOT:-./dataset_acquisition}/training/p4_4_2_bulk_balance_v1/runs/p442_yolo11n/weights
+        source: ./docker_data/device_ai/models
         target: /app/models
         read_only: true
 
