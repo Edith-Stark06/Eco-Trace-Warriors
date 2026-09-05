@@ -17,6 +17,7 @@ from typing import Annotated
 from fastapi import Depends, Request
 from loguru import logger
 
+from ..acquisition.config import dataset_acquisition_root
 from ..configs.settings import Settings, get_settings
 from ..database.database import dispose_engines, get_engine
 from ..database.session import get_session_factory
@@ -148,7 +149,9 @@ def _build_ensemble_detector(settings: Settings) -> EnsembleDetector | None:
     """Build an :class:`EnsembleDetector` from settings, or ``None`` on failure.
 
     Model A (P4.11) and Model B (P4.12) weight paths are resolved relative to
-    the **repository root** (one level above ``device_ai``) when not absolute.
+    the **dataset_acquisition root** (see
+    ``acquisition.config.dataset_acquisition_root`` — ``ECOTRACE_DATASET_ROOT``
+    if set, else ``<repo_root>/dataset_acquisition``) when not absolute.
 
     Args:
         settings: The active application settings.
@@ -157,16 +160,15 @@ def _build_ensemble_detector(settings: Settings) -> EnsembleDetector | None:
         A (possibly not-ready) :class:`EnsembleDetector`, or ``None`` if
         construction failed.
     """
-    # Resolve relative paths from the repository root.
-    repo_root = Path(__file__).resolve().parents[3]
+    acq_root = dataset_acquisition_root()
 
     model_a_path = Path(settings.ensemble_model_a_weights)
     if not model_a_path.is_absolute():
-        model_a_path = repo_root / model_a_path
+        model_a_path = acq_root / model_a_path
 
     model_b_path = Path(settings.ensemble_model_b_weights)
     if not model_b_path.is_absolute():
-        model_b_path = repo_root / model_b_path
+        model_b_path = acq_root / model_b_path
 
     try:
         return EnsembleDetector(
