@@ -300,6 +300,23 @@ if not cuda_functional:
         "request a different accelerator (e.g. T4 x2) or a PyTorch build "
         "with sm_60 support."
     )
+
+# Explicit named hard gate, in addition to the functional smoke test above:
+# only proceed on a known-good T4 allocation. Phase 3 found the account's
+# GPU pool can silently hand back an incompatible P100 (sm_60) even when
+# the notebook is configured for GPU — check the actual device name/count
+# directly rather than trusting the requested accelerator type.
+gpu_count = torch.cuda.device_count()
+gpu_names = [torch.cuda.get_device_name(i) for i in range(gpu_count)]
+print(f"GPU count: {gpu_count}")
+print(f"GPU names: {gpu_names}")
+if not all("T4" in name for name in gpu_names):
+    _fail(
+        f"GPU hard gate failed: expected T4-class GPU(s), got {gpu_names}. "
+        "Refusing to proceed — this notebook must only train on T4/T4x2, "
+        "never P100 or any other unverified accelerator."
+    )
+print("GPU hard gate passed: all detected GPU(s) are T4-class.")
 print("CUDA is available and functionally confirmed — GPU validation passed.")
 
 
