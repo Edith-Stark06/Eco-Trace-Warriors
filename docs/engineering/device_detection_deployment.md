@@ -8,6 +8,21 @@ and rollback strategy for the device-detection model. This document connects the
 annotated dataset (P4.1.2) to a production-ready trained detector serving predictions
 through the existing inference API.
 
+> **Production taxonomy note (added at finalization):** the tooling described in
+> this document defaults to the full, code-owned 19-class `DeviceTaxonomy`
+> (`dataset/taxonomy.py::load_taxonomy()`), and that remains correct for the
+> general-purpose training/manifest pipeline. However, the **currently deployed
+> production checkpoint** (`docker_data/device_ai/models/best.pt`, SHA256
+> `c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92`, served via
+> `inference/class_map.py::CANONICAL_CLASSES`) was trained on an **8-class
+> subset**: laptop, smartphone, tablet, monitor, printer, mouse, camera,
+> headphones. The other 11 taxonomy classes were temporarily dropped for this
+> production run due to insufficient training data, not removed from the
+> authoritative taxonomy. A future retraining run that builds a `data.yaml` via
+> `build_training_manifest()`'s 19-class default will **not** match the frozen
+> production checkpoint unless it is explicitly scoped back down to this same
+> 8-class subset — do not assume the two are interchangeable.
+
 ---
 
 ## 1. Purpose

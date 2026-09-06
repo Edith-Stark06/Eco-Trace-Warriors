@@ -29,6 +29,16 @@ weight each source should carry in the collection plan
 > (`docs/ai/device_collection_checklist.md`) requires the collector to confirm
 > the actual count, license, and redistribution terms **before** importing.
 
+> **Production status note (added at finalization):** this catalogue's 19-class
+> scope is the correct long-term acquisition target, but the detector currently
+> **deployed to production** (`docker_data/device_ai/models/best.pt`, SHA256
+> `c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92`) was trained
+> on only 8 of these 19 classes (laptop, smartphone, tablet, monitor, printer,
+> mouse, camera, headphones) — the remaining 11 were temporarily dropped from
+> the training run for insufficient data, not removed from this catalogue's
+> scope. Do not describe the live production detector as covering the full
+> 19-class taxonomy; it does not yet.
+
 ---
 
 ## 2. Canonical classes (class-ID order)
