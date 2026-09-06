@@ -187,3 +187,37 @@ declared as an intentional GPU-vs-CPU change alongside `device`/`workers`)
 is the most plausible unproven variable. An `amp=False` isolation
 config (`AMP_FALSE_TRAIN_KWARGS` in the script) has been prepared but
 **not run** — pending separate explicit authorization.
+
+## AMP isolation experiment (2026-09-06, kernel version 7)
+
+Ran the single authorized `amp=False` experiment: `AMP_ISOLATION_MODE`
+flipped to `True` locally, selecting `AMP_FALSE_TRAIN_KWARGS` (identical
+to `TRAIN_KWARGS` except `amp=False`) for `model.train()`. Confirmed at
+the Ultralytics engine level, not just this script's own print — the
+`engine/trainer:` args dump shows `amp=False` with every other argument
+byte-identical to v5/v6's dump. **Environment note**: Ultralytics
+auto-installed `8.4.142` this run (v5/v6 used `8.4.141` — a patch-level
+bump on Kaggle's pip index between runs, not something this project
+controlled or intended; recorded here rather than silently assumed
+identical).
+
+**Result — materially better, but not equivalent to production**: all 50
+epochs completed (best epoch 50, still improving at the end). Test mAP50
+0.636 (vs 0.612 AMP=True, vs 0.664 production) and mAP50-95 0.490 (vs
+0.447 AMP=True, vs 0.510 production) — recovers roughly half-to-most of
+the AMP=True-vs-production gap. Per-class AP50 improved for all three
+previously-weak classes: smartphone 0.316→**0.426** (+0.110), laptop
+0.347→**0.433** (+0.087, now above production's own 0.363), mouse
+0.410→**0.441** (+0.031). Precision dropped slightly (0.580→0.557) while
+recall rose more (0.538→0.586).
+
+**Verdict: MIXED / INCONCLUSIVE — AMP contributes to performance
+differences, but does not fully explain the regression.** Smartphone
+specifically only recovered about a third of its total shortfall against
+production (0.426 vs the production run's 0.625 on the same test set) —
+a real, substantial improvement, but the "key regression" the isolation
+was designed to explain is not fully closed. AMP is a real contributing
+factor to the GPU-vs-CPU gap, not the sole cause; something else in the
+GPU/software stack (or genuine seed/AMP-interaction sensitivity specific
+to smartphone) still accounts for the remaining difference. No further
+training was run after this one experiment, per instruction.
