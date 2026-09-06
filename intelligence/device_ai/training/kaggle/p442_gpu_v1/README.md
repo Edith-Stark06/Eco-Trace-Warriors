@@ -221,3 +221,32 @@ factor to the GPU-vs-CPU gap, not the sole cause; something else in the
 GPU/software stack (or genuine seed/AMP-interaction sensitivity specific
 to smartphone) still accounts for the remaining difference. No further
 training was run after this one experiment, per instruction.
+
+## Ultralytics version-control experiment (2026-09-06, kernel version 8)
+
+v7 didn't perfectly isolate AMP — it also happened to auto-install
+`8.4.142` where v5/v6 used `8.4.141`. This experiment controls for that:
+added `PINNED_ULTRALYTICS_VERSION` (a `DRY_RUN`/`AMP_ISOLATION_MODE`-style
+resting-`None` flag) that force-installs and hard-verifies an exact
+`ultralytics` version before any training code runs, hard-failing rather
+than silently substituting a different one if the pin fails. Set to
+`"8.4.141"` for this one run (`AMP_ISOLATION_MODE` still `True`, so
+`amp=False` as in v7) — confirmed in-log: `ultralytics version pin
+CONFIRMED: 8.4.141`, and the `engine/trainer:` args dump again shows
+`amp=False` with the recipe otherwise identical.
+
+**Result: bit-for-bit identical to version 7**, to the full floating-point
+precision printed — test precision `0.556903887276458`, recall
+`0.5856817337711248`, mAP50 `0.6363875829463496`, mAP50-95
+`0.4903411108882839`, every per-class AP50/AP50-95/precision/recall value
+matched exactly (smartphone AP50 `0.4258479532163743`, laptop
+`0.43349494949494954`, mouse `0.4410714285714286`, all identical). The
+Ultralytics 8.4.141→8.4.142 patch bump had **zero** detectable effect.
+
+**Verdict: VERSION EFFECT NEGLIGIBLE.** Changing the Ultralytics patch
+version did not materially explain the improvement seen after disabling
+AMP — AMP alone accounts for the full v5/v6→v7/v8 delta. AMP remains the
+strongest identified contributor to the GPU regression, though (per the
+Phase 4.3 finding) it does not explain the entire CPU-vs-GPU gap,
+particularly for smartphone. No further training was run after this one
+experiment.

@@ -60,6 +60,18 @@ DRY_RUN = True
 # ---------------------------------------------------------------------------
 AMP_ISOLATION_MODE = False
 
+# ---------------------------------------------------------------------------
+# Resting state is always None (install whatever ultralytics pip resolves,
+# as every prior run did). Set to an exact version string ONLY for a
+# controlled version-isolation experiment (Phase 4.4, kernel version 8,
+# "8.4.141") — Phase 4.3/v7 auto-installed 8.4.142 (a PyPI patch bump
+# between pushes, not intended), confounding the AMP=False comparison
+# against v5/v6's 8.4.141. When set, section 1 hard-fails (never silently
+# substitutes a different version) if the pin cannot be installed exactly.
+# Never commit this as non-None.
+# ---------------------------------------------------------------------------
+PINNED_ULTRALYTICS_VERSION = None
+
 # Phase 2 artifacts, recorded here for the training-arguments audit trail
 # (section 8's saved metadata), not read/verified against anything at runtime.
 KAGGLE_DATASET_ID = "edithstark/ecotrace-p442-yolo11n-gpu-v1"
@@ -109,9 +121,41 @@ except ImportError:
     _fail("PyTorch is not importable in this Kaggle environment.")
 
 try:
+    import ultralytics as _preexisting_ultralytics
+    _preexisting_ultralytics_version = _preexisting_ultralytics.__version__
+except ImportError:
+    _preexisting_ultralytics_version = None
+
+if PINNED_ULTRALYTICS_VERSION is not None:
+    if _preexisting_ultralytics_version != PINNED_ULTRALYTICS_VERSION:
+        print(
+            f"Installing PINNED ultralytics=={PINNED_ULTRALYTICS_VERSION} "
+            f"(found: {_preexisting_ultralytics_version}) for a controlled "
+            "version-isolation experiment (enable_internet required)..."
+        )
+        import subprocess
+
+        subprocess.run(
+            [sys.executable, "-m", "pip", "install", "-q",
+             f"ultralytics=={PINNED_ULTRALYTICS_VERSION}"],
+            check=True,
+        )
+    # Force a clean re-import bound to whatever is on disk now, rather than
+    # trust a partially-initialized module object from the try block above.
+    for _mod_name in list(sys.modules):
+        if _mod_name == "ultralytics" or _mod_name.startswith("ultralytics."):
+            del sys.modules[_mod_name]
     import ultralytics
     from ultralytics import YOLO
-except ImportError:
+    if ultralytics.__version__ != PINNED_ULTRALYTICS_VERSION:
+        _fail(
+            f"ultralytics version pin FAILED: requested "
+            f"{PINNED_ULTRALYTICS_VERSION}, got {ultralytics.__version__}. "
+            "Refusing to proceed with an unpinned/wrong version for this "
+            "controlled experiment — never silently substitute a version."
+        )
+    print(f"ultralytics version pin CONFIRMED: {ultralytics.__version__}")
+elif _preexisting_ultralytics_version is None:
     # Kaggle's base Python image does not ship ultralytics by default
     # (unlike torch/numpy/pandas) — install it now. enable_internet=true
     # in kernel-metadata.json is required for this to succeed.
@@ -122,6 +166,9 @@ except ImportError:
         [sys.executable, "-m", "pip", "install", "-q", "ultralytics"],
         check=True,
     )
+    import ultralytics
+    from ultralytics import YOLO
+else:
     import ultralytics
     from ultralytics import YOLO
 
