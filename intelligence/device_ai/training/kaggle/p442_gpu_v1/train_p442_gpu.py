@@ -41,10 +41,10 @@ import sys
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
-# Resting state is always True. The one authorized real training run
-# (kernel version 5, 2026-09-06) was pushed from a local copy with this
-# flipped to False — see README.md's "Real training result" section for
-# the outcome. Never commit this as False.
+# Resting state is always True. Flipped locally to False for kernel version
+# 5 (2026-09-06, first real run) and version 6 (reproducibility run, same
+# recipe, unchanged) — see README.md's "GPU reproducibility investigation"
+# section. Never commit this as False.
 # ---------------------------------------------------------------------------
 DRY_RUN = True
 
@@ -456,6 +456,19 @@ TRAIN_KWARGS = dict(
     verbose=True,
 )
 print(json.dumps(TRAIN_KWARGS, indent=2))
+
+# ---------------------------------------------------------------------------
+# PREPARED, NOT ACTIVE. Ultralytics defaults amp=True on CUDA (a no-op on
+# the original CPU production run, but live here) — this was never declared
+# as an intentional GPU change alongside device/workers, and kernel version
+# 5's smartphone AP50 collapse (0.625 production -> 0.316 candidate, same
+# test set, laptop/mouse unaffected) makes AMP a plausible unproven variable
+# (see README's "GPU reproducibility investigation" section). This constant
+# is computed for a possible FUTURE isolated experiment and is referenced
+# nowhere in section 8 — nothing here changes what TRAIN_KWARGS trains with.
+# Using it requires a separate explicit authorization.
+# ---------------------------------------------------------------------------
+AMP_FALSE_TRAIN_KWARGS = dict(TRAIN_KWARGS, amp=False)
 
 run_record = {
     "phase": "3-dry-run" if DRY_RUN else "4-real-training",

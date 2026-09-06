@@ -134,11 +134,6 @@ for this run) was pushed as version 5. All 50 epochs completed normally —
 - **Weakest classes**: smartphone (AP50 0.316, precision 0.163, recall 0.20)
   and laptop (AP50 0.347) — both far below the others. Strongest: printer
   (AP50 0.870), monitor (AP50 0.809, precision 0.864).
-- **No same-test-set baseline exists** to compare against — the P4.4.2
-  production checkpoint has never been evaluated on this exact 92-image
-  test split under a documented procedure (the only documented production
-  evaluation is against the separate P4.5 real-world set), so no baseline
-  comparison is reported rather than inferring one.
 - Production checkpoint SHA256 re-verified unchanged after this run:
   `c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92`.
 - Candidate artifacts (best.pt/last.pt, results.csv, args.yaml, plots,
@@ -148,3 +143,47 @@ for this run) was pushed as version 5. All 50 epochs completed normally —
 
 This is one experimental candidate result, not a production decision.
 Promotion (if ever warranted) is a separate, explicit, human-approved step.
+
+## Same-test production baseline found (Phase 4.1)
+
+A genuine same-test-set production evaluation already existed —
+`E:\Ecotrace Dataset\training\p4_4_2_bulk_balance_v1\metrics.json`, written
+by the original training pipeline itself against this exact 763/164/92
+split (confirmed: checkpoint SHA256 in that file's `best_checkpoint`
+matches production exactly). **Production beats the GPU candidate overall**
+(test mAP50 0.664 vs 0.612; mAP50-95 0.510 vs 0.447), almost entirely
+because of one class: **smartphone AP50 0.625 (production) vs 0.316 (GPU
+candidate)** on the identical data — laptop and mouse are statistically
+unchanged between the two. Confusion-matrix comparison shows a
+smartphone↔tablet confusion present in the GPU candidate but **absent**
+in production, pointing at a GPU-training-run-specific regression rather
+than a data problem for smartphone specifically (laptop's weakness, by
+contrast, is consistent across both models — likely a genuine data/
+class-boundary issue, not training-specific).
+
+## GPU reproducibility investigation (2026-09-06, kernel version 6)
+
+Re-ran the *exact* version 5 recipe unchanged (same script, same
+`TRAIN_KWARGS`, same seed=42/deterministic=True, same `amp` left at
+Ultralytics' CUDA default of `True`) to check whether the smartphone
+collapse was run-to-run noise. **Result: bit-for-bit identical metrics**
+— test precision/recall/mAP50/mAP50-95 and every per-class AP50/AP50-95/
+precision/recall matched version 5 to the full floating-point precision
+printed (e.g. smartphone AP50 `0.3155686630369026` both runs, mAP50-95
+`0.44654538779903624` both runs). `best.pt`/`last.pt` SHA256 differ from
+version 5's (checkpoint files typically embed a training timestamp/run
+metadata even when the underlying weights are identical), but the
+identical metrics to 16 significant figures make it very unlikely the
+weights themselves differ.
+
+**Conclusion: REPRODUCIBLE GPU REGRESSION, not random run variance.** The
+smartphone collapse is a deterministic property of this exact recipe +
+GPU + AMP configuration, confirmed by an independent, byte-for-byte-clean
+second run under the same infra gates (T4x2, functional CUDA test,
+dataset resolver, 763/164/92, taxonomy — all re-verified and passed
+identically). This strengthens the case that Ultralytics' `amp=True`
+default (live on CUDA, a no-op on the original CPU production run, never
+declared as an intentional GPU-vs-CPU change alongside `device`/`workers`)
+is the most plausible unproven variable. An `amp=False` isolation
+config (`AMP_FALSE_TRAIN_KWARGS` in the script) has been prepared but
+**not run** — pending separate explicit authorization.
