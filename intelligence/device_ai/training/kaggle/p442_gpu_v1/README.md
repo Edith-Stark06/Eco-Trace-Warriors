@@ -250,3 +250,42 @@ strongest identified contributor to the GPU regression, though (per the
 Phase 4.3 finding) it does not explain the entire CPU-vs-GPU gap,
 particularly for smartphone. No further training was run after this one
 experiment.
+
+## Expanded-dataset experiment (2026-09-06, kernel version 9) — REGRESSION
+
+Phase 5.1 built a disposable, audited experiment dataset (see
+`D:\Ecotrace-Audit\phase5_1_expanded_p442\`): the original 763 train
+images + 336 COCO-2017-derived smartphone/laptop/mouse images (14
+cross-pool duplicates excluded) = 1099 train, with val=164/test=92 kept
+byte-identical to the original. Uploaded as a new **private** Kaggle
+dataset (`edithstark/ecotrace-p442-expanded-train-v1`, mixed COCO/Flickr
+per-image licensing — not universally CC0/commercially cleared). Added
+`EXPANDED_DATASET_MODE` (a resting-`False` flag, same pattern as
+`AMP_ISOLATION_MODE`/`PINNED_ULTRALYTICS_VERSION`) that swaps
+`KAGGLE_DATASET_ID`/`DATASET_SLUG`/`EXPECTED_COUNTS` to the expanded
+dataset — the only intentional change from v8; recipe, `amp=False`, and
+`ultralytics==8.4.141` all held identical (confirmed in the
+`engine/trainer:` args dump).
+
+**Result: a clear regression, not an improvement.** Test mAP50 dropped
+0.636→**0.501**, mAP50-95 dropped 0.490→**0.371**. All three target
+classes got *worse*, not better: smartphone AP50 0.426→**0.326**, laptop
+AP50 0.433→**0.202** (roughly halved), mouse AP50 0.441→**0.233**. Every
+other class except headphones also declined (tablet 0.731→0.542, monitor
+0.824→0.602, camera 0.842→0.686, printer roughly flat 0.711→0.704).
+
+**Leading explanation, not proven**: Phase 5.1 had already flagged that
+the added COCO smartphone/mouse images have a far smaller median
+bounding-box area (smartphone 0.23→0.026 combined; mouse 0.28→0.012
+combined) than the originals — i.e. much smaller, farther-away objects.
+Mixing that much smaller object scale into these classes' training data,
+under a recipe with no augmentation/anchor changes to accommodate it,
+plausibly hurt the model's learned scale prior for exactly these
+classes — and laptop, not flagged as scale-mismatched in Phase 5.1,
+regressed by roughly as much, so scale alone may not fully explain it
+either. This experiment does not isolate the cause; it only establishes
+that this specific expanded dataset, under this specific unmodified
+recipe, performed worse. **Do not treat naive data-volume expansion as
+automatically helpful — this result argues the opposite for this dataset.**
+No further training was run after this one experiment; the new
+checkpoint remains experimental, not promoted.
