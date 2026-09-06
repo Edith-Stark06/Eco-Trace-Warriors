@@ -48,6 +48,18 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 DRY_RUN = True
 
+# ---------------------------------------------------------------------------
+# Resting state is always False (regular recipe, amp left at Ultralytics'
+# CUDA default of True). Flipped locally to True for the single Phase 4.3
+# AMP-isolation run (kernel version 7, 2026-09-06) — selected
+# AMP_FALSE_TRAIN_KWARGS below instead of TRAIN_KWARGS, changing exactly
+# one variable (amp) and nothing else; confirmed at the Ultralytics engine
+# level too (engine/trainer args dump showed amp=False, everything else
+# identical to v5/v6). See README's "AMP isolation experiment" section for
+# the result. Never commit this as True.
+# ---------------------------------------------------------------------------
+AMP_ISOLATION_MODE = False
+
 # Phase 2 artifacts, recorded here for the training-arguments audit trail
 # (section 8's saved metadata), not read/verified against anything at runtime.
 KAGGLE_DATASET_ID = "edithstark/ecotrace-p442-yolo11n-gpu-v1"
@@ -458,22 +470,25 @@ TRAIN_KWARGS = dict(
 print(json.dumps(TRAIN_KWARGS, indent=2))
 
 # ---------------------------------------------------------------------------
-# PREPARED, NOT ACTIVE. Ultralytics defaults amp=True on CUDA (a no-op on
-# the original CPU production run, but live here) — this was never declared
-# as an intentional GPU change alongside device/workers, and kernel version
-# 5's smartphone AP50 collapse (0.625 production -> 0.316 candidate, same
-# test set, laptop/mouse unaffected) makes AMP a plausible unproven variable
-# (see README's "GPU reproducibility investigation" section). This constant
-# is computed for a possible FUTURE isolated experiment and is referenced
-# nowhere in section 8 — nothing here changes what TRAIN_KWARGS trains with.
-# Using it requires a separate explicit authorization.
+# Ultralytics defaults amp=True on CUDA (a no-op on the original CPU
+# production run, but live here) — this was never declared as an
+# intentional GPU change alongside device/workers, and kernel version 5's
+# smartphone AP50 collapse (0.625 production -> 0.316 candidate, same test
+# set, laptop/mouse unaffected), independently reproduced bit-for-bit by
+# version 6, makes AMP the leading unproven variable (see README's "GPU
+# reproducibility investigation" section). AMP_ISOLATION_MODE selects this
+# instead of TRAIN_KWARGS for section 8 — the ONLY difference from
+# TRAIN_KWARGS is amp=False; everything else is the identical dict.
 # ---------------------------------------------------------------------------
 AMP_FALSE_TRAIN_KWARGS = dict(TRAIN_KWARGS, amp=False)
+ACTIVE_TRAIN_KWARGS = AMP_FALSE_TRAIN_KWARGS if AMP_ISOLATION_MODE else TRAIN_KWARGS
+print(f"\nAMP_ISOLATION_MODE={AMP_ISOLATION_MODE} -> "
+      f"amp={ACTIVE_TRAIN_KWARGS.get('amp', 'Ultralytics default (True on CUDA)')}")
 
 run_record = {
-    "phase": "3-dry-run" if DRY_RUN else "4-real-training",
+    "phase": "3-dry-run" if DRY_RUN else ("4.3-amp-isolation" if AMP_ISOLATION_MODE else "4-real-training"),
     "base_model": BASE_MODEL,
-    "train_kwargs": TRAIN_KWARGS,
+    "train_kwargs": ACTIVE_TRAIN_KWARGS,
     "python_version": platform.python_version(),
     "torch_version": torch.__version__,
     "ultralytics_version": ultralytics.__version__,
@@ -550,7 +565,7 @@ else:
     import time as _time
 
     train_start = _time.time()
-    results = model.train(**TRAIN_KWARGS)  # noqa: F841 - Phase 4 only
+    results = model.train(**ACTIVE_TRAIN_KWARGS)  # noqa: F841 - Phase 4 only
     train_duration_seconds = _time.time() - train_start
     print(f"\nTraining wall-clock duration: {train_duration_seconds:.1f}s "
           f"({train_duration_seconds / 60:.1f} min)")
