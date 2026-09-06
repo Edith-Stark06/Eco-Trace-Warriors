@@ -73,24 +73,31 @@ AMP_ISOLATION_MODE = False
 PINNED_ULTRALYTICS_VERSION = None
 
 # ---------------------------------------------------------------------------
-# Resting state is always False (original 763-image train set, dataset slug
-# ecotrace-p442-yolo11n-gpu-v1). Flipped locally to True ONLY for the single
-# Phase 5.2 expanded-training-set experiment (kernel version 9) — selects
-# the private edithstark/ecotrace-p442-expanded-train-v1 dataset (Phase
-# 5.1's audited 1099/164/92 construction: 763 original + 336 COCO-derived
-# smartphone/laptop/mouse images; val/test are the original, byte-identical,
-# frozen splits) instead of the original 763-train dataset. Everything else
-# (recipe, AMP, Ultralytics version) stays exactly as Phase 4.4/v8. Never
-# commit this as True.
+# Resting state is always "original" (763-image train set, dataset slug
+# ecotrace-p442-yolo11n-gpu-v1). Set locally to a different variant ONLY
+# for a single explicitly-authorized dataset-variant experiment:
+#   "expanded"     Phase 5.2 (kernel version 9) — the full unfiltered
+#                  336-image COCO expansion (edithstark/ecotrace-p442-
+#                  expanded-train-v1, 1099/164/92). RESULT: regression.
+#   "conservative" Phase 5.5 — Phase 5.4's scale-filtered "Conservative"
+#                  candidate (edithstark/ecotrace-p442-conservative-v1,
+#                  863/164/92: 763 original + 100 scale-compatible added
+#                  images — 75 laptop/17 smartphone/8 mouse).
+# In every variant, val/test are the same original, byte-identical, frozen
+# splits, and the recipe/AMP/Ultralytics version stay exactly as Phase
+# 4.4/v8. Never commit this as anything but "original".
 # ---------------------------------------------------------------------------
-EXPANDED_DATASET_MODE = False
+DATASET_VARIANT = "original"
+
+_DATASET_VARIANTS = {
+    "original": ("edithstark/ecotrace-p442-yolo11n-gpu-v1", {"train": 763, "val": 164, "test": 92}),
+    "expanded": ("edithstark/ecotrace-p442-expanded-train-v1", {"train": 1099, "val": 164, "test": 92}),
+    "conservative": ("edithstark/ecotrace-p442-conservative-v1", {"train": 863, "val": 164, "test": 92}),
+}
 
 # Phase 2 artifacts, recorded here for the training-arguments audit trail
 # (section 8's saved metadata), not read/verified against anything at runtime.
-KAGGLE_DATASET_ID = (
-    "edithstark/ecotrace-p442-expanded-train-v1" if EXPANDED_DATASET_MODE
-    else "edithstark/ecotrace-p442-yolo11n-gpu-v1"
-)
+KAGGLE_DATASET_ID, EXPECTED_COUNTS = _DATASET_VARIANTS[DATASET_VARIANT]
 KAGGLE_DATASET_VERSION = 1
 PHASE2_MANIFEST_SHA256 = "f64580240ab29ce7c939c208cdf88c6b16afcd36de5686c3895918e8793a67ff"
 
@@ -104,10 +111,6 @@ EXPECTED_CLASS_NAMES = {
     6: "camera",
     7: "headphones",
 }
-EXPECTED_COUNTS = (
-    {"train": 1099, "val": 164, "test": 92} if EXPANDED_DATASET_MODE
-    else {"train": 763, "val": 164, "test": 92}
-)
 
 OUTPUT_DIR = Path("/kaggle/working/ecotrace_p442_gpu_v1")
 
@@ -224,14 +227,15 @@ if torch.cuda.is_available():
 print("\n" + "=" * 70)
 print("2. DATASET DISCOVERY")
 print("=" * 70)
-print(f"EXPANDED_DATASET_MODE={EXPANDED_DATASET_MODE} -> dataset={KAGGLE_DATASET_ID}, "
+print(f"DATASET_VARIANT={DATASET_VARIANT!r} -> dataset={KAGGLE_DATASET_ID}, "
       f"expected counts={EXPECTED_COUNTS}")
 
-# Kaggle mounts a dataset with slug `ecotrace-p442-yolo11n-gpu-v1` (or, in
-# EXPANDED_DATASET_MODE, `ecotrace-p442-expanded-train-v1`) at a fixed,
-# predictable path — discovered here, never hardcoded as a Windows path
-# (this dataset carries no dataset_working-style stale absolute path; its
-# data.yaml was rewritten in Phase 2 to `path: .`, relative).
+# Kaggle mounts a dataset with slug `ecotrace-p442-yolo11n-gpu-v1` (or, per
+# DATASET_VARIANT, `ecotrace-p442-expanded-train-v1` /
+# `ecotrace-p442-conservative-v1`) at a fixed, predictable path —
+# discovered here, never hardcoded as a Windows path (this dataset carries
+# no dataset_working-style stale absolute path; its data.yaml was
+# rewritten in Phase 2 to `path: .`, relative).
 DATASET_SLUG = KAGGLE_DATASET_ID.split("/")[-1]
 kaggle_input = Path("/kaggle/input")
 
