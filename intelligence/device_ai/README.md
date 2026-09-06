@@ -5,7 +5,14 @@
 > materials, carbon score) behind a clean REST API.
 
 **Module:** `intelligence/device_ai`
-**Status:** Milestone **M1.10** — **Material Intelligence Engine**: an
+**Status:** Finalization (post-P9). Production checkpoint is **frozen**
+(`docker_data/device_ai/models/best.pt`, SHA256
+`c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92`) and ML
+experimentation is closed — see `docs/FINAL_PROJECT_STATUS.md` for current
+project-wide status. The milestone history below (M1.4–M1.10) describes how
+this service's architecture was built and remains accurate for that purpose.
+
+**Milestone history — M1.10** — **Material Intelligence Engine**: an
 internal-only, deterministic inference engine that consumes the fusion engine's
 (M1.7) immutable `DeviceContext`, the recoverability engine's (M1.8)
 `RecoverabilityReport` and the component engine's (M1.9) `ComponentReport` and
