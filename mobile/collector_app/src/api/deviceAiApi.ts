@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+import { File as ExpoFile } from 'expo-file-system';
 import { env } from '../config/env';
 import { ApiError } from './ApiError';
 import type {
@@ -60,37 +62,67 @@ export interface CapturedImage {
 }
 
 /**
- * Converts a captured image into an actual Blob for FormData.append().
- *
- * In Expo 57 with Winter fetch runtime, native FormData serialization
- * (convertFormDataAsync) expects strings, Blobs, or objects with bytes().
- * The traditional React Native `{ uri, name, type }` object is unsupported
- * and fails with "Unsupported FormDataPart implementation".
- *
- * Both native (file://) and web (data: / blob:) URIs are read directly
- * into a real Blob via fetch().
+ * Form part representation providing binary bytes for Expo's FormData converter.
+ * Expo 57's convertFormDataAsync() natively serializes entries that expose a `bytes()` method.
  */
-async function toFormPart(image: CapturedImage): Promise<Blob> {
-  const res = await fetch(image.uri);
+export interface FormDataBytePart {
+  name: string;
+  type: string;
+  bytes: () => Promise<Uint8Array>;
+}
 
-  if (!res.ok) {
-    throw new Error(`Unable to read captured image (${res.status}).`);
+export type FormPart = Blob | FormDataBytePart;
+
+/**
+ * Converts a captured image into a multipart FormData part compatible with
+ * the platform runtime:
+ *
+ * Native (Android/iOS): In Expo 57 with Winter fetch runtime, native FormData
+ * serialization (convertFormDataAsync) expects strings, Blobs, or objects with
+ * a `bytes(): Promise<Uint8Array>` method. We use `expo-file-system`'s `File`
+ * to access local `file://` URIs directly from storage without failing through
+ * OkHttp's file URL interceptor.
+ *
+ * Web: Browser camera capture produces canvas-based `data:` or `blob:` URIs,
+ * which `fetch(image.uri)` reads directly into a standard W3C `Blob`.
+ */
+async function toFormPart(image: CapturedImage): Promise<FormPart> {
+  if (Platform.OS === 'web') {
+    const res = await fetch(image.uri);
+    if (!res.ok) {
+      throw new Error(`Unable to read captured image (${res.status}).`);
+    }
+    const blob = await res.blob();
+    if (blob.size === 0) {
+      throw new Error('Captured image is empty.');
+    }
+    return blob;
   }
 
-  const blob = await res.blob();
-
-  if (blob.size === 0) {
+  const file = new ExpoFile(image.uri);
+  if (!file.exists) {
+    throw new Error(`Captured image file not found at ${image.uri}.`);
+  }
+  if (file.size === 0) {
     throw new Error('Captured image is empty.');
   }
 
-  return blob;
+  return {
+    name: image.name,
+    type: image.type || 'image/jpeg',
+    bytes: () => file.bytes(),
+  };
 }
 
 async function toFormData(images: CapturedImage[], captureId?: string): Promise<FormData> {
   const form = new FormData();
   for (const image of images) {
     const part = await toFormPart(image);
-    form.append('images', part, image.name);
+    if (part instanceof Blob) {
+      form.append('images', part, image.name);
+    } else {
+      form.append('images', part as unknown as Blob);
+    }
   }
   if (captureId) {
     form.append('capture_id', captureId);

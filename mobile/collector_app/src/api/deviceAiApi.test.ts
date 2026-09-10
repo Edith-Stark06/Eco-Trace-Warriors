@@ -3,20 +3,31 @@ import { deviceAiApi } from './deviceAiApi';
 import { ApiError } from './ApiError';
 
 /**
- * CHANGE-009 / Expo 57: deviceAiApi.registerDevices() converts captured image
- * URIs into real Blobs before appending to FormData across all platforms.
- *
- * In Expo 57's Winter fetch runtime, native FormData serialization
- * (convertFormDataAsync) expects strings, Blobs, or objects with bytes().
- * The legacy React Native `{ uri, name, type }` object is unsupported and fails
- * with "Unsupported FormDataPart implementation".
- *
- * Spies on FormData.prototype.append directly rather than reading back via
- * RN's own FormData polyfill, asserting deviceAiApi's exact FormData contract.
+ * CHANGE-009 / Expo 57: deviceAiApi.registerDevices() uses expo-file-system's
+ * File API to stream native camera file:// URIs as byte parts supported by
+ * Expo's convertFormDataAsync(), and uses fetch() -> Blob on web.
  */
 
+const mockFiles = new Map<string, { exists: boolean; size: number; bytes: () => Promise<Uint8Array> }>();
+
+jest.mock('expo-file-system', () => {
+  return {
+    File: jest.fn().mockImplementation((uri: string) => {
+      if (mockFiles.has(uri)) {
+        return mockFiles.get(uri);
+      }
+      return {
+        uri,
+        exists: true,
+        size: 2048,
+        bytes: jest.fn().mockResolvedValue(new Uint8Array([0xff, 0xd8, 0xff, 0xe0])),
+      };
+    }),
+  };
+});
+
 const CAPTURED_IMAGE = {
-  uri: 'file:///data/user/0/host.exp.exponent/cache/ExperienceData/.../Camera/photo.jpg',
+  uri: 'file:///data/user/0/host.exp.exponent/cache/ExperienceData/%2540anonymous%252Fcollector_app-test/Camera/photo.jpg',
   name: 'capture-1.jpg',
   type: 'image/jpeg',
 };
@@ -43,7 +54,6 @@ function jsonResponse(status: number, body: unknown): Response {
   } as unknown as Response;
 }
 
-/** A real Blob instance the mocked image-fetch resolves to, standing in for real captured bytes. */
 function fakeImageBlob(content = 'fake-image-bytes', type = 'image/jpeg'): Blob {
   return new Blob([content], { type });
 }
@@ -56,11 +66,12 @@ function mockImageResponse(blob: Blob, status = 200): Response {
   } as unknown as Response;
 }
 
-describe('deviceAiApi.registerDevices — platform-safe upload (CHANGE-009 / Expo 57)', () => {
+describe('deviceAiApi.registerDevices — Expo 57 filesystem & web uploads', () => {
   const originalOS = Platform.OS;
   let appendSpy: jest.SpyInstance;
 
   beforeEach(() => {
+    mockFiles.clear();
     appendSpy = jest.spyOn(FormData.prototype, 'append');
   });
 
@@ -69,13 +80,9 @@ describe('deviceAiApi.registerDevices — platform-safe upload (CHANGE-009 / Exp
     appendSpy.mockRestore();
   });
 
-  it('native (android): fetches the local image URI and converts it to a Blob before appending to FormData with filename', async () => {
+  it('native (android): reads camera file via expo-file-system and appends byte part with filename', async () => {
     Platform.OS = 'android';
-    const blob = fakeImageBlob();
-    const fetchMock = jest.fn((url: RequestInfo | URL) => {
-      if (String(url) === CAPTURED_IMAGE.uri) {
-        return Promise.resolve(mockImageResponse(blob));
-      }
+    const fetchMock = jest.fn((_url: RequestInfo | URL, _init?: RequestInit) => {
       return Promise.resolve(jsonResponse(200, REGISTER_RESPONSE));
     });
     globalThis.fetch = fetchMock;
@@ -84,23 +91,28 @@ describe('deviceAiApi.registerDevices — platform-safe upload (CHANGE-009 / Exp
 
     const imagesCall = appendSpy.mock.calls.find((call) => call[0] === 'images');
     expect(imagesCall).toBeDefined();
-    expect(imagesCall?.[1]).toBe(blob);
-    expect(imagesCall?.[1]).toBeInstanceOf(Blob);
-    expect(imagesCall?.[2]).toBe(CAPTURED_IMAGE.name);
+    const part = imagesCall?.[1];
+    expect(part).toBeDefined();
+    expect(typeof part.bytes).toBe('function');
+    expect(part.name).toBe(CAPTURED_IMAGE.name);
+    expect(part.type).toBe('image/jpeg');
 
-    // Two fetches: first reads native file URI into a Blob, second sends registration request
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fetchMock.mock.calls[0][0]).toBe(CAPTURED_IMAGE.uri);
-    expect(fetchMock.mock.calls[1][0]).toContain('/devices/register');
+    const bytes = await part.bytes();
+    expect(bytes).toBeInstanceOf(Uint8Array);
+    expect(bytes.length).toBeGreaterThan(0);
+
+    // Filename and type are preserved on the part object for Expo's FormData converter
+    expect(part.name).toBe(CAPTURED_IMAGE.name);
+    expect(part.type).toBe('image/jpeg');
+
+    // Registration request is sent
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toContain('/devices/register');
   });
 
-  it('native (ios): fetches the local image URI and converts it to a Blob before appending to FormData with filename', async () => {
+  it('native (ios): reads camera file via expo-file-system and appends byte part with filename', async () => {
     Platform.OS = 'ios';
-    const blob = fakeImageBlob();
-    const fetchMock = jest.fn((url: RequestInfo | URL) => {
-      if (String(url) === CAPTURED_IMAGE.uri) {
-        return Promise.resolve(mockImageResponse(blob));
-      }
+    const fetchMock = jest.fn((_url: RequestInfo | URL, _init?: RequestInit) => {
       return Promise.resolve(jsonResponse(200, REGISTER_RESPONSE));
     });
     globalThis.fetch = fetchMock;
@@ -109,16 +121,42 @@ describe('deviceAiApi.registerDevices — platform-safe upload (CHANGE-009 / Exp
 
     const imagesCall = appendSpy.mock.calls.find((call) => call[0] === 'images');
     expect(imagesCall).toBeDefined();
-    expect(imagesCall?.[1]).toBe(blob);
-    expect(imagesCall?.[1]).toBeInstanceOf(Blob);
-    expect(imagesCall?.[2]).toBe(CAPTURED_IMAGE.name);
-    expect(fetchMock.mock.calls[0][0]).toBe(CAPTURED_IMAGE.uri);
+    const part = imagesCall?.[1];
+    expect(typeof part.bytes).toBe('function');
+    expect(part.name).toBe(CAPTURED_IMAGE.name);
+    expect(part.type).toBe('image/jpeg');
   });
 
-  it('web: converts the captured URI into a real Blob before appending, preserving web compatibility', async () => {
+  it('native: throws error when captured image file does not exist', async () => {
+    Platform.OS = 'android';
+    mockFiles.set(CAPTURED_IMAGE.uri, {
+      exists: false,
+      size: 0,
+      bytes: jest.fn(),
+    });
+
+    await expect(deviceAiApi.registerDevices([CAPTURED_IMAGE])).rejects.toThrow(
+      `Captured image file not found at ${CAPTURED_IMAGE.uri}.`,
+    );
+  });
+
+  it('native: throws error when captured image file is empty (0 bytes)', async () => {
+    Platform.OS = 'android';
+    mockFiles.set(CAPTURED_IMAGE.uri, {
+      exists: true,
+      size: 0,
+      bytes: jest.fn().mockResolvedValue(new Uint8Array(0)),
+    });
+
+    await expect(deviceAiApi.registerDevices([CAPTURED_IMAGE])).rejects.toThrow(
+      'Captured image is empty.',
+    );
+  });
+
+  it('web: converts captured URI into a real Blob before appending, preserving web compatibility', async () => {
     Platform.OS = 'web';
     const blob = fakeImageBlob();
-    const fetchMock = jest.fn((url: RequestInfo | URL) => {
+    const fetchMock = jest.fn((url: RequestInfo | URL, _init?: RequestInit) => {
       if (String(url) === WEB_CAPTURED_IMAGE.uri) {
         return Promise.resolve(mockImageResponse(blob));
       }
@@ -139,24 +177,43 @@ describe('deviceAiApi.registerDevices — platform-safe upload (CHANGE-009 / Exp
     expect(fetchMock.mock.calls[1][0]).toContain('/devices/register');
   });
 
-  it('device AI registration request is made after the image Blob is prepared with FormData body', async () => {
-    Platform.OS = 'android';
-    const blob = fakeImageBlob();
-    const callOrder: string[] = [];
-    const fetchMock = jest.fn((url: RequestInfo | URL, _init?: RequestInit) => {
-      const urlStr = String(url);
-      if (urlStr === CAPTURED_IMAGE.uri) {
-        callOrder.push('fetch-image');
-        return Promise.resolve(mockImageResponse(blob));
+  it('web: throws error if reading captured image fails with a non-ok response', async () => {
+    Platform.OS = 'web';
+    globalThis.fetch = jest.fn((url: RequestInfo | URL) => {
+      if (String(url) === WEB_CAPTURED_IMAGE.uri) {
+        return Promise.resolve(mockImageResponse(fakeImageBlob(), 404));
       }
-      callOrder.push('device-ai-register');
+      return Promise.resolve(jsonResponse(200, REGISTER_RESPONSE));
+    });
+
+    await expect(deviceAiApi.registerDevices([WEB_CAPTURED_IMAGE])).rejects.toThrow(
+      'Unable to read captured image (404).',
+    );
+  });
+
+  it('web: throws error if captured image blob is empty (0 bytes)', async () => {
+    Platform.OS = 'web';
+    const emptyBlob = fakeImageBlob('');
+    globalThis.fetch = jest.fn((url: RequestInfo | URL) => {
+      if (String(url) === WEB_CAPTURED_IMAGE.uri) {
+        return Promise.resolve(mockImageResponse(emptyBlob, 200));
+      }
+      return Promise.resolve(jsonResponse(200, REGISTER_RESPONSE));
+    });
+
+    await expect(deviceAiApi.registerDevices([WEB_CAPTURED_IMAGE])).rejects.toThrow(
+      'Captured image is empty.',
+    );
+  });
+
+  it('device AI registration request is dispatched with FormData body', async () => {
+    Platform.OS = 'android';
+    const fetchMock = jest.fn((_url: RequestInfo | URL, _init?: RequestInit) => {
       return Promise.resolve(jsonResponse(200, REGISTER_RESPONSE));
     });
     globalThis.fetch = fetchMock;
 
     await deviceAiApi.registerDevices([CAPTURED_IMAGE]);
-
-    expect(callOrder).toEqual(['fetch-image', 'device-ai-register']);
 
     const registerCall = fetchMock.mock.calls.find((call) => String(call[0]).includes('/devices/register'));
     expect(registerCall).toBeDefined();
@@ -166,10 +223,7 @@ describe('deviceAiApi.registerDevices — platform-safe upload (CHANGE-009 / Exp
 
   it('never manually sets a multipart Content-Type header (the runtime must set its own boundary)', async () => {
     Platform.OS = 'android';
-    const fetchMock = jest.fn((url: RequestInfo | URL, _init?: RequestInit) => {
-      if (String(url) === CAPTURED_IMAGE.uri) {
-        return Promise.resolve(mockImageResponse(fakeImageBlob()));
-      }
+    const fetchMock = jest.fn((_url: RequestInfo | URL, _init?: RequestInit) => {
       return Promise.resolve(jsonResponse(200, REGISTER_RESPONSE));
     });
     globalThis.fetch = fetchMock;
@@ -184,12 +238,7 @@ describe('deviceAiApi.registerDevices — platform-safe upload (CHANGE-009 / Exp
 
   it('includes capture_id as a plain form field alongside the image part', async () => {
     Platform.OS = 'android';
-    globalThis.fetch = jest.fn((url: RequestInfo | URL) => {
-      if (String(url) === CAPTURED_IMAGE.uri) {
-        return Promise.resolve(mockImageResponse(fakeImageBlob()));
-      }
-      return Promise.resolve(jsonResponse(200, REGISTER_RESPONSE));
-    });
+    globalThis.fetch = jest.fn().mockResolvedValue(jsonResponse(200, REGISTER_RESPONSE));
 
     await deviceAiApi.registerDevices([CAPTURED_IMAGE], 'cap-42');
 
@@ -197,58 +246,21 @@ describe('deviceAiApi.registerDevices — platform-safe upload (CHANGE-009 / Exp
     expect(captureIdCall?.[1]).toBe('cap-42');
   });
 
-  it('throws an error if reading the captured image fails with a non-ok response', async () => {
-    globalThis.fetch = jest.fn((url: RequestInfo | URL) => {
-      if (String(url) === CAPTURED_IMAGE.uri) {
-        return Promise.resolve(mockImageResponse(fakeImageBlob(), 404));
-      }
-      return Promise.resolve(jsonResponse(200, REGISTER_RESPONSE));
-    });
-
-    await expect(deviceAiApi.registerDevices([CAPTURED_IMAGE])).rejects.toThrow(
-      'Unable to read captured image (404).',
-    );
-  });
-
-  it('throws an error if the captured image blob is empty (0 bytes)', async () => {
-    const emptyBlob = fakeImageBlob('');
-    globalThis.fetch = jest.fn((url: RequestInfo | URL) => {
-      if (String(url) === CAPTURED_IMAGE.uri) {
-        return Promise.resolve(mockImageResponse(emptyBlob, 200));
-      }
-      return Promise.resolve(jsonResponse(200, REGISTER_RESPONSE));
-    });
-
-    await expect(deviceAiApi.registerDevices([CAPTURED_IMAGE])).rejects.toThrow(
-      'Captured image is empty.',
-    );
-  });
-
-  it('existing response contract: resolves with the parsed JSON body on success', async () => {
+  it('existing response contract: resolves with parsed JSON body on success', async () => {
     Platform.OS = 'android';
-    globalThis.fetch = jest.fn((url: RequestInfo | URL) => {
-      if (String(url) === CAPTURED_IMAGE.uri) {
-        return Promise.resolve(mockImageResponse(fakeImageBlob()));
-      }
-      return Promise.resolve(jsonResponse(200, REGISTER_RESPONSE));
-    });
+    globalThis.fetch = jest.fn().mockResolvedValue(jsonResponse(200, REGISTER_RESPONSE));
 
     const result = await deviceAiApi.registerDevices([CAPTURED_IMAGE]);
     expect(result).toEqual(REGISTER_RESPONSE);
   });
 
-  it('existing response contract: throws ApiError with the response status on failure', async () => {
+  it('existing response contract: throws ApiError with response status on failure', async () => {
     Platform.OS = 'android';
-    globalThis.fetch = jest.fn((url: RequestInfo | URL) => {
-      if (String(url) === CAPTURED_IMAGE.uri) {
-        return Promise.resolve(mockImageResponse(fakeImageBlob()));
-      }
-      return Promise.resolve(
-        jsonResponse(422, {
-          detail: 'Request payload failed validation.',
-        }),
-      );
-    });
+    globalThis.fetch = jest.fn().mockResolvedValue(
+      jsonResponse(422, {
+        detail: 'Request payload failed validation.',
+      }),
+    );
 
     await expect(deviceAiApi.registerDevices([CAPTURED_IMAGE])).rejects.toThrow(ApiError);
     await expect(deviceAiApi.registerDevices([CAPTURED_IMAGE])).rejects.toMatchObject({
@@ -259,12 +271,8 @@ describe('deviceAiApi.registerDevices — platform-safe upload (CHANGE-009 / Exp
   });
 
   it('existing response contract: throws ApiError with NETWORK_ERROR when device AI is unreachable', async () => {
-    globalThis.fetch = jest.fn((url: RequestInfo | URL) => {
-      if (String(url) === CAPTURED_IMAGE.uri) {
-        return Promise.resolve(mockImageResponse(fakeImageBlob()));
-      }
-      return Promise.reject(new Error('Network request failed'));
-    });
+    Platform.OS = 'android';
+    globalThis.fetch = jest.fn().mockRejectedValue(new Error('Network request failed'));
 
     await expect(deviceAiApi.registerDevices([CAPTURED_IMAGE])).rejects.toMatchObject({
       code: 'NETWORK_ERROR',
