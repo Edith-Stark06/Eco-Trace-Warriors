@@ -3,7 +3,8 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-const PASSWORD = 'Admin@123';
+const PASSWORD = process.env.SEED_PASSWORD;
+
 const SALT_ROUNDS = 12;
 
 const roles = [
@@ -68,6 +69,10 @@ const users = [
 ] as const;
 
 async function main(): Promise<void> {
+  if (!PASSWORD || PASSWORD.trim().length === 0) {
+    throw new Error('SEED_PASSWORD environment variable is required to seed the database.');
+  }
+
   console.log('🌱 Seeding EcoTrace database...\n');
 
   // Seed Roles
