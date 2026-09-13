@@ -197,7 +197,7 @@ export function DevicePassportScreen({ route }: Props) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Digital Passport Header Badge */}
-      <Card variant="brand" style={styles.headerCard}>
+      <Card variant="elevated" style={styles.headerCard}>
         <View style={styles.headerTop}>
           <View style={styles.badgePill}>
             <Text style={styles.badgePillText}>DIGITAL PRODUCT PASSPORT</Text>
@@ -214,6 +214,14 @@ export function DevicePassportScreen({ route }: Props) {
         ) : (
           <Text style={styles.deviceIdPrimary}>{passport.device_id}</Text>
         )}
+
+        {(verification?.verification_status === 'VERIFIED' || trust?.status === 'VERIFIED') ? (
+          <View style={styles.cardVerifiedRow}>
+            <View style={styles.cardVerifiedBadge}>
+              <Text style={styles.cardVerifiedText}>✓ Device Verified</Text>
+            </View>
+          </View>
+        ) : null}
       </Card>
 
       {/* Blockchain Verification Section */}
@@ -430,6 +438,9 @@ const styles = StyleSheet.create({
   },
   headerCard: {
     padding: theme.spacing.lg,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.forest[200],
   },
   headerTop: {
     flexDirection: 'row',
@@ -438,13 +449,15 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.sm,
   },
   badgePill: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: theme.colors.forest[50],
     paddingHorizontal: theme.spacing.sm,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: theme.radius.full,
+    borderWidth: 1,
+    borderColor: theme.colors.forest[200],
   },
   badgePillText: {
-    color: '#FFFFFF',
+    color: theme.colors.forest[800],
     fontSize: 10,
     fontWeight: theme.typography.weight.bold,
     letterSpacing: 0.8,
@@ -453,32 +466,58 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   idBlock: {
-    marginTop: 2,
+    marginTop: theme.spacing.xs,
   },
   ecoIdLabel: {
-    fontSize: theme.typography.size.xs,
+    fontSize: 11,
     fontWeight: theme.typography.weight.bold,
-    color: theme.colors.forest[200],
+    color: theme.colors.slate[500],
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
   ecoId: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: theme.typography.weight.bold,
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
-    marginTop: 2,
+    color: theme.colors.slate[900],
+    fontFamily: 'monospace',
+    letterSpacing: 1,
+    marginTop: 4,
+    marginBottom: 4,
   },
   deviceIdSubtle: {
     fontSize: theme.typography.size.xs,
-    color: theme.colors.forest[100],
-    marginTop: 4,
-    opacity: 0.85,
+    color: theme.colors.slate[500],
+    marginTop: 2,
+    fontFamily: 'monospace',
   },
   deviceIdPrimary: {
     fontSize: 20,
     fontWeight: theme.typography.weight.bold,
-    color: '#FFFFFF',
+    color: theme.colors.slate[900],
+    fontFamily: 'monospace',
+  },
+  cardVerifiedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: theme.spacing.md,
+    paddingTop: theme.spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.slate[100],
+  },
+  cardVerifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.forest[50],
+    paddingHorizontal: theme.spacing.sm + 2,
+    paddingVertical: 4,
+    borderRadius: theme.radius.full,
+    borderWidth: 1,
+    borderColor: theme.colors.forest[200],
+  },
+  cardVerifiedText: {
+    fontSize: theme.typography.size.xs,
+    fontWeight: theme.typography.weight.bold,
+    color: theme.colors.forest[800],
   },
   sectionCard: {
     padding: theme.spacing.md,
@@ -508,12 +547,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
     paddingVertical: 6,
     marginBottom: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   trustBadgePositive: {
-    backgroundColor: theme.colors.emerald[100],
+    backgroundColor: theme.colors.emerald[50],
+    borderColor: theme.colors.emerald[100],
   },
   trustBadgeNegative: {
-    backgroundColor: theme.colors.rose[100],
+    backgroundColor: theme.colors.rose[50],
+    borderColor: theme.colors.rose[200],
   },
   trustBadgeText: {
     fontWeight: theme.typography.weight.bold,

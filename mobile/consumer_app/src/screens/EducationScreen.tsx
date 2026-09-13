@@ -62,7 +62,10 @@ const styles = StyleSheet.create({
     gap: theme.spacing.md,
   },
   header: {
-    marginBottom: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
+    paddingBottom: theme.spacing.base,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.light,
   },
   headerSubtitle: {
     fontSize: 10,

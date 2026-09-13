@@ -220,6 +220,9 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: spacing.base,
+    paddingBottom: spacing.base,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.light,
   },
   title: {
     fontSize: typography.sizes.title,

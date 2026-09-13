@@ -1,5 +1,6 @@
 import React from 'react';
 import { ScrollView, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { useAuth } from '../auth/AuthContext';
@@ -17,16 +18,15 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Dashboard'>;
  * Clear visual hierarchy: Greeting -> GreenCoins & Impact -> Primary "Report" CTA -> Secondary actions grid.
  */
 export function DashboardScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { status, balance } = useRewards();
   const { isOnline, pendingCount, failedCount } = useSyncManager();
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <NetworkStatusBanner isOnline={isOnline} pendingCount={pendingCount} failedCount={failedCount} />
-
       {/* Top Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, spacing.base) + spacing.xs }]}>
         <View style={styles.headerTextContainer}>
           <Text style={styles.brandTag}>ECOTRACE INDIA</Text>
           <Text style={styles.greeting}>Hi, {user?.fullName ?? 'there'}</Text>
@@ -42,6 +42,8 @@ export function DashboardScreen({ navigation }: Props) {
           </Text>
         </Pressable>
       </View>
+
+      <NetworkStatusBanner isOnline={isOnline} pendingCount={pendingCount} failedCount={failedCount} />
 
       {/* Hero GreenCoins & Environmental Impact Card */}
       <Card style={styles.heroCard}>
@@ -195,8 +197,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.base,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.base,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.light,
+    marginBottom: spacing.base,
   },
   headerTextContainer: {
     flex: 1,

@@ -153,6 +153,9 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: theme.spacing.xl,
+    paddingBottom: theme.spacing.base,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.light,
   },
   title: {
     fontSize: theme.typography.size.xl,

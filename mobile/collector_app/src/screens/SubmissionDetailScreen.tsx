@@ -84,7 +84,7 @@ export function SubmissionDetailScreen({ route, navigation }: Props) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header Card */}
-      <Card variant="brand" style={styles.heroCard}>
+      <Card variant="elevated" style={styles.heroCard}>
         <View style={styles.heroTop}>
           <Text style={styles.heroEyebrow}>PICKUP DETAILS</Text>
           <View style={styles.statusPill}>
@@ -193,6 +193,10 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     padding: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.forest[200],
   },
   heroTop: {
     flexDirection: 'row',
@@ -201,33 +205,34 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.xs,
   },
   heroEyebrow: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: theme.typography.weight.bold,
-    color: theme.colors.forest[200],
+    color: theme.colors.slate[500],
     letterSpacing: 1,
   },
   statusPill: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: theme.colors.forest[50],
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: 3,
     borderRadius: theme.radius.full,
+    borderWidth: 1,
+    borderColor: theme.colors.forest[200],
   },
   statusPillText: {
-    color: '#FFFFFF',
+    color: theme.colors.forest[800],
     fontSize: 11,
     fontWeight: theme.typography.weight.bold,
   },
   title: {
     fontSize: theme.typography.size.xl,
     fontWeight: theme.typography.weight.bold,
-    color: '#FFFFFF',
+    color: theme.colors.slate[900],
     marginTop: 2,
   },
   heroMeta: {
     fontSize: 11,
-    color: theme.colors.forest[100],
+    color: theme.colors.slate[500],
     marginTop: 4,
-    opacity: 0.9,
     fontFamily: 'monospace',
   },
   detailsCard: {

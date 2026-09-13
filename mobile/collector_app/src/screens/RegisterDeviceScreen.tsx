@@ -233,6 +233,9 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: theme.spacing.md,
+    paddingBottom: theme.spacing.base,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.slate[100],
   },
   aiTag: {
     alignSelf: 'flex-start',
