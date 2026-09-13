@@ -4,6 +4,7 @@ import type { Pagination } from '@shared/pagination';
 import type {
   CollectorRecord,
   CreateSubmissionRepositoryInput,
+  LinkDeviceRepositoryInput,
   RecyclerCompletionInput,
   RecyclerRecord,
   SubmissionRecord,
@@ -89,6 +90,11 @@ export function createSeededSubmissionRepository(): SeededSubmissionRepository {
         recyclerNotes: null,
         recoveredWeight: null,
         materialRecovery: null,
+        co2Saved: null,
+        energySaved: null,
+        landfillDiverted: null,
+        deviceId: null,
+        ecoId: null,
         createdAt: now,
         updatedAt: now,
       };
@@ -212,6 +218,13 @@ export function createSeededSubmissionRepository(): SeededSubmissionRepository {
       return Promise.resolve(usersById.get(recyclerId) ?? null);
     },
 
+    findRecyclerHistory(recyclerId: string, pagination?: Pagination): Promise<SubmissionRecord[]> {
+      const rows = [...byId.values()]
+        .filter((r) => r.assignedRecyclerId === recyclerId && r.status === 'RECYCLED')
+        .sort((a, b) => (b.recycledAt?.getTime() ?? 0) - (a.recycledAt?.getTime() ?? 0));
+      return Promise.resolve(paginate(rows, pagination));
+    },
+
     updateRecyclerProcessing(id: string, processingStartedAt: Date): Promise<SubmissionRecord> {
       const updated: SubmissionRecord = {
         ...mustGet(id),
@@ -236,6 +249,24 @@ export function createSeededSubmissionRepository(): SeededSubmissionRepository {
         recyclerNotes: input.recyclerNotes ?? null,
         // InputJsonValue (write shape) widens to JsonValue for the stored record.
         materialRecovery: (input.materialRecovery ?? null) as SubmissionRecord['materialRecovery'],
+        updatedAt: nextDate(),
+      };
+      byId.set(id, updated);
+      return Promise.resolve(updated);
+    },
+
+    findByDeviceOrEcoId(identifier: string): Promise<SubmissionRecord | null> {
+      const found = [...byId.values()].find(
+        (r) => r.deviceId === identifier || r.ecoId === identifier,
+      );
+      return Promise.resolve(found ?? null);
+    },
+
+    linkDevice(id: string, input: LinkDeviceRepositoryInput): Promise<SubmissionRecord> {
+      const updated: SubmissionRecord = {
+        ...mustGet(id),
+        deviceId: input.deviceId,
+        ecoId: input.ecoId,
         updatedAt: nextDate(),
       };
       byId.set(id, updated);

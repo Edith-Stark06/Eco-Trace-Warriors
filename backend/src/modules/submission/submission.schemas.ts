@@ -49,6 +49,21 @@ export const submissionIdSchema = z.object({
   id: z.string().uuid('A valid submission id is required'),
 });
 
+/** Param for GET /submissions/by-device/:identifier — accepts a device_id or eco_id. */
+export const deviceIdentifierParamSchema = z.object({
+  identifier: z.string().trim().min(1, 'A device identifier is required'),
+});
+
+/**
+ * Body for PATCH /submissions/:id/device-link. `ecoId` is optional because a
+ * device may not have an EcoID yet at confirm time (enrichment/anchoring
+ * happens later in device_ai) — see docs/engineering/03_ARCHITECTURE.md.
+ */
+export const linkDeviceSchema = z.object({
+  deviceId: z.string().trim().min(1, 'A device id is required'),
+  ecoId: z.string().trim().min(1).optional(),
+});
+
 /**
  * Body for PATCH /submissions/:id/assign. The status-transition endpoints
  * (accept/start/complete) carry no body — they validate only the :id param.
@@ -82,3 +97,5 @@ export type SubmissionIdParams = z.infer<typeof submissionIdSchema>;
 export type AssignCollectorInput = z.infer<typeof assignCollectorSchema>;
 export type AssignRecyclerInput = z.infer<typeof assignRecyclerSchema>;
 export type CompleteRecyclingInput = z.infer<typeof completeRecyclingSchema>;
+export type DeviceIdentifierParams = z.infer<typeof deviceIdentifierParamSchema>;
+export type LinkDeviceInput = z.infer<typeof linkDeviceSchema>;

@@ -56,6 +56,7 @@ from ..fingerprint.repository import (
 )
 from ..fingerprint.service import FingerprintService
 from ..fingerprint.verification import VerificationEngine
+from ..forecasting.service import ForecastingService
 from ..inference.clip_encoder import CLIPEncoder
 from ..inference.ecoid import EcoIDGenerator
 from ..inference.ensemble_detector import EnsembleDetector
@@ -557,6 +558,21 @@ def get_device_intelligence_service(
     )
 
 
+@lru_cache(maxsize=1)
+def get_forecasting_service() -> ForecastingService:
+    """Return the process-wide :class:`ForecastingService` singleton.
+
+    Cheap to cache: it holds no model weights itself, only the
+    :class:`~device_ai.training.registry.artifact_manager.ArtifactManager`
+    / :class:`~device_ai.training.registry.model_registry.ModelRegistry`
+    path/JSON wrappers already used by the training platform (M1.3).
+
+    Returns:
+        A configured :class:`ForecastingService`.
+    """
+    return ForecastingService(get_settings())
+
+
 def build_trust_anchor_repository(settings: Settings) -> TrustAnchorRepository:
     """Construct a :class:`TrustAnchorRepository` from the provided settings.
 
@@ -731,6 +747,7 @@ def reset_dependency_caches() -> None:
     get_fingerprint_encoder.cache_clear()
     get_fingerprint_repository.cache_clear()
     get_device_repository.cache_clear()
+    get_forecasting_service.cache_clear()
     get_trust_anchor_repository.cache_clear()
     get_external_trust_ledger.cache_clear()
     get_external_trust_repository.cache_clear()

@@ -59,6 +59,32 @@ export interface DeviceTrustStatusResponse {
   trust: TrustStatusPayload;
 }
 
+/** Loosely-typed intelligence facets — the collector app only needs to
+ *  trigger enrichment, not render its full facet breakdown. */
+export interface DeviceEnrichmentResponse {
+  success: boolean;
+  device: DeviceRecord;
+  intelligence: Record<string, unknown>;
+  request_id: string | null;
+}
+
+export interface TrustAnchorPayload {
+  anchor_id: string;
+  device_id: string;
+  passport_fingerprint: string;
+  algorithm: string;
+  anchored_at: string;
+  status: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface TrustAnchorResponse {
+  success: boolean;
+  anchor: TrustAnchorPayload;
+  is_new: boolean;
+  request_id: string | null;
+}
+
 /** Loosely-typed passport payload — full facet-by-facet typing is deferred; the
  *  UI only reads a handful of top-level fields plus `lifecycle.state`. */
 export interface DevicePassportPayload {

@@ -117,12 +117,18 @@ export default function RecyclerDashboardPage() {
       )}
 
       <Section title="Quick actions">
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <QuickAction
             to={ROUTES.recycler}
             icon="recycler"
             title="Active recycling"
             description="Review and process your assigned jobs"
+          />
+          <QuickAction
+            to={ROUTES.recyclerHistory}
+            icon="history"
+            title="History & analytics"
+            description="Your completed jobs and recovery efficiency"
           />
           <QuickAction
             to={ROUTES.settings}

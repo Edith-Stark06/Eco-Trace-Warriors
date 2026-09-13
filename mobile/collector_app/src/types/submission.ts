@@ -30,6 +30,9 @@ export interface PublicSubmission {
   recyclerNotes: string | null;
   recoveredWeight: number | null;
   materialRecovery: unknown;
+  /** Cross-domain link to intelligence/device_ai's Device record. Null until linked (P10.1). */
+  deviceId: string | null;
+  ecoId: string | null;
   createdAt: string;
   updatedAt: string;
 }

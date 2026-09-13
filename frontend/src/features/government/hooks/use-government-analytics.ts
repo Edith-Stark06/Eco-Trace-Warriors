@@ -48,11 +48,15 @@ export function useGovernmentEnvironmentalImpact() {
   });
 }
 
-/** AI demand forecast (GET /analytics/forecast). */
-export function useGovernmentForecast() {
+/**
+ * AI demand forecast (GET /analytics/forecast?horizon=). Keyed by horizon so
+ * switching the horizon selector fetches (and caches) that horizon's real
+ * result independently rather than reusing a different horizon's data.
+ */
+export function useGovernmentForecast(horizon: number) {
   return useQuery({
-    queryKey: queryKeys.government.forecast,
-    queryFn: () => governmentApi.getForecast(),
+    queryKey: queryKeys.government.forecast(horizon),
+    queryFn: () => governmentApi.getForecast(horizon),
     retry: analyticsRetry,
   });
 }

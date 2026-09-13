@@ -30,13 +30,14 @@ export const queryKeys = {
   recycler: {
     all: ['recycler'] as const,
     assignments: (params?: QueryKeyParams) => ['recycler', 'assignments', params ?? {}] as const,
+    history: (params?: QueryKeyParams) => ['recycler', 'history', params ?? {}] as const,
   },
   government: {
     all: ['government'] as const,
     overview: ['government', 'overview'] as const,
     regions: ['government', 'regions'] as const,
     environmentalImpact: ['government', 'environmental-impact'] as const,
-    forecast: ['government', 'forecast'] as const,
+    forecast: (horizon: number) => ['government', 'forecast', horizon] as const,
   },
   admin: {
     all: ['admin'] as const,
@@ -49,5 +50,9 @@ export const queryKeys = {
   },
   blockchain: {
     health: ['blockchain', 'health'] as const,
+  },
+  notifications: {
+    all: ['notifications'] as const,
+    list: (params?: QueryKeyParams) => ['notifications', 'list', params ?? {}] as const,
   },
 } as const;

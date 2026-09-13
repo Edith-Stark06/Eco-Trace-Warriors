@@ -44,3 +44,29 @@ export interface CreateSubmissionInput {
   longitude: number;
   imageUrls?: string[];
 }
+
+/**
+ * Mirrors backend/src/modules/submission/submission.types.ts
+ * SubmissionLifecycleView — the Submission-domain view surfaced on the
+ * Device Passport's "Collection & Recycling" section (P10.1).
+ * GET /submissions/by-device/:identifier. Every field is a real,
+ * already-persisted Submission value; a missing value stays `null`
+ * rather than being guessed.
+ */
+export interface SubmissionLifecycleView {
+  submissionId: string;
+  status: SubmissionStatus;
+  collectorAssigned: boolean;
+  pickupAccepted: boolean;
+  pickupStarted: boolean;
+  collected: boolean;
+  recyclingStarted: boolean;
+  recycled: boolean;
+  pickupStartedAt: string | null;
+  recyclingStartedAt: string | null;
+  recycledAt: string | null;
+  recoveredWeight: number | null;
+  co2Saved: number | null;
+  energySaved: number | null;
+  landfillDiverted: number | null;
+}

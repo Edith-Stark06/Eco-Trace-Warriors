@@ -12,6 +12,8 @@ import {
   createSeededSubmissionRepository,
 } from '../helpers/in-memory-submission-repository';
 import { createInMemoryRewardRepository } from '../helpers/in-memory-reward-repository';
+import { createInMemoryNotificationRepository } from '../helpers/in-memory-notification-repository';
+import type { NotificationRepository } from '@modules/notification';
 
 const TEST_ENV = { NODE_ENV: 'test', LOG_LEVEL: 'fatal', BCRYPT_ROUNDS: '4' } as const;
 
@@ -34,6 +36,13 @@ function buildApp(): Express {
     config,
     logger,
     submissionRepository: createInMemorySubmissionRepository(),
+    // Every builder here injects an in-memory notification repository — the
+    // submission service's lifecycle hooks (P10.3) call it best-effort on
+    // every assign/collect/recycle transition these tests exercise, and
+    // without an override the app would fall back to a real Prisma client
+    // (see app.ts), reaching for a real database these integration tests
+    // must never depend on.
+    notificationRepository: createInMemoryNotificationRepository(),
   });
 }
 
@@ -41,30 +50,42 @@ function buildApp(): Express {
  * App backed by a repository preloaded with a known collector, so the assign
  * endpoint's collector-existence check succeeds. Returns the collector id.
  */
-function buildAppWithCollector(collectorId = COLLECTOR_ID): { app: Express; collectorId: string } {
+function buildAppWithCollector(collectorId = COLLECTOR_ID): {
+  app: Express;
+  collectorId: string;
+  notifications: NotificationRepository;
+} {
   const logger = createLogger(config);
   const seeded = createSeededSubmissionRepository();
   seeded.addUser(activeCollector(collectorId));
-  const app = createApp({ config, logger, submissionRepository: seeded.repository });
-  return { app, collectorId };
+  const notifications = createInMemoryNotificationRepository();
+  const app = createApp({
+    config,
+    logger,
+    submissionRepository: seeded.repository,
+    notificationRepository: notifications,
+  });
+  return { app, collectorId, notifications };
 }
 
 /**
  * App backed by a repository preloaded with a known collector and recycler, so
  * both assign endpoints' existence checks succeed. Used by recycler-flow tests.
  */
-function buildAppWithRecycler(): { app: Express } {
+function buildAppWithRecycler(): { app: Express; notifications: NotificationRepository } {
   const logger = createLogger(config);
   const seeded = createSeededSubmissionRepository();
   seeded.addUser(activeCollector(COLLECTOR_ID));
   seeded.addUser(activeRecycler(RECYCLER_ID));
+  const notifications = createInMemoryNotificationRepository();
   const app = createApp({
     config,
     logger,
     submissionRepository: seeded.repository,
     rewardRepository: createInMemoryRewardRepository(),
+    notificationRepository: notifications,
   });
-  return { app };
+  return { app, notifications };
 }
 
 const OWNER = tokenFor('user-1', UserRole.CONSUMER);
@@ -898,6 +919,261 @@ describe('Recycler workflow', () => {
       const { app } = buildAppWithRecycler();
 
       const res = await request(app).get('/api/v1/recycler/submissions');
+
+      expect(res.status).toBe(401);
+    });
+  });
+
+  describe('GET /api/v1/recycler/submissions/history', () => {
+    async function createRecycledByRecycler(app: Express, recoveredWeight = 5): Promise<string> {
+      const id = await createCollectedAndAssignRecycler(app);
+      await request(app)
+        .patch(`/api/v1/submissions/${id}/recycle/start`)
+        .set('Authorization', auth(RECYCLER));
+      await request(app)
+        .patch(`/api/v1/submissions/${id}/recycle/complete`)
+        .set('Authorization', auth(RECYCLER))
+        .send({ recoveredWeight, materialRecovery: { copper: 0.5 } });
+      return id;
+    }
+
+    it("returns the recycler's own RECYCLED jobs, newest first, with real stored figures", async () => {
+      const { app } = buildAppWithRecycler();
+      const first = await createRecycledByRecycler(app, 5);
+      const second = await createRecycledByRecycler(app, 6);
+
+      const res = await request(app)
+        .get('/api/v1/recycler/submissions/history')
+        .set('Authorization', auth(RECYCLER));
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveLength(2);
+      expect(res.body.data[0].id).toBe(second);
+      expect(res.body.data[1].id).toBe(first);
+      expect(res.body.data[0].recoveredWeight).toBe(6);
+      expect(res.body.data[0].materialRecovery).toEqual({ copper: 0.5 });
+      // The in-memory reward repository fake (unlike the real Prisma-backed
+      // one — verified live) doesn't backfill co2Saved/energySaved/
+      // landfillDiverted onto the fake submission store; this route just
+      // passes through whatever the repository holds, so the honest
+      // assertion here is presence of the real response shape, not a
+      // specific value this test double never populates.
+      expect(res.body.data[0]).toHaveProperty('co2Saved');
+      expect(res.body.data[0]).toHaveProperty('energySaved');
+      expect(res.body.data[0]).toHaveProperty('landfillDiverted');
+      // Trimmed DTO — never exposes the address/owner/collector identity.
+      expect(res.body.data[0].address).toBeUndefined();
+      expect(res.body.data[0].userId).toBeUndefined();
+    });
+
+    it('excludes COLLECTED/RECYCLING jobs — only RECYCLED appears in history', async () => {
+      const { app } = buildAppWithRecycler();
+      await createCollectedAndAssignRecycler(app);
+
+      const res = await request(app)
+        .get('/api/v1/recycler/submissions/history')
+        .set('Authorization', auth(RECYCLER));
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveLength(0);
+    });
+
+    it("never returns another recycler's history, even for a different, otherwise-valid recycler account", async () => {
+      const { app } = buildAppWithRecycler();
+      await createRecycledByRecycler(app);
+
+      const res = await request(app)
+        .get('/api/v1/recycler/submissions/history')
+        .set('Authorization', auth(OTHER_RECYCLER));
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveLength(0);
+    });
+
+    it('ignores a client-supplied recyclerId query parameter — scoping always comes from the token', async () => {
+      const { app } = buildAppWithRecycler();
+      await createRecycledByRecycler(app);
+
+      const res = await request(app)
+        .get(`/api/v1/recycler/submissions/history?recyclerId=${RECYCLER_ID}`)
+        .set('Authorization', auth(OTHER_RECYCLER));
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveLength(0);
+    });
+
+    it('returns 403 for a non-recycler', async () => {
+      const { app } = buildAppWithRecycler();
+
+      const res = await request(app)
+        .get('/api/v1/recycler/submissions/history')
+        .set('Authorization', auth(COLLECTOR));
+
+      expect(res.status).toBe(403);
+    });
+
+    it('returns 401 without a token', async () => {
+      const { app } = buildAppWithRecycler();
+
+      const res = await request(app).get('/api/v1/recycler/submissions/history');
+
+      expect(res.status).toBe(401);
+    });
+  });
+});
+
+describe('Device linkage (P10.1)', () => {
+  async function createAcceptedAssignment(app: Express): Promise<string> {
+    const id = await createSubmission(app, OWNER);
+    await request(app)
+      .patch(`/api/v1/submissions/${id}/assign`)
+      .set('Authorization', auth(ADMIN))
+      .send({ collectorId: COLLECTOR_ID });
+    await request(app)
+      .patch(`/api/v1/submissions/${id}/accept`)
+      .set('Authorization', auth(COLLECTOR));
+    return id;
+  }
+
+  describe('PATCH /api/v1/submissions/:id/device-link', () => {
+    it('lets the assigned collector link a device to their submission', async () => {
+      const { app } = buildAppWithCollector();
+      const id = await createAcceptedAssignment(app);
+
+      const res = await request(app)
+        .patch(`/api/v1/submissions/${id}/device-link`)
+        .set('Authorization', auth(COLLECTOR))
+        .send({ deviceId: 'DEV-2026-TEST0001-01' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.deviceId).toBe('DEV-2026-TEST0001-01');
+      expect(res.body.data.ecoId).toBeNull();
+    });
+
+    it('returns 404 when a different collector attempts to link (not the assignee)', async () => {
+      const { app } = buildAppWithCollector();
+      const id = await createAcceptedAssignment(app);
+
+      const res = await request(app)
+        .patch(`/api/v1/submissions/${id}/device-link`)
+        .set('Authorization', auth(OTHER_COLLECTOR))
+        .send({ deviceId: 'DEV-2026-TEST0001-01' });
+
+      expect(res.status).toBe(404);
+    });
+
+    it('lets an admin link a device on behalf of any submission', async () => {
+      const app = buildApp();
+      const id = await createSubmission(app, OWNER);
+
+      const res = await request(app)
+        .patch(`/api/v1/submissions/${id}/device-link`)
+        .set('Authorization', auth(ADMIN))
+        .send({ deviceId: 'DEV-2026-TEST0001-01', ecoId: 'ET-2026-TEST0001' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.deviceId).toBe('DEV-2026-TEST0001-01');
+      expect(res.body.data.ecoId).toBe('ET-2026-TEST0001');
+    });
+
+    it('returns 403 for a consumer (route restricted to COLLECTOR/ADMIN)', async () => {
+      const app = buildApp();
+      const id = await createSubmission(app, OWNER);
+
+      const res = await request(app)
+        .patch(`/api/v1/submissions/${id}/device-link`)
+        .set('Authorization', auth(OWNER))
+        .send({ deviceId: 'DEV-2026-TEST0001-01' });
+
+      expect(res.status).toBe(403);
+    });
+
+    it('returns 400 for an empty deviceId', async () => {
+      const { app } = buildAppWithCollector();
+      const id = await createAcceptedAssignment(app);
+
+      const res = await request(app)
+        .patch(`/api/v1/submissions/${id}/device-link`)
+        .set('Authorization', auth(COLLECTOR))
+        .send({ deviceId: '' });
+
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe('GET /api/v1/submissions/by-device/:identifier', () => {
+    it("resolves the submission owner's lifecycle view by device_id", async () => {
+      const { app } = buildAppWithCollector();
+      const id = await createAcceptedAssignment(app);
+      await request(app)
+        .patch(`/api/v1/submissions/${id}/device-link`)
+        .set('Authorization', auth(COLLECTOR))
+        .send({ deviceId: 'DEV-2026-TEST0001-01' });
+
+      const res = await request(app)
+        .get('/api/v1/submissions/by-device/DEV-2026-TEST0001-01')
+        .set('Authorization', auth(OWNER));
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toEqual(
+        expect.objectContaining({
+          submissionId: id,
+          status: 'ACCEPTED',
+          collectorAssigned: true,
+          pickupAccepted: true,
+          pickupStarted: false,
+          collected: false,
+        }),
+      );
+      // Trimmed view — never exposes the assigned collector's user id.
+      expect(res.body.data.assignedCollectorId).toBeUndefined();
+    });
+
+    it("returns 404 for a different consumer — never leaks another owner's submission", async () => {
+      const { app } = buildAppWithCollector();
+      const id = await createAcceptedAssignment(app);
+      await request(app)
+        .patch(`/api/v1/submissions/${id}/device-link`)
+        .set('Authorization', auth(COLLECTOR))
+        .send({ deviceId: 'DEV-2026-TEST0001-01' });
+
+      const res = await request(app)
+        .get('/api/v1/submissions/by-device/DEV-2026-TEST0001-01')
+        .set('Authorization', auth(OTHER));
+
+      expect(res.status).toBe(404);
+    });
+
+    it('is visible to the assigned collector', async () => {
+      const { app } = buildAppWithCollector();
+      const id = await createAcceptedAssignment(app);
+      await request(app)
+        .patch(`/api/v1/submissions/${id}/device-link`)
+        .set('Authorization', auth(COLLECTOR))
+        .send({ deviceId: 'DEV-2026-TEST0001-01' });
+
+      const res = await request(app)
+        .get('/api/v1/submissions/by-device/DEV-2026-TEST0001-01')
+        .set('Authorization', auth(COLLECTOR));
+
+      expect(res.status).toBe(200);
+    });
+
+    it('returns 404 for a device with no linked submission — a legitimate state, not an error', async () => {
+      const app = buildApp();
+
+      const res = await request(app)
+        .get('/api/v1/submissions/by-device/NEVER-LINKED')
+        .set('Authorization', auth(OWNER));
+
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe('NOT_FOUND');
+    });
+
+    it('returns 401 without a token', async () => {
+      const app = buildApp();
+
+      const res = await request(app).get('/api/v1/submissions/by-device/DEV-2026-TEST0001-01');
 
       expect(res.status).toBe(401);
     });

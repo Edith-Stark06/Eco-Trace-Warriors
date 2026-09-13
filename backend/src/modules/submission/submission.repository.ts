@@ -81,8 +81,20 @@ export interface SubmissionRecord {
   readonly recyclerNotes: string | null;
   readonly recoveredWeight: number | null;
   readonly materialRecovery: Prisma.JsonValue | null;
+  readonly co2Saved: number | null;
+  readonly energySaved: number | null;
+  readonly landfillDiverted: number | null;
+  /** Cross-domain link to intelligence/device_ai's Device record. Null for unlinked submissions. */
+  readonly deviceId: string | null;
+  readonly ecoId: string | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+}
+
+/** Fields written when linking a submission to a device_ai Device record. */
+export interface LinkDeviceInput {
+  readonly deviceId: string;
+  readonly ecoId: string | null;
 }
 
 export interface SubmissionRepository {
@@ -121,6 +133,14 @@ export interface SubmissionRepository {
   findRecyclerAssignments(recyclerId: string, pagination?: Pagination): Promise<SubmissionRecord[]>;
   /** Loads a user by id for recycler-assignment validation, or null when absent. */
   findRecyclerById(recyclerId: string): Promise<RecyclerRecord | null>;
+  /**
+   * A recycler's completed history — every RECYCLED submission they processed,
+   * newest first. Unpaginated when no window is given: RECYCLED submissions
+   * never re-enter the active queue, so a recycler's full history is the
+   * relevant "page" at this project's data volume (see
+   * docs/engineering/05_API.md — Recycler History).
+   */
+  findRecyclerHistory(recyclerId: string, pagination?: Pagination): Promise<SubmissionRecord[]>;
   /** Moves a submission to RECYCLING and stamps when processing began. */
   updateRecyclerProcessing(id: string, processingStartedAt: Date): Promise<SubmissionRecord>;
   /** Moves a submission to RECYCLED and records the recovery outcome. */
@@ -129,6 +149,13 @@ export interface SubmissionRepository {
     recycledAt: Date,
     input: RecyclerCompletionInput,
   ): Promise<SubmissionRecord>;
+
+  // --- Device Intelligence linkage (P10.1) -----------------------------------
+
+  /** Finds the submission linked to a device_id or eco_id, or null if unlinked/unknown. */
+  findByDeviceOrEcoId(identifier: string): Promise<SubmissionRecord | null>;
+  /** Records the device_ai identifiers for a submission. Idempotent re-link overwrites. */
+  linkDevice(id: string, input: LinkDeviceInput): Promise<SubmissionRecord>;
 }
 
 /** Statuses shown on the collector dashboard — work in flight, not yet collected. */
@@ -161,6 +188,11 @@ const submissionSelect = {
   recyclerNotes: true,
   recoveredWeight: true,
   materialRecovery: true,
+  co2Saved: true,
+  energySaved: true,
+  landfillDiverted: true,
+  deviceId: true,
+  ecoId: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -329,6 +361,21 @@ export function createSubmissionRepository(deps: {
       return user ? { id: user.id, role: user.role.name, isActive: user.isActive } : null;
     },
 
+    async findRecyclerHistory(
+      recyclerId: string,
+      pagination?: Pagination,
+    ): Promise<SubmissionRecord[]> {
+      return prisma.submission.findMany({
+        where: {
+          assignedRecyclerId: recyclerId,
+          status: 'RECYCLED',
+        },
+        orderBy: { recycledAt: 'desc' },
+        select: submissionSelect,
+        ...toPage(pagination),
+      });
+    },
+
     async updateRecyclerProcessing(
       id: string,
       processingStartedAt: Date,
@@ -355,6 +402,21 @@ export function createSubmissionRepository(deps: {
           // Prisma requires JsonNull sentinel to write SQL NULL into a Json column.
           materialRecovery: input.materialRecovery ?? Prisma.JsonNull,
         },
+        select: submissionSelect,
+      });
+    },
+
+    async findByDeviceOrEcoId(identifier: string): Promise<SubmissionRecord | null> {
+      return prisma.submission.findFirst({
+        where: { OR: [{ deviceId: identifier }, { ecoId: identifier }] },
+        select: submissionSelect,
+      });
+    },
+
+    async linkDevice(id: string, input: LinkDeviceInput): Promise<SubmissionRecord> {
+      return prisma.submission.update({
+        where: { id },
+        data: { deviceId: input.deviceId, ecoId: input.ecoId },
         select: submissionSelect,
       });
     },

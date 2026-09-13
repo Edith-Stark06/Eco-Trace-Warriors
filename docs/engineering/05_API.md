@@ -255,6 +255,8 @@ recycler then processes the collected e-waste and records material recovery.
 | PATCH  | `/submissions/{id}/recycle/start`    | R     | Assigned recycler starts processing (`COLLECTED → RECYCLING`)   |
 | PATCH  | `/submissions/{id}/recycle/complete` | R     | Assigned recycler records recovery (`RECYCLING → RECYCLED`)     |
 | GET    | `/recycler/submissions`              | R     | Recycler dashboard: own active assignments, newest first        |
+| PATCH  | `/submissions/{id}/device-link`      | CO, A | Cross-reference this submission with a device_ai device (P10.1) |
+| GET    | `/submissions/by-device/{identifier}`| *     | Resolve the Submission lifecycle for a device_id/eco_id (P10.1) |
 
 `SubmissionStatus`: `PENDING`, `ASSIGNED`, `ACCEPTED`, `IN_PROGRESS`, `COLLECTED`, `RECYCLING`, `RECYCLED`, `COMPLETED`, `REJECTED` (see `04_DATABASE.md`).
 
@@ -311,10 +313,14 @@ Response `data`:
   "recyclerNotes": null,
   "recoveredWeight": null,
   "materialRecovery": null,
+  "deviceId": null,
+  "ecoId": null,
   "createdAt": "2026-07-22T10:30:00.000Z",
   "updatedAt": "2026-07-22T10:30:00.000Z"
 }
 ```
+
+`deviceId`/`ecoId` (P10.1) are `null` until a collector (or admin) links the submission to a device_ai Device via `PATCH /submissions/{id}/device-link`; they stay `null` forever for historical submissions never paired with a device — this is expected, not an error.
 
 ### GET /submissions — 200
 
@@ -396,6 +402,42 @@ Recycler only, assigned recycler only (`404` otherwise). Requires `status == REC
 
 Recycler only. Response `data`: an array of the authenticated recycler's **active** assignments — submissions in `COLLECTED` or `RECYCLING` assigned to them — newest first. `RECYCLED` and later statuses are excluded. Supports `limit`/`offset` pagination (see [Pagination](#pagination)). Other roles → `403`.
 
+### PATCH /submissions/{id}/device-link — 200 (P10.1)
+
+Collector (assigned collector only, else `404`) or Admin (any submission). Cross-references this submission with a device_ai Device — the smallest safe link between the two otherwise-independent domains (`03_ARCHITECTURE.md` rule 6). Request:
+
+```json
+{ "deviceId": "DEV-2026-3EDB1D84-01", "ecoId": "ET-2026-5ED1280B" }
+```
+
+`deviceId` is required (non-empty string). `ecoId` is optional — device_ai does not assign an EcoID until later enrichment/anchoring, so the collector app's real call typically omits it and re-linking later to add it is expected. Linking a `deviceId`/`ecoId` already linked to a *different* submission → `409 CONFLICT` (unique constraint). Response `data`: the updated submission object with `deviceId`/`ecoId` set.
+
+### GET /submissions/by-device/{identifier} — 200 (P10.1)
+
+Any authenticated role. `{identifier}` is a device_id or eco_id. Resolves the submission linked to that device and returns a trimmed **`SubmissionLifecycleView`**, not the full submission — no collector/recycler user ids, address, or imagery, since this is served to the Consumer Device Passport:
+
+```json
+{
+  "submissionId": "uuid",
+  "status": "RECYCLED",
+  "collectorAssigned": true,
+  "pickupAccepted": true,
+  "pickupStarted": true,
+  "collected": true,
+  "recyclingStarted": true,
+  "recycled": true,
+  "pickupStartedAt": "2026-07-22T11:00:00.000Z",
+  "recyclingStartedAt": "2026-07-23T09:00:00.000Z",
+  "recycledAt": "2026-07-23T09:30:00.000Z",
+  "recoveredWeight": 2.3,
+  "co2Saved": 62.5,
+  "energySaved": 37.5,
+  "landfillDiverted": 2.5
+}
+```
+
+Every field reuses a value the Submission domain already persists (the sustainability figures come from the reward module's calculation at `recycle/complete` time — never recomputed here). Visibility matches `GET /submissions/{id}`: the submission's owner, an admin/government actor, or the assigned collector/recycler; anyone else, or a device with no linked submission, → `404` (never `403`, to avoid leaking whether a device/submission exists).
+
 ## Devices
 
 | Method | Path                       | Roles | Description                                                      |
@@ -435,12 +477,71 @@ Recycler only. Response `data`: an array of the authenticated recycler's **activ
 
 ## Analytics
 
+Implemented in `backend/src/modules/analytics/` — a read-only reporting layer
+aggregating the existing Submission, User, and RewardTransaction tables (no
+new domain tables). Response shapes match `frontend/src/types/analytics.ts`.
+
 | Method | Path                              | Roles | Description                                  |
 | ------ | --------------------------------- | ----- | -------------------------------------------- |
 | GET    | `/analytics/overview`             | G, A  | National statistics                          |
 | GET    | `/analytics/regions`              | G, A  | Regional breakdown / heatmap data            |
-| GET    | `/analytics/forecast`             | G, A  | AI demand forecast (proxied from AI service) |
+| GET    | `/analytics/forecast`             | G, A  | Real LSTM daily e-waste weight forecast (P10.1) — `?horizon=<1-90>`, default 30 |
 | GET    | `/analytics/environmental-impact` | G, A  | Impact metrics                               |
+
+Notes:
+
+- `/analytics/regions` groups by the submission owner's `User.region` (the
+  only location-classification field that exists today — `Submission` itself
+  only has free-text `address`/`latitude`/`longitude`). `state`, `latitude`,
+  and `longitude` in the response are always `null`: there is no per-region
+  state or coordinate data to report, and parsing them out of free-text
+  addresses would be a guessed business rule, not a real one. Submissions
+  whose owner has no `region` set are grouped under `"Unspecified"`.
+- `/analytics/environmental-impact.treesEquivalent` is always `null` — no
+  validated kg-CO2-to-trees conversion factor exists in this codebase.
+- `/analytics/forecast` (P10.1) trains/serves a small LSTM
+  (`intelligence/device_ai/forecasting/`) on the real daily e-waste
+  **recycled weight** history — one real observation per calendar date
+  (UTC), summing same-day submissions, built from `Submission.recycledAt`
+  + `Submission.recoveredWeight` (the only lifecycle timestamp paired with
+  an actually-*measured* weight; `estimatedWeight` is a consumer's guess at
+  creation time, and `completedAt` is never written anywhere in this
+  codebase). Missing calendar days within the observed range are zero-filled
+  (a real "nothing recycled that day" fact, not invented data) before
+  windowing.
+
+  Response (`DemandForecast`, additive over the original provisional shape —
+  see `frontend/src/types/analytics.ts`):
+  `status` is one of `OK` / `INSUFFICIENT_HISTORICAL_DATA` /
+  `MODEL_BACKEND_UNAVAILABLE` / `SERVICE_UNAVAILABLE`. Only `OK` populates
+  `points` (future days) with real predictions; the other three leave
+  `points`/`evaluation` empty/null and set `reason` to a human-readable
+  explanation plus `historyDays`/`minHistoryDaysRequired` — **no status ever
+  returns a fabricated prediction, confidence interval, or accuracy figure**.
+  `history` carries recent real (zero-filled) daily observations for
+  ACTUAL-vs-FORECAST display. `evaluation` (`rmse`/`mae`/`mape`/
+  `trainSamples`/`valSamples`) is computed from a real chronological
+  (never-shuffled) holdout split every time the model (re)trains.
+  `predictedSubmissions` and `confidence` on each forecast point are always
+  `null` — no submission-count model or calibrated prediction interval is
+  computed; reporting either would be a fabricated value.
+
+  Minimum data requirement: `forecast_min_history_days` (default 30,
+  `FORECAST_MIN_HISTORY_DAYS` in device_ai) zero-filled calendar days, or
+  `lookback + 15` (10 training + 5 validation sliding windows) if larger —
+  whichever is stricter. Below this, `INSUFFICIENT_HISTORICAL_DATA` is
+  returned truthfully rather than training on too little data.
+
+  Training strategy: the backend sends the full real daily series on every
+  request; device_ai retrains only when no cached model exists for that
+  exact series (content-hash + lookback match) or `force_retrain` is passed
+  — never on every request. At daily granularity this naturally caps
+  retraining to at most once per new day's data. Trained weights, the
+  scaler/window companion JSON, and the evaluation report are persisted via
+  the existing training platform's `ArtifactManager`/`ModelRegistry`
+  (`intelligence/device_ai/training/registry/`, reused as-is) under
+  `ARTIFACT_DIR` (a named Docker volume, `device_ai_artifacts`, so a trained
+  model survives a container restart).
 
 ## System
 
@@ -483,6 +584,7 @@ the backend calls it" was also inaccurate and has been corrected.
 | POST/GET | `/devices/{device_id}/passport/external-anchor` | Create / read the external (blockchain-abstraction) Trust Anchor — **refuses** (`PASSPORT_NOT_ANCHORABLE`) if the local passport isn't `VERIFIED` (P8.5, live-verified) |
 | GET    | `/devices/{device_id}/passport/external-anchor/verify` | External anchor vs. current fingerprint |
 | GET    | `/devices/{device_id}/trust`, `/trust/full` | Local / full (local + external) trust status         |
+| POST   | `/forecast/ewaste`                       | Train/reuse-cached + predict daily recycled weight (P10.1) — proxied by the backend's `GET /analytics/forecast` |
 | GET    | `/system/blockchain/health`              | Fabric Gateway connectivity — public, no auth required |
 
 Internal APIs follow the same envelope and error contract as the public API.

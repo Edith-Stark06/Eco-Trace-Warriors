@@ -34,6 +34,11 @@ class DeviceModel(Base):
     __tablename__ = "devices"
 
     device_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    # Mirrors metadata["eco_id"] in a dedicated indexed column so EcoID
+    # passport/trust lookups (P9.x) resolve via an indexed query instead of a
+    # full-table JSON scan. metadata remains the source of truth written at
+    # registration time; this column is kept in sync on every save.
+    eco_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     capture_id: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
     class_id: Mapped[int] = mapped_column(Integer, nullable=False)
     device_type: Mapped[str] = mapped_column(String(64), nullable=False)

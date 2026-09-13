@@ -1,28 +1,20 @@
 /**
  * Government analytics domain types.
  *
- * These mirror the four analytics endpoints declared in
- * docs/engineering/05_API.md:
+ * These mirror the analytics endpoints declared in docs/engineering/05_API.md
+ * and implemented in backend/src/modules/analytics/:
  *
  *   GET /analytics/overview              National statistics
  *   GET /analytics/regions               Regional breakdown / heatmap data
- *   GET /analytics/forecast              AI demand forecast (proxied from AI service)
+ *   GET /analytics/forecast              Real LSTM e-waste weight forecast (P10.1)
  *   GET /analytics/environmental-impact  Impact metrics
  *
- * IMPORTANT — provisional contract:
- * The backend Analytics module is not yet implemented (the module directory is
- * an empty stub and no `/analytics` router is mounted), and the documentation
- * provides only the one-line endpoint descriptions above — no field-level DTOs.
- *
- * The interfaces below are therefore INFERRED from those descriptions and from
- * the existing, authoritative backend contracts they will naturally aggregate:
- *   - RewardBalance / RewardSustainability (backend rewards module)
- *   - SubmissionStatus lifecycle (backend submission module)
- *
- * They exist so the Government module is fully typed and becomes functional the
- * moment the backend Analytics module ships. When that module is implemented,
- * reconcile these shapes against its real response DTOs and adjust as needed.
- * No value in this file is fabricated data — these are type declarations only.
+ * `RegionalStat.state`/`latitude`/`longitude` and
+ * `EnvironmentalImpact.treesEquivalent` are always `null` from the real
+ * backend — there is no per-region state/coordinate data or a validated
+ * trees-equivalent conversion factor to report (see 05_API.md's Analytics
+ * notes). No value in this file is fabricated data — these are type
+ * declarations only.
  */
 
 /**
@@ -73,19 +65,49 @@ export interface RegionalBreakdown {
 
 /**
  * A single forecast bucket. `period` is an opaque backend-provided label (e.g.
- * an ISO date or "2026-08"); `confidence` is a 0–1 model confidence when the AI
- * service supplies one.
+ * an ISO date or "2026-08"). `predictedSubmissions` is always `null` — the
+ * LSTM forecasts daily recycled weight only (docs/engineering/05_API.md), a
+ * submission-count model was not built, and this is reported honestly as
+ * unavailable rather than guessed. `confidence` is always `null` — the model
+ * does not compute a calibrated prediction interval, so none is displayed.
  */
 export interface ForecastPoint {
   period: string;
-  predictedSubmissions: number;
+  predictedSubmissions: number | null;
   predictedWeight: number;
   confidence: number | null;
 }
 
+/** One real historical day, for ACTUAL-vs-FORECAST display context. */
+export interface ForecastHistoryPoint {
+  period: string;
+  actualWeight: number;
+}
+
+/** Real chronological-holdout regression metrics — never fabricated. */
+export interface ForecastEvaluation {
+  rmse: number;
+  mae: number;
+  mape: number | null;
+  trainSamples: number;
+  valSamples: number;
+}
+
+/** Machine-readable forecast outcome — see 05_API.md's Analytics notes. */
+export type ForecastResultStatus =
+  | 'OK'
+  | 'INSUFFICIENT_HISTORICAL_DATA'
+  | 'MODEL_BACKEND_UNAVAILABLE'
+  | 'SERVICE_UNAVAILABLE';
+
 /**
- * GET /analytics/forecast — AI demand forecast proxied from the AI service.
- * `model` identifies the forecasting model when reported.
+ * GET /analytics/forecast — real LSTM e-waste weight demand forecast (P10.1),
+ * trained on Submission.recycledAt/recoveredWeight history. `model` identifies
+ * the trained model version when one was used. `status`/`reason` are always
+ * present and truthful: when there isn't enough real history yet or the
+ * forecasting backend is unavailable, `points`/`history`/`evaluation` are
+ * empty/null rather than populated with an invented value — see `status` to
+ * distinguish that from a genuine "OK" forecast.
  */
 export interface DemandForecast {
   horizon: string;
@@ -93,6 +115,12 @@ export interface DemandForecast {
   points: ForecastPoint[];
   weightUnit: 'kg';
   generatedAt: string;
+  status: ForecastResultStatus;
+  reason: string | null;
+  historyDays: number;
+  minHistoryDaysRequired: number;
+  history: ForecastHistoryPoint[];
+  evaluation: ForecastEvaluation | null;
 }
 
 /**

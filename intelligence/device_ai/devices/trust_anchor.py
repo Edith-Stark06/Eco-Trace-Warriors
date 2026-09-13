@@ -350,8 +350,11 @@ class DevicePassportTrustService:
             PassportNotAnchorableError: If the passport fails verification.
             AnchorConflictError: If a conflicting fingerprint is already anchored.
         """
-        # Validate existence and run verification
-        self._device_service.get_device(device_id)
+        # Validate existence and resolve to the canonical device_id — the
+        # caller may have passed the public EcoID instead, and every
+        # downstream lookup below (anchor repository, external ledger) is
+        # keyed by canonical device_id only.
+        device_id = self._device_service.get_device(device_id).device_id
         verification_result = self._device_service.verify_device_passport(device_id)
 
         # Policy checks
@@ -413,7 +416,8 @@ class DevicePassportTrustService:
             DeviceNotFoundError: If the device does not exist.
             AnchorNotFoundError: If no anchor exists for the device.
         """
-        self._device_service.get_device(device_id)  # Validate existence
+        # Validate existence and canonicalize (device_id may be an EcoID)
+        device_id = self._device_service.get_device(device_id).device_id
         anchor = self._anchor_repository.get_by_device_id(device_id)
         if anchor is None:
             raise AnchorNotFoundError(
@@ -436,7 +440,8 @@ class DevicePassportTrustService:
         Raises:
             DeviceNotFoundError: If the device does not exist.
         """
-        self._device_service.get_device(device_id)  # Validate existence
+        # Validate existence and canonicalize (device_id may be an EcoID)
+        device_id = self._device_service.get_device(device_id).device_id
 
         passport = self._device_service.get_device_passport(device_id)
         current_fp = fingerprint_passport(passport)
@@ -503,7 +508,8 @@ class DevicePassportTrustService:
             DeviceNotFoundError: If the device does not exist.
             PassportNotAnchorableError: If the passport fails verification.
         """
-        self._device_service.get_device(device_id)
+        # Validate existence and canonicalize (device_id may be an EcoID)
+        device_id = self._device_service.get_device(device_id).device_id
         verification_result = self._device_service.verify_device_passport(device_id)
 
         if verification_result.verification_status == VerificationStatus.INVALID:
@@ -560,8 +566,9 @@ class DevicePassportTrustService:
         Raises:
             DeviceNotFoundError: If the device does not exist.
         """
-        # Step 1: Validate existence
+        # Step 1: Validate existence and canonicalize (device_id may be an EcoID)
         record = self._device_service.get_device(device_id)
+        device_id = record.device_id
         eval_time = _utc_now()
         eval_iso = eval_time.isoformat()
 
@@ -720,8 +727,9 @@ class DevicePassportTrustService:
             ExternalAnchorConflictError: If a different fingerprint is already anchored.
             ExternalLedgerUnavailableError: If external ledger is unreachable.
         """
-        # 1. Device existence
+        # 1. Device existence and canonicalization (device_id may be an EcoID)
         device = self._device_service.get_device(device_id)
+        device_id = device.device_id
 
         # 2. Local trust validation
         local_trust = self.get_device_trust_status(device_id)
@@ -802,7 +810,8 @@ class DevicePassportTrustService:
             DeviceNotFoundError: If the device does not exist.
             ExternalAnchorNotFoundError: If no external anchor exists.
         """
-        self._device_service.get_device(device_id)
+        # Validate existence and canonicalize (device_id may be an EcoID)
+        device_id = self._device_service.get_device(device_id).device_id
         anchor = self._external_ledger.get_anchor(device_id)
         if anchor is None and self._external_repository is not None:
             anchor = self._external_repository.get_by_device_id(device_id)
@@ -829,7 +838,8 @@ class DevicePassportTrustService:
         Raises:
             DeviceNotFoundError: If the device does not exist.
         """
-        self._device_service.get_device(device_id)
+        # Validate existence and canonicalize (device_id may be an EcoID)
+        device_id = self._device_service.get_device(device_id).device_id
 
         passport = self._device_service.get_device_passport(device_id)
         current_fp = fingerprint_passport(passport)
@@ -854,7 +864,8 @@ class DevicePassportTrustService:
         Raises:
             DeviceNotFoundError: If the device does not exist.
         """
-        self._device_service.get_device(device_id)
+        # Validate existence and canonicalize (device_id may be an EcoID)
+        device_id = self._device_service.get_device(device_id).device_id
 
         local_res = self.get_device_trust_status(device_id)
         external_res = self.verify_device_passport_external(device_id)

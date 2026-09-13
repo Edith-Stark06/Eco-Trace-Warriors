@@ -11,6 +11,7 @@ import type {
 import { ConflictError, ForbiddenError, NotFoundError } from '@shared/errors';
 import { createLogger } from '@shared/logging';
 import type { RewardService } from '@modules/rewards';
+import type { NotificationService } from '@modules/notification';
 
 const OWNER: SubmissionActor = { userId: 'user-1', role: UserRole.CONSUMER };
 const OTHER: SubmissionActor = { userId: 'user-2', role: UserRole.CONSUMER };
@@ -53,6 +54,11 @@ const pendingRecord: SubmissionRecord = {
   recyclerNotes: null,
   recoveredWeight: null,
   materialRecovery: null,
+  co2Saved: null,
+  energySaved: null,
+  landfillDiverted: null,
+  deviceId: null,
+  ecoId: null,
   createdAt: new Date('2026-07-20T00:00:00.000Z'),
   updatedAt: new Date('2026-07-20T00:00:00.000Z'),
 };
@@ -95,6 +101,24 @@ const recyclingRecord: SubmissionRecord = {
   processingStartedAt: new Date('2026-07-22T09:00:00.000Z'),
 };
 
+/** A fully recycled, device-linked submission — used for getByDevice()/linkDevice() tests. */
+const recycledLinkedRecord: SubmissionRecord = {
+  ...pendingRecord,
+  id: 'sub-7',
+  status: 'RECYCLED',
+  assignedCollectorId: 'collector-1',
+  assignedRecyclerId: 'recycler-1',
+  pickupScheduledAt: new Date('2026-07-21T08:00:00.000Z'),
+  processingStartedAt: new Date('2026-07-22T09:00:00.000Z'),
+  recycledAt: new Date('2026-07-23T09:00:00.000Z'),
+  recoveredWeight: 2.3,
+  co2Saved: 62.5,
+  energySaved: 37.5,
+  landfillDiverted: 2.5,
+  deviceId: 'device-abc',
+  ecoId: 'eco-xyz',
+};
+
 function buildRepo(
   overrides: Partial<SubmissionRepository> = {},
 ): jest.Mocked<SubmissionRepository> {
@@ -118,6 +142,9 @@ function buildRepo(
     updateRecyclerCompletion: jest
       .fn()
       .mockResolvedValue({ ...recyclingRecord, status: 'RECYCLED' }),
+    findByDeviceOrEcoId: jest.fn().mockResolvedValue(recycledLinkedRecord),
+    linkDevice: jest.fn().mockResolvedValue({ ...acceptedRecord, deviceId: 'device-abc' }),
+    findRecyclerHistory: jest.fn().mockResolvedValue([recycledLinkedRecord]),
     ...overrides,
   } as jest.Mocked<SubmissionRepository>;
 }
@@ -164,19 +191,41 @@ function buildRewardService(overrides?: Partial<RewardService>): RewardService {
   };
 }
 
+function buildNotificationService(
+  overrides?: Partial<NotificationService>,
+): jest.Mocked<NotificationService> {
+  return {
+    createNotification: jest.fn().mockResolvedValue({
+      id: 'notif-1',
+      submissionId: 'sub-1',
+      type: 'COLLECTOR_ASSIGNED',
+      message: 'stub',
+      createdAt: new Date().toISOString(),
+      readAt: null,
+      isRead: false,
+    }),
+    listForUser: jest.fn().mockResolvedValue([]),
+    markRead: jest.fn(),
+    ...overrides,
+  } as jest.Mocked<NotificationService>;
+}
+
 function buildService(
   repo: jest.Mocked<SubmissionRepository> = buildRepo(),
   rewards?: Partial<RewardService>,
+  notifications: jest.Mocked<NotificationService> = buildNotificationService(),
 ): {
   service: ReturnType<typeof createSubmissionService>;
   repo: jest.Mocked<SubmissionRepository>;
+  notifications: jest.Mocked<NotificationService>;
 } {
   const deps: SubmissionServiceDeps = {
     submissions: repo,
     logger: createLogger({ logLevel: 'fatal', nodeEnv: 'test' }),
     rewards: buildRewardService(rewards),
+    notifications,
   };
-  return { service: createSubmissionService(deps), repo };
+  return { service: createSubmissionService(deps), repo, notifications };
 }
 
 const createInput = {
@@ -211,6 +260,15 @@ describe('createSubmissionService', () => {
       expect(result.createdAt).toBe('2026-07-20T00:00:00.000Z');
       expect(result.pickupScheduledAt).toBeNull();
       expect(result.completedAt).toBeNull();
+    });
+
+    it('exposes deviceId/ecoId as null for a fresh, unlinked submission', async () => {
+      const { service } = buildService();
+
+      const result = await service.create(OWNER, createInput);
+
+      expect(result.deviceId).toBeNull();
+      expect(result.ecoId).toBeNull();
     });
   });
 
@@ -406,6 +464,59 @@ describe('createSubmissionService — collector workflow', () => {
       expect(result.status).toBe('ASSIGNED');
     });
 
+    it('notifies the submission owner (P10.3), never the collector or actor', async () => {
+      const { service, notifications } = buildService();
+
+      await service.assignCollector(ADMIN, 'sub-1', 'collector-1');
+
+      expect(notifications.createNotification).toHaveBeenCalledWith(
+        'user-1', // assignedRecord.userId — the consumer, not the admin actor or collector
+        'sub-1',
+        'COLLECTOR_ASSIGNED',
+        'Your collector has been assigned for your Laptop submission.',
+      );
+    });
+
+    it('never mentions the collector id/identity in the notification message (no private details)', async () => {
+      const { service, notifications } = buildService();
+
+      await service.assignCollector(ADMIN, 'sub-1', 'collector-1');
+
+      const [, , , message] = (notifications.createNotification as jest.Mock).mock.calls[0] as [
+        string,
+        string,
+        string,
+        string,
+      ];
+      expect(message).not.toContain('collector-1');
+    });
+
+    it('does not notify when assignment fails validation (no collector found)', async () => {
+      const { service, notifications } = buildService(
+        buildRepo({ findCollectorById: jest.fn().mockResolvedValue(null) }),
+      );
+
+      await expect(service.assignCollector(ADMIN, 'sub-1', 'ghost')).rejects.toBeInstanceOf(
+        NotFoundError,
+      );
+      expect(notifications.createNotification).not.toHaveBeenCalled();
+    });
+
+    it('still returns the assignment successfully even if notification recording fails (best-effort)', async () => {
+      const { service, repo } = buildService(
+        undefined,
+        undefined,
+        buildNotificationService({
+          createNotification: jest.fn().mockRejectedValue(new Error('db unavailable')),
+        }),
+      );
+
+      const result = await service.assignCollector(ADMIN, 'sub-1', 'collector-1');
+
+      expect(result.status).toBe('ASSIGNED');
+      expect(repo.assignCollector).toHaveBeenCalled();
+    });
+
     it('assigns a collector for a government actor', async () => {
       const { service, repo } = buildService();
 
@@ -512,6 +623,16 @@ describe('createSubmissionService — collector workflow', () => {
       expect(result.status).toBe('ACCEPTED');
     });
 
+    it('does NOT send an ITEM_COLLECTED notification — only the COLLECTED transition does (P10.3)', async () => {
+      const { service, notifications } = buildService(
+        buildRepo({ findById: jest.fn().mockResolvedValue(assignedRecord) }),
+      );
+
+      await service.acceptAssignment(COLLECTOR, 'sub-2');
+
+      expect(notifications.createNotification).not.toHaveBeenCalled();
+    });
+
     it('throws NotFoundError for a collector who is not the assignee', async () => {
       const { service, repo } = buildService(
         buildRepo({ findById: jest.fn().mockResolvedValue(assignedRecord) }),
@@ -543,6 +664,7 @@ describe('createSubmissionService — collector workflow', () => {
         submissions: repo,
         logger: createLogger({ logLevel: 'fatal', nodeEnv: 'test' }),
         rewards: buildRewardService(),
+        notifications: buildNotificationService(),
         now: () => clock,
       });
 
@@ -587,14 +709,34 @@ describe('createSubmissionService — collector workflow', () => {
       expect(result.status).toBe('COLLECTED');
     });
 
+    it('notifies the submission owner that the item was collected (P10.3)', async () => {
+      const collected: SubmissionRecord = { ...inProgressRecord, status: 'COLLECTED' };
+      const { service, notifications } = buildService(
+        buildRepo({
+          findById: jest.fn().mockResolvedValue(inProgressRecord),
+          updateStatus: jest.fn().mockResolvedValue(collected),
+        }),
+      );
+
+      await service.completePickup(COLLECTOR, 'sub-4');
+
+      expect(notifications.createNotification).toHaveBeenCalledWith(
+        'user-1',
+        'sub-4',
+        'ITEM_COLLECTED',
+        'Your Laptop has been collected and is ready for recycling.',
+      );
+    });
+
     it('throws ConflictError when the submission is not IN_PROGRESS', async () => {
-      const { service } = buildService(
+      const { service, notifications } = buildService(
         buildRepo({ findById: jest.fn().mockResolvedValue(acceptedRecord) }),
       );
 
       await expect(service.completePickup(COLLECTOR, 'sub-3')).rejects.toBeInstanceOf(
         ConflictError,
       );
+      expect(notifications.createNotification).not.toHaveBeenCalled();
     });
   });
 
@@ -737,6 +879,7 @@ describe('createSubmissionService — recycler workflow', () => {
         submissions: repo,
         logger: createLogger({ logLevel: 'fatal', nodeEnv: 'test' }),
         rewards: buildRewardService(),
+        notifications: buildNotificationService(),
         now: () => clock,
       });
 
@@ -781,6 +924,7 @@ describe('createSubmissionService — recycler workflow', () => {
         submissions: repo,
         logger: createLogger({ logLevel: 'fatal', nodeEnv: 'test' }),
         rewards: buildRewardService(),
+        notifications: buildNotificationService(),
         now: () => clock,
       });
 
@@ -791,6 +935,48 @@ describe('createSubmissionService — recycler workflow', () => {
         recyclerNotes: 'Separated lithium batteries.',
         materialRecovery: { plastic: 3.2, metal: 6.1, glass: 3.2 },
       });
+      expect(result.submission.status).toBe('RECYCLED');
+      expect(result.reward.greenCoinsAwarded).toBeGreaterThan(0);
+    });
+
+    it('notifies the submission owner with the real, backend-issued GreenCoins amount (P10.3)', async () => {
+      const repo = buildRepo({ findById: jest.fn().mockResolvedValue(recyclingRecord) });
+      const { service, notifications } = buildService(repo);
+
+      await service.completeRecycling(RECYCLER, 'sub-6', { recoveredWeight: 5 });
+
+      expect(notifications.createNotification).toHaveBeenCalledWith(
+        'user-1',
+        'sub-6',
+        'RECYCLING_COMPLETED',
+        'Your Laptop has been recycled and 100 GreenCoins have been issued.',
+      );
+    });
+
+    it('does not notify when reward issuance fails — only a fully successful completion notifies', async () => {
+      const repo = buildRepo({ findById: jest.fn().mockResolvedValue(recyclingRecord) });
+      const { service, notifications } = buildService(repo, {
+        issueReward: jest.fn().mockRejectedValue(new Error('reward service unavailable')),
+      });
+
+      await expect(
+        service.completeRecycling(RECYCLER, 'sub-6', { recoveredWeight: 5 }),
+      ).rejects.toThrow('reward service unavailable');
+      expect(notifications.createNotification).not.toHaveBeenCalled();
+    });
+
+    it('still returns success even if notification recording fails (best-effort, never rolls back a real recycling completion)', async () => {
+      const repo = buildRepo({ findById: jest.fn().mockResolvedValue(recyclingRecord) });
+      const { service } = buildService(
+        repo,
+        undefined,
+        buildNotificationService({
+          createNotification: jest.fn().mockRejectedValue(new Error('db unavailable')),
+        }),
+      );
+
+      const result = await service.completeRecycling(RECYCLER, 'sub-6', { recoveredWeight: 5 });
+
       expect(result.submission.status).toBe('RECYCLED');
       expect(result.reward.greenCoinsAwarded).toBeGreaterThan(0);
     });
@@ -838,6 +1024,227 @@ describe('createSubmissionService — recycler workflow', () => {
 
       expect(repo.findRecyclerAssignments).toHaveBeenCalledWith('recycler-1', undefined);
       expect(result).toHaveLength(1);
+    });
+  });
+
+  describe('getRecyclerHistory', () => {
+    it("scopes the query to the authenticated recycler's own userId", async () => {
+      const { service, repo } = buildService();
+
+      await service.getRecyclerHistory(RECYCLER);
+
+      expect(repo.findRecyclerHistory).toHaveBeenCalledWith('recycler-1', undefined);
+    });
+
+    it('ignores any actor field other than the verified userId (no client-suppliable recyclerId exists)', async () => {
+      const { service, repo } = buildService();
+
+      await service.getRecyclerHistory(OTHER_RECYCLER);
+
+      expect(repo.findRecyclerHistory).toHaveBeenCalledWith('recycler-2', undefined);
+      expect(repo.findRecyclerHistory).not.toHaveBeenCalledWith('recycler-1', undefined);
+    });
+
+    it('forwards pagination through to the repository', async () => {
+      const { service, repo } = buildService();
+
+      await service.getRecyclerHistory(RECYCLER, { limit: 10, offset: 0 });
+
+      expect(repo.findRecyclerHistory).toHaveBeenCalledWith('recycler-1', { limit: 10, offset: 0 });
+    });
+
+    it('maps each record to a trimmed history entry with real stored values, never recomputed', async () => {
+      const { service } = buildService();
+
+      const result = await service.getRecyclerHistory(RECYCLER);
+
+      expect(result).toEqual([
+        {
+          id: 'sub-7',
+          category: 'Laptop',
+          estimatedWeight: 2.5,
+          recoveredWeight: 2.3,
+          recycledAt: '2026-07-23T09:00:00.000Z',
+          materialRecovery: null,
+          recyclerNotes: null,
+          co2Saved: 62.5,
+          energySaved: 37.5,
+          landfillDiverted: 2.5,
+        },
+      ]);
+    });
+
+    it('reports materialRecovery exactly as stored, including null when never recorded', async () => {
+      const repo = buildRepo({
+        findRecyclerHistory: jest
+          .fn()
+          .mockResolvedValue([{ ...recycledLinkedRecord, materialRecovery: null }]),
+      });
+      const { service } = buildService(repo);
+
+      const result = await service.getRecyclerHistory(RECYCLER);
+
+      expect(result[0]?.materialRecovery).toBeNull();
+    });
+
+    it('returns an empty array (not an error) when the recycler has no completed jobs yet', async () => {
+      const repo = buildRepo({ findRecyclerHistory: jest.fn().mockResolvedValue([]) });
+      const { service } = buildService(repo);
+
+      const result = await service.getRecyclerHistory(RECYCLER);
+
+      expect(result).toEqual([]);
+    });
+  });
+});
+
+describe('createSubmissionService — device linkage (P10.1)', () => {
+  describe('linkDevice', () => {
+    it('lets the assigned collector link a device to their submission', async () => {
+      const repo = buildRepo({ findById: jest.fn().mockResolvedValue(acceptedRecord) });
+      const { service } = buildService(repo);
+
+      await service.linkDevice(COLLECTOR, 'sub-3', { deviceId: 'device-abc', ecoId: 'eco-xyz' });
+
+      expect(repo.linkDevice).toHaveBeenCalledWith('sub-3', {
+        deviceId: 'device-abc',
+        ecoId: 'eco-xyz',
+      });
+    });
+
+    it('defaults a missing ecoId to null rather than fabricating one', async () => {
+      const repo = buildRepo({ findById: jest.fn().mockResolvedValue(acceptedRecord) });
+      const { service } = buildService(repo);
+
+      await service.linkDevice(COLLECTOR, 'sub-3', { deviceId: 'device-abc' });
+
+      expect(repo.linkDevice).toHaveBeenCalledWith('sub-3', {
+        deviceId: 'device-abc',
+        ecoId: null,
+      });
+    });
+
+    it('lets an admin link a device on behalf of any submission', async () => {
+      const repo = buildRepo({ findById: jest.fn().mockResolvedValue(acceptedRecord) });
+      const { service } = buildService(repo);
+
+      await service.linkDevice(ADMIN, 'sub-3', { deviceId: 'device-abc' });
+
+      expect(repo.linkDevice).toHaveBeenCalledWith('sub-3', {
+        deviceId: 'device-abc',
+        ecoId: null,
+      });
+    });
+
+    it('throws NotFoundError for a collector who is not the assignee', async () => {
+      const repo = buildRepo({ findById: jest.fn().mockResolvedValue(acceptedRecord) });
+      const { service } = buildService(repo);
+
+      await expect(
+        service.linkDevice(OTHER_COLLECTOR, 'sub-3', { deviceId: 'device-abc' }),
+      ).rejects.toBeInstanceOf(NotFoundError);
+      expect(repo.linkDevice).not.toHaveBeenCalled();
+    });
+
+    it('throws NotFoundError when the submission does not exist', async () => {
+      const repo = buildRepo({ findById: jest.fn().mockResolvedValue(null) });
+      const { service } = buildService(repo);
+
+      await expect(
+        service.linkDevice(COLLECTOR, 'missing', { deviceId: 'device-abc' }),
+      ).rejects.toBeInstanceOf(NotFoundError);
+    });
+  });
+
+  describe('getByDevice', () => {
+    it('resolves the lifecycle view for the submission owner', async () => {
+      const { service } = buildService();
+
+      const result = await service.getByDevice(OWNER, 'device-abc');
+
+      expect(result).toEqual({
+        submissionId: 'sub-7',
+        status: 'RECYCLED',
+        collectorAssigned: true,
+        pickupAccepted: true,
+        pickupStarted: true,
+        collected: true,
+        recyclingStarted: true,
+        recycled: true,
+        pickupStartedAt: '2026-07-21T08:00:00.000Z',
+        recyclingStartedAt: '2026-07-22T09:00:00.000Z',
+        recycledAt: '2026-07-23T09:00:00.000Z',
+        recoveredWeight: 2.3,
+        co2Saved: 62.5,
+        energySaved: 37.5,
+        landfillDiverted: 2.5,
+      });
+    });
+
+    it('resolves by eco_id as well as device_id', async () => {
+      const repo = buildRepo();
+      const { service } = buildService(repo);
+
+      await service.getByDevice(OWNER, 'eco-xyz');
+
+      expect(repo.findByDeviceOrEcoId).toHaveBeenCalledWith('eco-xyz');
+    });
+
+    it('is visible to the assigned collector', async () => {
+      const { service } = buildService();
+
+      const result = await service.getByDevice(COLLECTOR, 'device-abc');
+
+      expect(result.submissionId).toBe('sub-7');
+    });
+
+    it('is visible to the assigned recycler', async () => {
+      const { service } = buildService();
+
+      const result = await service.getByDevice(RECYCLER, 'device-abc');
+
+      expect(result.submissionId).toBe('sub-7');
+    });
+
+    it('is visible to an admin regardless of ownership', async () => {
+      const { service } = buildService();
+
+      const result = await service.getByDevice(ADMIN, 'device-abc');
+
+      expect(result.submissionId).toBe('sub-7');
+    });
+
+    it('throws NotFoundError (not Forbidden) for a stranger — Consumer A cannot see Consumer B’s device', async () => {
+      const { service } = buildService();
+
+      await expect(service.getByDevice(OTHER, 'device-abc')).rejects.toBeInstanceOf(NotFoundError);
+    });
+
+    it('throws NotFoundError when no submission is linked to the identifier', async () => {
+      const repo = buildRepo({ findByDeviceOrEcoId: jest.fn().mockResolvedValue(null) });
+      const { service } = buildService(repo);
+
+      await expect(service.getByDevice(OWNER, 'unknown-device')).rejects.toBeInstanceOf(
+        NotFoundError,
+      );
+    });
+
+    it('reports pending milestones as false without fabricating progress for an in-flight submission', async () => {
+      const repo = buildRepo({
+        findByDeviceOrEcoId: jest.fn().mockResolvedValue({
+          ...inProgressRecord,
+          deviceId: 'device-abc',
+        }),
+      });
+      const { service } = buildService(repo);
+
+      const result = await service.getByDevice(OWNER, 'device-abc');
+
+      expect(result.collected).toBe(false);
+      expect(result.recyclingStarted).toBe(false);
+      expect(result.recycled).toBe(false);
+      expect(result.recoveredWeight).toBeNull();
+      expect(result.co2Saved).toBeNull();
     });
   });
 });

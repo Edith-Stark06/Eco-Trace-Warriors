@@ -1,6 +1,10 @@
 import { env } from '../config/env';
 import { ApiError } from './ApiError';
-import type { DevicePassportResponse, DeviceTrustStatusResponse } from '../types/device';
+import type {
+  DevicePassportResponse,
+  DeviceTrustStatusResponse,
+  FullDeviceTrustStatusResponse,
+} from '../types/device';
 import type { DevicePassportVerificationResponse } from '../types/verification';
 
 /**
@@ -46,5 +50,11 @@ export const deviceAiApi = {
   },
   verifyPassport(deviceId: string): Promise<DevicePassportVerificationResponse> {
     return deviceAiGet<DevicePassportVerificationResponse>(`/devices/${deviceId}/passport/verify`);
+  },
+  /** Local + external (blockchain-abstraction ledger) trust comparison — used
+   *  so the UI can show what actually backs external verification (e.g. an
+   *  in-memory ledger vs. a real Fabric network) rather than assuming. */
+  getFullTrustStatus(deviceId: string): Promise<FullDeviceTrustStatusResponse> {
+    return deviceAiGet<FullDeviceTrustStatusResponse>(`/devices/${deviceId}/trust/full`);
   },
 };

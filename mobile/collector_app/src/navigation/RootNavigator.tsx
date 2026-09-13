@@ -12,6 +12,7 @@ import { SubmissionHistoryScreen } from '../screens/SubmissionHistoryScreen';
 import { SubmissionDetailScreen } from '../screens/SubmissionDetailScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import type { RootStackParamList } from './types';
+import { theme } from '../theme';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -24,23 +25,39 @@ export function RootNavigator() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerTintColor: '#1B5E20' }}>
+      <Stack.Navigator
+        screenOptions={{
+          headerTintColor: theme.colors.forest[700],
+          headerTitleStyle: {
+            fontWeight: '700',
+            fontSize: 17,
+            color: theme.colors.slate[900],
+          },
+          headerStyle: {
+            backgroundColor: theme.colors.surface,
+          },
+          headerShadowVisible: false,
+          contentStyle: {
+            backgroundColor: theme.colors.background.app,
+          },
+        }}
+      >
         {status === 'unauthenticated' ? (
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
         ) : (
           <>
             <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Capture" component={CaptureScreen} options={{ title: 'Capture device' }} />
-            <Stack.Screen name="Scan" component={ScanScreen} options={{ title: 'Scan device' }} />
+            <Stack.Screen name="Capture" component={CaptureScreen} options={{ title: 'Capture Device' }} />
+            <Stack.Screen name="Scan" component={ScanScreen} options={{ title: 'Scan Device' }} />
             <Stack.Screen
               name="RegisterDevice"
               component={RegisterDeviceScreen}
-              options={{ title: 'Register device' }}
+              options={{ title: 'Register Device' }}
             />
             <Stack.Screen
               name="SubmissionHistory"
               component={SubmissionHistoryScreen}
-              options={{ title: 'Submission history' }}
+              options={{ title: 'Submission History' }}
             />
             <Stack.Screen
               name="SubmissionDetail"

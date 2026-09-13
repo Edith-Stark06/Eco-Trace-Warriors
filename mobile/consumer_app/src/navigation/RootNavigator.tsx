@@ -14,6 +14,7 @@ import { SubmissionHistoryScreen } from '../screens/SubmissionHistoryScreen';
 import { EducationScreen } from '../screens/EducationScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import type { RootStackParamList } from './types';
+import { theme } from '../theme';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -26,7 +27,23 @@ export function RootNavigator() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerTintColor: '#1B5E20' }}>
+      <Stack.Navigator
+        screenOptions={{
+          headerTintColor: theme.colors.forest[700],
+          headerTitleStyle: {
+            fontWeight: '700',
+            fontSize: 17,
+            color: theme.colors.slate[900],
+          },
+          headerStyle: {
+            backgroundColor: theme.colors.surface,
+          },
+          headerShadowVisible: false,
+          contentStyle: {
+            backgroundColor: theme.colors.background.app,
+          },
+        }}
+      >
         {status === 'unauthenticated' ? (
           <>
             <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
@@ -35,11 +52,11 @@ export function RootNavigator() {
         ) : (
           <>
             <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="ReportWaste" component={ReportWasteScreen} options={{ title: 'Report e-waste' }} />
-            <Stack.Screen name="Scan" component={ScanScreen} options={{ title: 'Verify a device' }} />
-            <Stack.Screen name="DevicePassport" component={DevicePassportScreen} options={{ title: 'Device passport' }} />
-            <Stack.Screen name="Rewards" component={RewardsScreen} options={{ title: 'Rewards' }} />
-            <Stack.Screen name="SubmissionHistory" component={SubmissionHistoryScreen} options={{ title: 'My submissions' }} />
+            <Stack.Screen name="ReportWaste" component={ReportWasteScreen} options={{ title: 'Report E-Waste' }} />
+            <Stack.Screen name="Scan" component={ScanScreen} options={{ title: 'Verify a Device' }} />
+            <Stack.Screen name="DevicePassport" component={DevicePassportScreen} options={{ title: 'Device Passport' }} />
+            <Stack.Screen name="Rewards" component={RewardsScreen} options={{ title: 'Rewards & GreenCoins' }} />
+            <Stack.Screen name="SubmissionHistory" component={SubmissionHistoryScreen} options={{ title: 'My Submissions' }} />
             <Stack.Screen name="Education" component={EducationScreen} options={{ title: 'Learn' }} />
             <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
           </>

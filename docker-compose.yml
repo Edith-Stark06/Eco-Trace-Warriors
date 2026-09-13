@@ -75,7 +75,7 @@ services:
       # already in use (both are listed so either works without reconfig).
       # A real deployment overrides CORS_ORIGINS with its actual origin(s)
       # — this default is never appropriate beyond a laptop.
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:5173,http://10.13.29.243:5173,http://localhost:8081,http://localhost:8082}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:5173,http://localhost:8081,http://localhost:8082}
       DEVICE_AI_SERVICE_URL: http://device-ai:8100
 
     ports:
@@ -120,7 +120,7 @@ services:
       # above (CHANGE-009) — the Collector app calls this service directly
       # from the browser (POST /devices/register etc.), not only through
       # the Node backend, so it needs the same origin allowlist.
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:5173,http://10.13.29.243:5173,http://localhost:8081,http://localhost:8082}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:5173,http://localhost:8081,http://localhost:8082}
 
     # The P4.4.2 YOLO11n reference checkpoint (single_model inference mode,
     # see configs/settings.py) is a protected training artifact, not
@@ -149,6 +149,14 @@ services:
         source: ./docker_data/device_ai/models
         target: /app/models
         read_only: true
+      # Trained model artifacts (forecasting LSTM checkpoints, the JSON model
+      # registry, evaluation reports — see forecasting/service.py and
+      # training/registry/) live under /app/artifacts, which the Dockerfile
+      # creates as a writable directory inside the container's own layer. A
+      # named volume persists that directory across container
+      # recreate/rebuild so a trained forecast model survives a redeploy
+      # instead of silently vanishing and forcing a retrain.
+      - device_ai_artifacts:/app/artifacts
 
     ports:
       - "${DEVICE_AI_PORT:-8100}:8100"
@@ -205,3 +213,4 @@ services:
 
 volumes:
   postgres_data:
+  device_ai_artifacts:

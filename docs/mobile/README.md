@@ -69,6 +69,39 @@ variables in at build time (`src/config/env.ts`):
 throws in a release build (`!__DEV__`) if either URL is not HTTPS —
 mirrors the superseded Flutter app's `secure_url_guard.dart` (P8.7).
 
+### Demo/physical-device network configuration
+
+The `localhost` defaults above only work in a simulator/emulator running
+on the same machine as `docker compose`. **A physical phone cannot reach
+`localhost` — that resolves to the phone itself, not the demo laptop.**
+For a real device on the same Wi-Fi/hotspot as the machine running the
+Docker stack, copy `.env.example` to `.env.local` in each app
+(`.env.local` is gitignored — see `.gitignore`) and set:
+
+```
+EXPO_PUBLIC_API_BASE_URL=http://<HOST-IP>:3000/api/v1
+EXPO_PUBLIC_DEVICE_AI_BASE_URL=http://<HOST-IP>:8100
+```
+
+`<HOST-IP>` is the LAN IP of the machine running `docker compose up`
+(check with `ipconfig`/`ifconfig`; on Windows behind a hotspot this is
+often a `172.20.10.x` address), reachable from the phone only while both
+devices are on the same network. `3000` and `8100` are the host ports the
+backend and device_ai containers publish (`docker-compose.yml`) — a
+common mistake is pointing at the bare host with no port, which silently
+fails since nothing listens on port 80.
+
+This IP is not stable: it changes whenever the hotspot/Wi-Fi network
+changes (new venue, restarted router, different host laptop), so
+`.env.local` must be re-checked before each demo rather than assumed
+correct from a previous session. There is no DNS/service-discovery layer
+here — this is a plain LAN IP, on purpose, to avoid adding infrastructure
+this project doesn't otherwise need.
+
+The web frontend (`frontend/`) is unaffected by this — it's served over
+HTTP(S) from its own configured URL (see `docs/engineering/05_API.md`)
+and isn't subject to the mobile "localhost means the phone" issue.
+
 ## Authentication
 
 `src/auth/AuthContext.tsx` owns the session: login/register call the real
@@ -99,10 +132,26 @@ manual retry action in the submission history screen.
 Per the architecture rule: `Mobile → Backend/device_ai REST API →
 FabricGatewayClient → Hyperledger Fabric`. The Consumer app's
 `DevicePassportScreen` reads `GET /devices/{id}/passport`,
-`/trust`, and `/passport/verify` from `intelligence/device_ai` — the
-service that owns the real `FabricGatewayClient` (validated against a
+`/trust`, `/trust/full`, and `/passport/verify` from `intelligence/device_ai`
+— the service that owns the real `FabricGatewayClient` (validated against a
 real local Fabric network in P9.2) — and never handles a peer address,
 wallet, or private key itself.
+
+`{id}` accepts either the device_id or the public EcoID — the backend's
+identifier resolution (`device_ai/devices/repository.py`'s
+`resolve_device()`) already handles both, so the QR scanner (`ScanScreen`)
+needs no per-identifier-type logic and requires no changes to support EcoID
+lookups.
+
+The passport screen never labels a trust result "Hyperledger Verified" —
+`/trust`'s `status` field is only ever one of `UNANCHORED` / `ANCHORED` /
+`VERIFIED` / `MISMATCH` / `STALE` (`device_ai/api/device_schemas.py`), and
+`/trust/full`'s `provider`/`network`/`external_status` fields are shown
+verbatim (e.g. `provider: "memory"` when the external ledger is the
+in-memory abstraction, not a live blockchain) rather than assumed. A failure
+to reach `/trust` degrades to a "Blockchain verification unavailable" state
+without blanking the rest of the passport — see `DevicePassportScreen.tsx`'s
+own comments for the exact fetch/degradation sequence.
 
 ## Testing
 

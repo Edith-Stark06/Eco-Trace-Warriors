@@ -12,7 +12,7 @@ import { ROUTES } from '@/lib/routes';
  * Top navigation bar of the application shell.
  *
  * Left: mobile drawer toggle, brand logo, and auto-generated breadcrumbs.
- * Right: notifications placeholder, theme toggle, and the user menu. Carries no
+ * Right: notifications, theme toggle, and the user menu. Carries no
  * business information — purely navigation and session controls.
  */
 export function Navbar() {

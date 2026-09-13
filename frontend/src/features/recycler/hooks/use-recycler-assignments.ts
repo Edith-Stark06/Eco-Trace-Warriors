@@ -20,6 +20,20 @@ export function useRecyclerAssignments(params?: PaginationParams) {
 }
 
 /**
+ * The authenticated recycler's own completed (RECYCLED) job history. A
+ * distinct query/cache entry from the active queue — a completion mutation
+ * invalidates both (see `useInvalidateRecyclerAssignments` below), since a
+ * job that just left the active queue is exactly the one that newly appears
+ * here.
+ */
+export function useRecyclerHistory(params?: PaginationParams) {
+  return useQuery({
+    queryKey: queryKeys.recycler.history(params),
+    queryFn: () => recyclerApi.getHistory(params),
+  });
+}
+
+/**
  * Shared invalidation for every workflow transition. A successful start /
  * complete changes the assignment's status, which can remove it from the active
  * queue — so we invalidate all recycler queries and let Query refetch the

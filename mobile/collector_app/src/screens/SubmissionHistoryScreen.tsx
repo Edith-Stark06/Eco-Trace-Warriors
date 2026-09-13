@@ -7,6 +7,9 @@ import { useSyncManager } from '../hooks/useSyncManager';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { ErrorState } from '../components/ErrorState';
 import { EmptyState } from '../components/EmptyState';
+import { Card } from '../components/common/Card';
+import { StatusBadge } from '../components/common/StatusBadge';
+import { theme } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SubmissionHistory'>;
 
@@ -27,6 +30,7 @@ export function SubmissionHistoryScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
+      {/* Offline Sync Queue Banners */}
       {failedQueueItems.length > 0 && (
         <View style={styles.failedSection}>
           <Text style={styles.sectionTitle}>Failed to sync ({failedQueueItems.length})</Text>
@@ -61,8 +65,17 @@ export function SubmissionHistoryScreen({ navigation }: Props) {
       )}
 
       {pendingQueueItems.length > 0 && (
-        <Text style={styles.pendingNote}>{pendingQueueItems.length} device confirmation(s) queued, pending sync</Text>
+        <View style={styles.pendingBanner}>
+          <Text style={styles.pendingNote}>
+            ⏳ {pendingQueueItems.length} device confirmation(s) queued, pending sync
+          </Text>
+        </View>
       )}
+
+      <View style={styles.listHeader}>
+        <Text style={styles.listTitle}>All Assigned Pickups</Text>
+        <Text style={styles.listCount}>{submissions.length} total</Text>
+      </View>
 
       {submissions.length === 0 ? (
         <EmptyState message="No submitted pickups yet." />
@@ -70,16 +83,34 @@ export function SubmissionHistoryScreen({ navigation }: Props) {
         <FlatList
           data={submissions}
           keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
           renderItem={({ item }) => (
-            <Pressable
-              style={styles.row}
+            <Card
+              variant="outlined"
+              style={styles.historyCard}
               onPress={() => navigation.navigate('SubmissionDetail', { submissionId: item.id })}
               accessibilityRole="button"
               accessibilityLabel={`${item.category}, status ${item.status}`}
             >
-              <Text style={styles.rowTitle}>{item.category}</Text>
+              <View style={styles.cardTop}>
+                <View style={styles.categoryBadge}>
+                  <Text style={styles.categoryIcon}>📦</Text>
+                  <Text style={styles.rowTitle}>{item.category}</Text>
+                </View>
+                <StatusBadge status={item.status} size="sm" />
+              </View>
+
+              <View style={styles.cardMeta}>
+                <Text style={styles.metaAddress} numberOfLines={1}>
+                  📍 {item.address}
+                </Text>
+                <Text style={styles.metaDate}>
+                  📅 {new Date(item.createdAt).toLocaleDateString()}
+                </Text>
+              </View>
+
               <Text style={styles.rowStatus}>{item.status}</Text>
-            </Pressable>
+            </Card>
           )}
         />
       )}
@@ -88,19 +119,139 @@ export function SubmissionHistoryScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  sectionTitle: { fontSize: 14, fontWeight: '700', color: '#991B1B', margin: 16, marginBottom: 4 },
-  failedSection: { backgroundColor: '#FEF2F2', paddingBottom: 8 },
-  failedRow: { paddingHorizontal: 16, paddingVertical: 4 },
-  failedText: { fontSize: 13, color: '#991B1B' },
-  retryButton: { marginHorizontal: 16, marginTop: 8, backgroundColor: '#B91C1C', borderRadius: 6, paddingVertical: 8, alignItems: 'center', minHeight: 40 },
-  retryButtonText: { color: '#FFFFFF', fontWeight: '600', fontSize: 13 },
-  conflictSection: { backgroundColor: '#FEF3C7', paddingBottom: 8 },
-  conflictSectionTitle: { fontSize: 14, fontWeight: '700', color: '#92400E', margin: 16, marginBottom: 4 },
-  conflictRow: { paddingHorizontal: 16, paddingVertical: 4 },
-  conflictText: { fontSize: 13, color: '#92400E' },
-  pendingNote: { fontSize: 13, color: '#92400E', backgroundColor: '#FEF3C7', padding: 12 },
-  row: { paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#F3F4F6', minHeight: 44 },
-  rowTitle: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  rowStatus: { fontSize: 13, color: '#2E7D32', marginTop: 2 },
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background.app,
+  },
+  sectionTitle: {
+    fontSize: theme.typography.size.xs,
+    fontWeight: theme.typography.weight.bold,
+    color: theme.colors.rose[700],
+    marginHorizontal: theme.spacing.lg,
+    marginTop: theme.spacing.md,
+    marginBottom: 4,
+  },
+  failedSection: {
+    backgroundColor: theme.colors.rose[50],
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.rose[200],
+    paddingBottom: theme.spacing.md,
+  },
+  failedRow: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: 3,
+  },
+  failedText: {
+    fontSize: theme.typography.size.xs,
+    color: theme.colors.rose[700],
+  },
+  retryButton: {
+    marginHorizontal: theme.spacing.lg,
+    marginTop: theme.spacing.sm,
+    backgroundColor: theme.colors.rose[700],
+    borderRadius: theme.radius.sm,
+    paddingVertical: 8,
+    alignItems: 'center',
+    minHeight: 40,
+    justifyContent: 'center',
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: theme.typography.weight.bold,
+    fontSize: theme.typography.size.xs,
+  },
+  conflictSection: {
+    backgroundColor: theme.colors.amber[50],
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.amber[100],
+    paddingBottom: theme.spacing.md,
+  },
+  conflictSectionTitle: {
+    fontSize: theme.typography.size.xs,
+    fontWeight: theme.typography.weight.bold,
+    color: theme.colors.amber[800],
+    marginHorizontal: theme.spacing.lg,
+    marginTop: theme.spacing.md,
+    marginBottom: 4,
+  },
+  conflictRow: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: 3,
+  },
+  conflictText: {
+    fontSize: theme.typography.size.xs,
+    color: theme.colors.amber[800],
+    lineHeight: 16,
+  },
+  pendingBanner: {
+    backgroundColor: theme.colors.amber[50],
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.amber[100],
+  },
+  pendingNote: {
+    fontSize: theme.typography.size.xs,
+    color: theme.colors.amber[800],
+    padding: theme.spacing.md,
+    fontWeight: theme.typography.weight.medium,
+  },
+  listHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.xs,
+  },
+  listTitle: {
+    fontSize: theme.typography.size.sm,
+    fontWeight: theme.typography.weight.bold,
+    color: theme.colors.slate[800],
+  },
+  listCount: {
+    fontSize: theme.typography.size.xs,
+    color: theme.colors.slate[500],
+  },
+  listContent: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.xs,
+    paddingBottom: theme.spacing.xxl,
+    gap: theme.spacing.sm,
+  },
+  historyCard: {
+    padding: theme.spacing.md,
+  },
+  cardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.xs,
+  },
+  categoryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  categoryIcon: {
+    fontSize: 16,
+  },
+  rowTitle: {
+    fontSize: theme.typography.size.sm,
+    fontWeight: theme.typography.weight.bold,
+    color: theme.colors.slate[900],
+  },
+  cardMeta: {
+    gap: 2,
+    marginBottom: 4,
+  },
+  metaAddress: {
+    fontSize: theme.typography.size.xs,
+    color: theme.colors.slate[600],
+  },
+  metaDate: {
+    fontSize: 11,
+    color: theme.colors.slate[400],
+  },
+  rowStatus: {
+    display: 'none',
+  },
 });

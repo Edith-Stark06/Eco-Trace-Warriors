@@ -171,6 +171,7 @@ P8.2/P8.5/P8.7).
 3. **Blockchain writes must not block the user path indefinitely** — the external anchor step degrades honestly (never fabricates a status) when unreachable, verified live in P8.5 §9/§10.
 4. **AI calls are advisory** where the backend does call the AI service (its one health proxy): if unreachable, the backend's own health stays unaffected — no cascading failure (P8.5 §9, live-verified).
 5. **The AI service may optionally use PostgreSQL** (`DEVICE_BACKEND=postgres`/`TRUST_ANCHOR_BACKEND=postgres`) but defaults to an isolated in-memory store — it never shares the backend's own Postgres tables/schema either way; "never reads PostgreSQL directly" was inaccurate as an absolute claim and has been corrected.
+6. **Cross-domain linkage is an identifier, not a shared table (P10.1).** `Submission.deviceId`/`Submission.ecoId` (nullable, unique) let the backend look up the Submission tied to a device_ai Device without either service reading the other's schema or database. The Consumer Device Passport aggregates the two domains client-side: one call to device_ai (`GET /devices/{id}/passport`) and a separate call to the backend (`GET /submissions/by-device/:identifier`); neither service calls the other, and no lifecycle event is duplicated across them — device_ai's audit trail (`DEVICE_DETECTED`…`DEVICE_EXTERNALLY_ANCHORED`) and the backend's Submission status machine (`PENDING`…`RECYCLED`) each remain the sole source of truth for their own states.
 
 ---
 
@@ -179,7 +180,7 @@ P8.2/P8.5/P8.7).
 | Data | Owner (system of record) | Also present in |
 |---|---|---|
 | Users, roles, credentials | PostgreSQL | — |
-| Devices, EcoIDs | PostgreSQL | Fabric (identity + event hashes) |
+| Devices, EcoIDs | PostgreSQL (device_ai) | Fabric (identity + event hashes); cross-referenced by id/EcoID from the backend's `Submission.deviceId`/`ecoId` (P10.1) — no shared table |
 | Collections, schedules | PostgreSQL | Fabric (lifecycle events) |
 | GreenCoin balances | PostgreSQL | — |
 | Recycling certificates | PostgreSQL | Fabric (verification record) |
