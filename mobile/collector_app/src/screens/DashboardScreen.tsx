@@ -1,5 +1,6 @@
 import React from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { useAuth } from '../auth/AuthContext';
@@ -66,16 +67,15 @@ function SubmissionRow({ item, onPress }: { item: PublicSubmission; onPress: () 
 
 /** Collector home: assigned/pending tasks + sync status — mirrors home_screen.dart. */
 export function DashboardScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
   const { status, submissions, error, refresh } = useSubmissions();
   const { isOnline, pendingCount, failedCount } = useSyncManager();
 
   return (
     <View style={styles.container}>
-      <NetworkStatusBanner isOnline={isOnline} pendingCount={pendingCount} failedCount={failedCount} />
-
       {/* Header Operations Bar */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, theme.spacing.base) + theme.spacing.xs }]}>
         <View style={styles.headerLeft}>
           <View style={styles.opsTag}>
             <View style={styles.opsDot} />
@@ -94,6 +94,8 @@ export function DashboardScreen({ navigation }: Props) {
           <Text style={styles.logout}>Sign out</Text>
         </Pressable>
       </View>
+
+      <NetworkStatusBanner isOnline={isOnline} pendingCount={pendingCount} failedCount={failedCount} />
 
       {/* Primary Action Row */}
       <View style={styles.actions}>
@@ -159,8 +161,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
-    paddingBottom: theme.spacing.sm,
+    paddingBottom: theme.spacing.md,
+    backgroundColor: theme.colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.slate[100],
+    marginBottom: theme.spacing.xs,
   },
   headerLeft: {
     flex: 1,
