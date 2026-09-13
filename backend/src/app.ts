@@ -164,10 +164,11 @@ export function createApp({
     accessExpiry: config.jwtAccessExpiry,
     refreshExpiry: config.jwtRefreshExpiry,
   });
+  const passwordService = createPasswordService({ rounds: config.bcryptRounds });
   const authService = createAuthService({
     users,
     refreshTokens,
-    passwords: createPasswordService({ rounds: config.bcryptRounds }),
+    passwords: passwordService,
     tokens: tokenService,
     logger,
   });
@@ -177,10 +178,11 @@ export function createApp({
   });
   app.use(config.apiPrefix, authRouter);
 
-  // Users module — directory lookup for assignment workflows. Reuses the auth
-  // module's user repository (single owner of the user table) so no second
-  // Prisma access point is introduced.
-  const usersService = createUsersService({ users });
+  // Users module — directory lookup for assignment workflows, plus ADMIN-only
+  // provisioning of operational accounts (POST /users). Reuses the auth
+  // module's user repository and password service (single owner of the user
+  // table) so no second Prisma access point is introduced.
+  const usersService = createUsersService({ users, passwords: passwordService, logger });
   const usersRouter = createUsersRouter(createUsersController(usersService), {
     authenticate: authenticate(tokenService),
     authorize,

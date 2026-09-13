@@ -17,11 +17,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { SUBMISSION_STATUSES } from '@/types';
+import type { CreateUserResult } from '@/types';
 import { AnalyticsUnavailable } from '@/features/government/components/AnalyticsUnavailable';
 import { AdminUnavailable } from '@/features/admin/components/AdminUnavailable';
 import { AdminSubmissionsTable } from '@/features/admin/components/AdminSubmissionsTable';
 import { BlockchainHealthCard } from '@/features/admin/components/BlockchainHealthCard';
-import { useAdminSubmissions } from '@/features/admin/hooks/use-admin';
+import { CreateUserDialog } from '@/features/admin/components/CreateUserDialog';
+import { GeneratedPasswordDialog } from '@/features/admin/components/GeneratedPasswordDialog';
+import { useAdminSubmissions, useCreateUser } from '@/features/admin/hooks/use-admin';
 import { sortByNewest, statusLabel } from '@/features/consumer/lib/submission-display';
 
 /** Rows shown per page in the client-side pagination. */
@@ -38,10 +41,11 @@ const ALL_STATUSES = 'ALL';
  *   - Reward Administration: inline via IssueRewardDialog (POST /rewards/issue/:id)
  *   - Blockchain Monitoring: GET /system/blockchain/health (P6.5 — a real proxy
  *       through to the P6.1/P6.2 Fabric Gateway client, not a fabricated status)
+ *   - User Management: POST /users (P10.5) — ADMIN-only provisioning of
+ *       COLLECTOR/RECYCLER/GOVERNMENT accounts with a server-generated password
  *
  * Sections with no backend API (informational unavailable state):
  *   - System Overview / Analytics: no /analytics router mounted
- *   - User Management: no user-listing endpoint exists
  *   - System Activity: no audit/activity feed endpoint exists
  *
  * Default export for React.lazy code-splitting.
@@ -51,6 +55,8 @@ export default function AdminDashboardPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<string>(ALL_STATUSES);
   const [page, setPage] = useState(1);
+  const createUser = useCreateUser();
+  const [createdUser, setCreatedUser] = useState<CreateUserResult | null>(null);
 
   const filtered = useMemo(() => {
     if (!data) return [];
@@ -98,9 +104,27 @@ export default function AdminDashboardPage() {
         <BlockchainHealthCard />
       </Section>
 
-      {/* User Management — role-scoped lookup exists, but no full user directory */}
-      <Section title="User management" description="Platform user accounts and roles.">
-        <AdminUnavailable description="Full user management is not yet available. The backend exposes only a role-scoped lookup (collectors and recyclers) used by the assignment workflow below — no complete user directory or account-editing endpoint exists." />
+      {/* User Management — ADMIN-only account provisioning (P10.5). No full
+          user directory/editing endpoint exists yet; this section only
+          covers creating new operational accounts. */}
+      <Section
+        title="User management"
+        description="Create Collector, Recycler, or Government accounts."
+        actions={
+          <CreateUserDialog
+            isPending={createUser.isPending}
+            onCreate={(input) => createUser.mutateAsync(input)}
+            onCreated={setCreatedUser}
+          />
+        }
+      >
+        <ContentCard>
+          <p className="text-sm text-muted-foreground">
+            New accounts receive a securely generated password, shown once immediately after
+            creation. Admin and Consumer accounts cannot be created here — Consumer accounts are
+            self-registered, and Admin accounts are not self-service.
+          </p>
+        </ContentCard>
       </Section>
 
       {/* Submission Administration — GET /submissions (admin sees all) */}
@@ -229,6 +253,8 @@ export default function AdminDashboardPage() {
       <Section title="System activity" description="Platform-wide audit trail and recent events.">
         <AdminUnavailable description="System activity feed is not yet available. No audit or activity endpoint exists on this backend instance." />
       </Section>
+
+      <GeneratedPasswordDialog result={createdUser} onClose={() => setCreatedUser(null)} />
     </div>
   );
 }

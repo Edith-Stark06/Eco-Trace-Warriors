@@ -11,3 +11,22 @@ export interface UserListItem {
 }
 
 export type UserListResponse = SuccessResponse<UserListItem[]>;
+
+/** The created user's public projection — never includes passwordHash. */
+export interface CreatedUser {
+  readonly id: string;
+  readonly email: string;
+  readonly role: UserRole;
+  readonly createdAt: string;
+}
+
+/**
+ * Result of POST /users. `generatedPassword` is plaintext and exists only in
+ * this one response — it is never persisted, logged, or returned again.
+ */
+export interface CreateUserResult {
+  readonly user: CreatedUser;
+  readonly generatedPassword: string;
+}
+
+export type CreateUserResponse = SuccessResponse<CreateUserResult>;

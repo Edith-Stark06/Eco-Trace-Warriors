@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { RequestHandler } from 'express';
 import { UserRole } from '@prisma/client';
 import { validate } from '@shared/middleware';
-import { listUsersQuerySchema } from './users.schemas';
+import { createUserSchema, listUsersQuerySchema } from './users.schemas';
 import type { UsersController } from './users.controller';
 
 /** Middleware injected into the users router. */
@@ -30,6 +30,19 @@ export function createUsersRouter(controller: UsersController, deps: UsersRouter
     validate({ query: listUsersQuerySchema }),
     (req, res, next) => {
       controller.list(req, res).catch(next);
+    },
+  );
+
+  // Admin-provisions an operational account (COLLECTOR/RECYCLER/GOVERNMENT)
+  // with a server-generated password. ADMIN only — GOVERNMENT gets 403, same
+  // as every other non-admin role.
+  router.post(
+    '/users',
+    authenticate,
+    authorize(UserRole.ADMIN),
+    validate({ body: createUserSchema }),
+    (req, res, next) => {
+      controller.create(req, res).catch(next);
     },
   );
 

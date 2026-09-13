@@ -9,7 +9,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/api/admin.api';
 import { queryKeys } from '@/lib/query-keys';
-import type { PaginationParams } from '@/types';
+import type { CreatableUserRole, PaginationParams } from '@/types';
 
 /** All submissions across every user (admin-scoped GET /submissions). */
 export function useAdminSubmissions(params?: PaginationParams) {
@@ -71,5 +71,17 @@ export function useAssignRecycler() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.admin.all });
     },
+  });
+}
+
+/**
+ * Provisions a COLLECTOR/RECYCLER/GOVERNMENT account (POST /users). The
+ * result — including the one-time plaintext password — is returned to the
+ * caller and held only in local component state, never cached here.
+ */
+export function useCreateUser() {
+  return useMutation({
+    mutationFn: ({ email, role }: { email: string; role: CreatableUserRole }) =>
+      adminApi.createUser(email, role),
   });
 }
