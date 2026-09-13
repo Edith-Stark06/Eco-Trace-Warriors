@@ -56,3 +56,29 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
 }
+
+/**
+ * Roles an ADMIN may provision via POST /users. ADMIN and CONSUMER are
+ * intentionally excluded — ADMIN accounts are not self-service, and CONSUMER
+ * accounts are created only via public registration.
+ */
+export const CREATABLE_USER_ROLES = ['COLLECTOR', 'RECYCLER', 'GOVERNMENT'] as const;
+
+export type CreatableUserRole = (typeof CREATABLE_USER_ROLES)[number];
+
+/** The created user's public projection returned by POST /users. */
+export interface CreatedUser {
+  id: string;
+  email: string;
+  role: CreatableUserRole;
+  createdAt: string;
+}
+
+/**
+ * Result of POST /users. `generatedPassword` is plaintext and exists only in
+ * this one response — never persisted, cached, or shown again after this.
+ */
+export interface CreateUserResult {
+  user: CreatedUser;
+  generatedPassword: string;
+}

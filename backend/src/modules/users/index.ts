@@ -4,6 +4,12 @@ export { createUsersController } from './users.controller';
 export type { UsersController } from './users.controller';
 export { createUsersRouter } from './users.routes';
 export type { UsersRouterDeps } from './users.routes';
-export { listUsersQuerySchema } from './users.schemas';
-export type { ListUsersQuery } from './users.schemas';
-export type { UserListItem, UserListResponse } from './users.types';
+export { createUserSchema, listUsersQuerySchema } from './users.schemas';
+export type { CreateUserRequest, ListUsersQuery } from './users.schemas';
+export type {
+  CreatedUser,
+  CreateUserResult,
+  CreateUserResponse,
+  UserListItem,
+  UserListResponse,
+} from './users.types';

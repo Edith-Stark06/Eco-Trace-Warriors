@@ -9,12 +9,21 @@
  *   GET  /submissions          — admin sees ALL submissions (service: isAdmin → findAll)
  *   POST /rewards/issue/:id    — manual reward issuance (ADMIN only; status must be RECYCLED)
  *   GET  /users?role=          — active users by role (COLLECTOR or RECYCLER); ADMIN+GOVERNMENT
+ *   POST /users                — provision a COLLECTOR/RECYCLER/GOVERNMENT account (ADMIN only)
  *   PATCH /submissions/:id/assign          — assign collector (ADMIN+GOVERNMENT)
  *   PATCH /submissions/:id/assign-recycler — assign recycler (ADMIN+GOVERNMENT)
  */
 import { apiClient } from '@/api/axios';
 import { unwrap } from '@/api/client';
-import type { ApiSuccess, PaginationParams, PublicUser, RewardSummary, Submission } from '@/types';
+import type {
+  ApiSuccess,
+  CreatableUserRole,
+  CreateUserResult,
+  PaginationParams,
+  PublicUser,
+  RewardSummary,
+  Submission,
+} from '@/types';
 
 export const adminApi = {
   /**
@@ -62,5 +71,16 @@ export const adminApi = {
       apiClient.patch<ApiSuccess<Submission>>(`/submissions/${submissionId}/assign-recycler`, {
         recyclerId,
       }),
+    ),
+
+  /**
+   * POST /users — provisions a COLLECTOR/RECYCLER/GOVERNMENT account. ADMIN
+   * only (GOVERNMENT gets 403, unlike the GET /users directory lookup). The
+   * backend generates the password server-side; it is returned in plaintext
+   * exactly once, in this response, and never sent again.
+   */
+  createUser: (email: string, role: CreatableUserRole): Promise<CreateUserResult> =>
+    unwrap<CreateUserResult>(
+      apiClient.post<ApiSuccess<CreateUserResult>>('/users', { email, role }),
     ),
 };
