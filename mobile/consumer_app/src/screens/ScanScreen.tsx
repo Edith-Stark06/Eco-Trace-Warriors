@@ -4,7 +4,10 @@ import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'ex
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { ErrorState } from '../components/ErrorState';
+import { resolveScannedCode } from '../lib/ecoQr';
 import { theme } from '../theme';
+
+const INVALID_QR_MESSAGE = 'Invalid EcoTrace QR. Please scan a valid EcoTrace device QR.';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Scan'>;
 
@@ -38,8 +41,16 @@ export function ScanScreen({ navigation }: Props) {
       setLastError('Unreadable code — try again with better lighting.');
       return;
     }
+
+    const scanned = resolveScannedCode(code);
+    if (scanned.kind === 'invalid') {
+      setLastError(INVALID_QR_MESSAGE);
+      return;
+    }
+
     setHandled(true);
-    navigation.replace('DevicePassport', { deviceId: code });
+    setLastError(null);
+    navigation.replace('DevicePassport', { deviceId: scanned.identifier });
   };
 
   return (
@@ -53,6 +64,11 @@ export function ScanScreen({ navigation }: Props) {
 
       {/* Viewfinder Overlay with corner HUD reticle */}
       <View style={styles.overlay}>
+        <View style={styles.titleBanner}>
+          <Text style={styles.titleText}>Scan device QR</Text>
+          <Text style={styles.subtitleText}>Scan the QR displayed by the EcoTrace collector.</Text>
+        </View>
+
         <View style={styles.reticleContainer}>
           <View style={styles.frame}>
             {/* Corner Bracket Accents */}
@@ -87,6 +103,25 @@ const styles = StyleSheet.create({
   },
   camera: {
     flex: 1,
+  },
+  titleBanner: {
+    position: 'absolute',
+    top: 64,
+    left: theme.spacing.lg,
+    right: theme.spacing.lg,
+    alignItems: 'center',
+  },
+  titleText: {
+    color: '#FFFFFF',
+    fontSize: theme.typography.size.lg,
+    fontWeight: theme.typography.weight.bold,
+    letterSpacing: 0.3,
+  },
+  subtitleText: {
+    color: 'rgba(255, 255, 255, 0.75)',
+    fontSize: theme.typography.size.xs,
+    marginTop: 4,
+    textAlign: 'center',
   },
   overlay: {
     position: 'absolute',

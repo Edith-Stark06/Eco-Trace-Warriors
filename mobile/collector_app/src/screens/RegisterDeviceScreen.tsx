@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
+import QRCode from 'react-native-qrcode-svg';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { deviceAiApi } from '../api/deviceAiApi';
@@ -12,6 +13,7 @@ import { ErrorState } from '../components/ErrorState';
 import { Card } from '../components/common/Card';
 import { theme } from '../theme';
 import type { DeviceRecord } from '../types/device';
+import { buildEcoTraceQrPayload, getEcoId } from '../lib/ecoQrPayload';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RegisterDevice'>;
 
@@ -92,6 +94,12 @@ export function RegisterDeviceScreen({ route, navigation }: Props) {
   }
 
   if (phase === 'done') {
+    // The EcoID the backend already assigned at registration time — never
+    // generated locally. QR display is a best-effort handoff UI only: if
+    // it's absent for any reason, registration itself has already succeeded
+    // and is not affected.
+    const ecoId = device ? getEcoId(device) : null;
+
     return (
       <View style={styles.doneContainer}>
         <Card variant="elevated" style={styles.doneCard}>
@@ -105,12 +113,39 @@ export function RegisterDeviceScreen({ route, navigation }: Props) {
               : 'You are offline — the device confirmation is queued and will finalize automatically once you reconnect.'}
           </Text>
 
+          {ecoId ? (
+            <View style={styles.qrBlock} testID="ecoid-qr-block">
+              <View style={styles.qrFrame}>
+                <QRCode
+                  value={buildEcoTraceQrPayload(ecoId)}
+                  size={200}
+                  ecl="M"
+                  backgroundColor="#FFFFFF"
+                  color="#000000"
+                />
+              </View>
+              <Text style={styles.ecoIdLabel}>EcoID</Text>
+              <Text style={styles.ecoIdValue} testID="ecoid-value">
+                {ecoId}
+              </Text>
+              {device ? (
+                <View style={styles.deviceMetaRow}>
+                  <Text style={styles.deviceMetaType}>{device.device_type}</Text>
+                  <Text style={styles.deviceMetaConfidence}>
+                    {(device.confidence * 100).toFixed(0)}% confidence
+                  </Text>
+                </View>
+              ) : null}
+              <Text style={styles.qrHint}>Show this QR to the consumer to verify the device.</Text>
+            </View>
+          ) : null}
+
           <Pressable
             style={styles.doneButton}
             accessibilityRole="button"
             onPress={() => navigation.navigate('Dashboard')}
           >
-            <Text style={styles.doneButtonText}>Back to dashboard</Text>
+            <Text style={styles.doneButtonText}>Done</Text>
           </Pressable>
         </Card>
       </View>
@@ -329,6 +364,56 @@ const styles = StyleSheet.create({
     fontSize: 28,
     color: theme.colors.forest[700],
     fontWeight: theme.typography.weight.bold,
+  },
+  qrBlock: {
+    alignItems: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  qrFrame: {
+    backgroundColor: '#FFFFFF',
+    padding: theme.spacing.md,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.slate[100],
+    marginBottom: theme.spacing.md,
+    ...theme.elevation.xs,
+  },
+  ecoIdLabel: {
+    fontSize: theme.typography.size.xs,
+    fontWeight: theme.typography.weight.bold,
+    color: theme.colors.slate[500],
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  ecoIdValue: {
+    fontSize: theme.typography.size.xl,
+    fontWeight: theme.typography.weight.bold,
+    color: theme.colors.slate[900],
+    marginTop: 2,
+    fontFamily: 'monospace',
+  },
+  deviceMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: theme.spacing.sm,
+  },
+  deviceMetaType: {
+    fontSize: theme.typography.size.sm,
+    fontWeight: theme.typography.weight.semibold,
+    color: theme.colors.forest[800],
+    textTransform: 'capitalize',
+  },
+  deviceMetaConfidence: {
+    fontSize: theme.typography.size.xs,
+    color: theme.colors.slate[500],
+  },
+  qrHint: {
+    fontSize: theme.typography.size.xs,
+    color: theme.colors.slate[500],
+    textAlign: 'center',
+    marginTop: theme.spacing.md,
+    paddingHorizontal: theme.spacing.md,
   },
   doneButton: {
     backgroundColor: theme.colors.forest[700],
