@@ -26,6 +26,16 @@ jest.mock('../hooks/useNetworkStatus', () => ({
   useNetworkStatus: jest.fn(),
 }));
 
+jest.mock('react-native-qrcode-svg', () => {
+  const ReactActual = jest.requireActual('react') as typeof import('react');
+  const { View } = jest.requireActual('react-native') as typeof import('react-native');
+  return {
+    __esModule: true,
+    default: ({ value }: { value: string }) =>
+      ReactActual.createElement(View, { testID: 'mock-qrcode', accessibilityLabel: value }),
+  };
+});
+
 const registerDevicesMock = deviceAiApi.registerDevices as jest.Mock;
 const confirmMock = deviceAiApi.confirm as jest.Mock;
 const finalizeMock = deviceAiApi.finalize as jest.Mock;
@@ -127,5 +137,70 @@ describe('RegisterDeviceScreen — device/submission linkage (P10.1)', () => {
     await findByText('Device recorded');
     expect(finalizeMock).not.toHaveBeenCalled();
     expect(linkDeviceMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('RegisterDeviceScreen — EcoID QR handoff (P10.4)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    useNetworkStatusMock.mockReturnValue(true);
+    confirmMock.mockResolvedValue({});
+    finalizeMock.mockResolvedValue({});
+    enrichMock.mockResolvedValue({});
+    anchorPassportMock.mockResolvedValue({});
+    linkDeviceMock.mockResolvedValue({});
+  });
+
+  it('shows the EcoID QR handoff using the EcoID already returned by registration', async () => {
+    registerDevicesMock.mockResolvedValue({
+      devices: [{ ...device, metadata: { eco_id: 'ET-2026-1A2B3C4D' } }],
+    });
+
+    const { getByTestId, findByText } = await render(
+      <RegisterDeviceScreen route={buildRoute(undefined)} navigation={navigation} />,
+    );
+
+    await waitFor(() => expect(registerDevicesMock).toHaveBeenCalled());
+    const confirmButton = await waitFor(() => getByTestId('register-confirm-button'));
+    await fireEvent.press(confirmButton);
+
+    await findByText('Device recorded');
+    const qr = getByTestId('mock-qrcode');
+    expect(qr.props.accessibilityLabel).toBe(
+      JSON.stringify({ type: 'ECOTRACE_DEVICE', ecoId: 'ET-2026-1A2B3C4D' }),
+    );
+    await findByText('ET-2026-1A2B3C4D');
+  });
+
+  it('never fetches or generates a second EcoID — only the registration response is used', async () => {
+    registerDevicesMock.mockResolvedValue({
+      devices: [{ ...device, metadata: { eco_id: 'ET-2026-1A2B3C4D' } }],
+    });
+
+    const { getByTestId, findByText } = await render(
+      <RegisterDeviceScreen route={buildRoute(undefined)} navigation={navigation} />,
+    );
+
+    await waitFor(() => expect(registerDevicesMock).toHaveBeenCalled());
+    const confirmButton = await waitFor(() => getByTestId('register-confirm-button'));
+    await fireEvent.press(confirmButton);
+
+    await findByText('Device recorded');
+    expect(registerDevicesMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not block a successful registration when no EcoID is present (QR display is best-effort)', async () => {
+    registerDevicesMock.mockResolvedValue({ devices: [{ ...device, metadata: {} }] });
+
+    const { getByTestId, findByText, queryByTestId } = await render(
+      <RegisterDeviceScreen route={buildRoute(undefined)} navigation={navigation} />,
+    );
+
+    await waitFor(() => expect(registerDevicesMock).toHaveBeenCalled());
+    const confirmButton = await waitFor(() => getByTestId('register-confirm-button'));
+    await fireEvent.press(confirmButton);
+
+    await findByText('Device recorded');
+    expect(queryByTestId('ecoid-qr-block')).toBeNull();
   });
 });
