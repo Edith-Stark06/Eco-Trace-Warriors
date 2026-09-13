@@ -19,6 +19,7 @@ export type {
   CollectorRecord,
   RecyclerRecord,
   RecyclerCompletionInput,
+  LinkDeviceInput as LinkDeviceRepositoryInput,
   CreateSubmissionInput as CreateSubmissionRepositoryInput,
   UpdateSubmissionInput as UpdateSubmissionRepositoryInput,
 } from './submission.repository';
@@ -29,6 +30,8 @@ export {
   assignCollectorSchema,
   assignRecyclerSchema,
   completeRecyclingSchema,
+  deviceIdentifierParamSchema,
+  linkDeviceSchema,
 } from './submission.schemas';
 export type {
   CreateSubmissionInput,
@@ -37,6 +40,8 @@ export type {
   AssignCollectorInput,
   AssignRecyclerInput,
   CompleteRecyclingInput,
+  DeviceIdentifierParams,
+  LinkDeviceInput,
 } from './submission.schemas';
 export type {
   PublicSubmission,
@@ -44,4 +49,8 @@ export type {
   SubmissionListResponse,
   CompleteRecyclingWithRewardData,
   CompleteRecyclingWithRewardResponse,
+  SubmissionLifecycleView,
+  SubmissionLifecycleResponse,
+  RecyclerHistoryEntry,
+  RecyclerHistoryResponse,
 } from './submission.types';

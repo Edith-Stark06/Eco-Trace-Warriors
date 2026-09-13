@@ -7,6 +7,8 @@ import type {
   DeviceStateUpdateResponse,
   DevicePassportResponse,
   DeviceTrustStatusResponse,
+  DeviceEnrichmentResponse,
+  TrustAnchorResponse,
 } from '../types/device';
 
 /**
@@ -140,6 +142,16 @@ export const deviceAiApi = {
   },
   finalize(deviceId: string): Promise<DeviceStateUpdateResponse> {
     return deviceAiRequest<DeviceStateUpdateResponse>(`/devices/${deviceId}/finalize`, { method: 'POST' });
+  },
+  /** Runs brand/condition/material/carbon intelligence enrichment on a finalized device. */
+  enrich(deviceId: string): Promise<DeviceEnrichmentResponse> {
+    return deviceAiRequest<DeviceEnrichmentResponse>(`/devices/${deviceId}/enrich`, { method: 'POST' });
+  },
+  /** Verifies and anchors the Device Passport in the local Trust Anchor layer. Idempotent. */
+  anchorPassport(deviceId: string): Promise<TrustAnchorResponse> {
+    return deviceAiRequest<TrustAnchorResponse>(`/devices/${deviceId}/passport/anchor`, {
+      method: 'POST',
+    });
   },
   getPassport(deviceId: string): Promise<DevicePassportResponse> {
     return deviceAiRequest<DevicePassportResponse>(`/devices/${deviceId}/passport`);

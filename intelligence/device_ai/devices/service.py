@@ -40,7 +40,7 @@ from .models import (
 )
 from .passport import DevicePassport, build_device_passport
 from .passport_verification import PassportVerificationResult, verify_passport
-from .repository import DeviceRepository
+from .repository import DeviceRepository, resolve_device
 
 
 def _utc_now() -> datetime:
@@ -187,18 +187,20 @@ class DeviceRegistrationService:
         return created_records, timing
 
     def get_device(self, device_id: str) -> DeviceRecord:
-        """Retrieve a device record by its ID.
+        """Retrieve a device record by its canonical device_id or public EcoID.
 
         Args:
-            device_id: Public device identifier.
+            device_id: Public device identifier (device_id, e.g.
+                ``DEV-2026-XXXXXXXX-01``) or EcoID (e.g. ``ET-2026-XXXXXXXX``).
+                Both resolve to the same record.
 
         Returns:
             The stored :class:`DeviceRecord`.
 
         Raises:
-            DeviceNotFoundError: If no record matches ``device_id``.
+            DeviceNotFoundError: If neither a device_id nor an EcoID matches.
         """
-        record = self._repository.get(device_id)
+        record = resolve_device(self._repository, device_id)
         if record is None:
             raise DeviceNotFoundError(
                 f"Device '{device_id}' not found.",
@@ -332,8 +334,8 @@ class DeviceRegistrationService:
         Raises:
             DeviceNotFoundError: If the device does not exist.
         """
-        self.get_device(device_id)  # Validate existence
-        return self._repository.list_events(device_id)
+        record = self.get_device(device_id)  # Validate existence + resolve EcoID
+        return self._repository.list_events(record.device_id)
 
     def get_device_passport(self, device_id: str) -> DevicePassport:
         """Construct and return the aggregated DevicePassport read model.
@@ -350,7 +352,7 @@ class DeviceRegistrationService:
             DeviceNotFoundError: If the device does not exist.
         """
         record = self.get_device(device_id)
-        events = self._repository.list_events(device_id)
+        events = self._repository.list_events(record.device_id)
         return build_device_passport(record, events)
 
     def verify_device_passport(self, device_id: str) -> PassportVerificationResult:
@@ -368,6 +370,6 @@ class DeviceRegistrationService:
             DeviceNotFoundError: If the device does not exist.
         """
         record = self.get_device(device_id)
-        events = self._repository.list_events(device_id)
+        events = self._repository.list_events(record.device_id)
         passport = build_device_passport(record, events)
         return verify_passport(record=record, events=events, passport=passport)

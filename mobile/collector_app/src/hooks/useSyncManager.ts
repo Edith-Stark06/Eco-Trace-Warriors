@@ -57,6 +57,16 @@ export function useSyncManager() {
         await syncQueueStorage.update(item.id, { status: 'syncing' });
         try {
           await deviceAiApi.finalize(item.deviceId);
+          // Best-effort, same as the online RegisterDeviceScreen path:
+          // enrichment/anchoring failures must not reintroduce this item
+          // into the retry queue — finalize (the state transition this
+          // queue exists to guarantee) already succeeded.
+          try {
+            await deviceAiApi.enrich(item.deviceId);
+            await deviceAiApi.anchorPassport(item.deviceId);
+          } catch {
+            // Can be retried later from the Device Passport screen.
+          }
           await syncQueueStorage.remove(item.id);
         } catch (err) {
           const isNetwork = err instanceof ApiError && err.isNetworkError;

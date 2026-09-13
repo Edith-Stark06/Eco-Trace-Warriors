@@ -79,6 +79,7 @@ from .repository import (
     DeviceRepository,
     InMemoryDeviceRepository,
     JsonFileDeviceRepository,
+    resolve_device,
 )
 from .service import DeviceRegistrationService
 from .trust_anchor import (
@@ -174,4 +175,5 @@ __all__ = [
     "InMemoryDeviceRepository",
     "JsonFileDeviceRepository",
     "PostgresDeviceRepository",
+    "resolve_device",
 ]

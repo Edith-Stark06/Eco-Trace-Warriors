@@ -1,5 +1,9 @@
 import { apiClient } from './client';
-import type { CreateSubmissionInput, PublicSubmission } from '../types/submission';
+import type {
+  CreateSubmissionInput,
+  PublicSubmission,
+  SubmissionLifecycleView,
+} from '../types/submission';
 
 /** Real backend routes — backend/src/modules/submission/submission.routes.ts. */
 export const submissionsApi = {
@@ -13,5 +17,14 @@ export const submissionsApi = {
   },
   get(id: string): Promise<PublicSubmission> {
     return apiClient<PublicSubmission>(`/submissions/${id}`);
+  },
+  /**
+   * The Submission lifecycle for a device_ai device_id/eco_id (P10.1) — the
+   * Device Passport's "Collection & Recycling" section. A 404 means no
+   * submission has been linked to this device yet, a legitimate state the
+   * screen renders as "Collection information unavailable", not an error.
+   */
+  getByDevice(identifier: string): Promise<SubmissionLifecycleView> {
+    return apiClient<SubmissionLifecycleView>(`/submissions/by-device/${identifier}`);
   },
 };

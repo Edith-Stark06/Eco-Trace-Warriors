@@ -21,6 +21,7 @@ from .api.dependencies import get_pipeline, get_registry
 from .api.device_routes import router as device_router
 from .api.errors import register_exception_handlers
 from .api.fingerprint_routes import router as fingerprint_router
+from .api.forecast_routes import router as forecast_router
 from .api.middleware import RequestContextMiddleware
 from .api.ocr_routes import router as ocr_router
 from .api.routes import router
@@ -98,5 +99,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(ocr_router)
     app.include_router(device_router)
     app.include_router(blockchain_router)
+    app.include_router(forecast_router)
 
     return app

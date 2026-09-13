@@ -8,8 +8,12 @@
  */
 import { formatMetric, formatPoints } from '@/features/consumer/lib/reward-display';
 
-/** Format a whole-number count with thousands separators (e.g. 12000 → "12,000"). */
-export function formatCount(value: number): string {
+/**
+ * Format a whole-number count with thousands separators (e.g. 12000 →
+ * "12,000"), or an em dash when the backend did not model this figure.
+ */
+export function formatCount(value: number | null): string {
+  if (value === null) return '—';
   return formatPoints(Math.round(value));
 }
 

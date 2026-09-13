@@ -38,6 +38,7 @@ model User {
   collectedSubmissions Submission[]        @relation("SubmissionCollector")
   recycledSubmissions  Submission[]        @relation("SubmissionRecycler")
   submissions          Submission[]        @relation("SubmissionOwner")
+  notifications        Notification[]
   role                 Role                @relation(fields: [roleId], references: [id])
 
   @@index([roleId])
@@ -83,7 +84,15 @@ model Submission {
   energySaved         Float?
   landfillDiverted    Float?
   rewardIssued        Boolean            @default(false)
+  // Cross-domain link to intelligence/device_ai's Device record (P10.1).
+  // Nullable: historical submissions and submissions never paired with a
+  // physical device registration have no device. Unique: one device maps to
+  // at most one submission, and vice versa. Only the identifiers are stored
+  // here — the Device model itself stays in device_ai's own database.
+  deviceId            String?            @unique
+  ecoId               String?            @unique
   rewardTransaction   RewardTransaction?
+  notifications       Notification[]
   assignedCollector   User?              @relation("SubmissionCollector", fields: [assignedCollectorId], references: [id])
   assignedRecycler    User?              @relation("SubmissionRecycler", fields: [assignedRecyclerId], references: [id])
   user                User               @relation("SubmissionOwner", fields: [userId], references: [id])
@@ -107,6 +116,32 @@ model RewardTransaction {
 
   @@index([userId])
   @@map("reward_transactions")
+}
+
+/**
+ * In-app consumer notification (P10.3). Persisted, authenticated-API-only —
+ * no push token, email, phone, or free-form fields: the message is always
+ * generated server-side from a real lifecycle transition, never user input.
+ * The (userId, submissionId, type) unique constraint makes notification
+ * creation idempotent — at most one notification per submission per event
+ * type, even if the triggering lifecycle call is ever repeated.
+ */
+model Notification {
+  id           String           @id @default(uuid())
+  userId       String
+  submissionId String
+  type         NotificationType
+  message      String
+  createdAt    DateTime         @default(now())
+  readAt       DateTime?
+  user         User             @relation(fields: [userId], references: [id])
+  submission   Submission       @relation(fields: [submissionId], references: [id])
+
+  @@unique([userId, submissionId, type])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([readAt])
+  @@map("notifications")
 }
 
 enum UserRole {
@@ -135,4 +170,11 @@ enum RewardReason {
   CAMPAIGN
   ADJUSTMENT
   REDEMPTION
+}
+
+/** Closed set of real submission-lifecycle events a consumer is notified about. */
+enum NotificationType {
+  COLLECTOR_ASSIGNED
+  ITEM_COLLECTED
+  RECYCLING_COMPLETED
 }

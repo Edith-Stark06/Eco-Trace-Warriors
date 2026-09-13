@@ -22,6 +22,7 @@ import type {
   CompleteRecyclingPayload,
   CompleteRecyclingResult,
   PaginationParams,
+  RecyclerHistoryEntry,
   Submission,
 } from '@/types';
 
@@ -33,6 +34,18 @@ export const recyclerApi = {
   getAssignments: (params?: PaginationParams): Promise<Submission[]> =>
     unwrap<Submission[]>(
       apiClient.get<ApiSuccess<Submission[]>>('/recycler/submissions', { params }),
+    ),
+
+  /**
+   * GET /recycler/submissions/history — the authenticated recycler's own
+   * completed (RECYCLED) jobs, newest first. Scoping comes entirely from the
+   * bearer token server-side; this call carries no recycler identifier.
+   */
+  getHistory: (params?: PaginationParams): Promise<RecyclerHistoryEntry[]> =>
+    unwrap<RecyclerHistoryEntry[]>(
+      apiClient.get<ApiSuccess<RecyclerHistoryEntry[]>>('/recycler/submissions/history', {
+        params,
+      }),
     ),
 
   /** PATCH /submissions/:id/recycle/start — begin processing: COLLECTED → RECYCLING. */

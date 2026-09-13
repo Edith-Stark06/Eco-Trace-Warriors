@@ -1,5 +1,5 @@
 import { UserRole } from '@prisma/client';
-import type { SubmissionStatus } from '@prisma/client';
+import type { NotificationType, SubmissionStatus } from '@prisma/client';
 import { ConflictError, ForbiddenError, NotFoundError } from '@shared/errors';
 import type { Logger } from '@shared/logging';
 import type { Pagination } from '@shared/pagination';
@@ -7,10 +7,17 @@ import type { SubmissionRecord, SubmissionRepository } from './submission.reposi
 import type {
   CompleteRecyclingInput,
   CreateSubmissionInput,
+  LinkDeviceInput,
   UpdateSubmissionInput,
 } from './submission.schemas';
-import type { PublicSubmission, CompleteRecyclingWithRewardData } from './submission.types';
+import type {
+  PublicSubmission,
+  CompleteRecyclingWithRewardData,
+  RecyclerHistoryEntry,
+  SubmissionLifecycleView,
+} from './submission.types';
 import type { RewardService, RewardSummary } from '../rewards/reward.service';
+import type { NotificationService } from '../notification/notification.service';
 
 /**
  * The single source of truth for the submission workflow state machine.
@@ -46,6 +53,14 @@ export interface SubmissionServiceDeps {
   readonly submissions: SubmissionRepository;
   readonly logger: Logger;
   readonly rewards: RewardService;
+  /**
+   * In-app consumer notifications (P10.3). Called best-effort at three
+   * lifecycle points (see assignCollector/advanceAsCollector/
+   * completeRecycling below) — a notification failure is logged and
+   * swallowed, never allowed to fail or roll back the business transition
+   * that already succeeded. See notifyBestEffort() for the shared wrapper.
+   */
+  readonly notifications: NotificationService;
   /** Clock provider — injectable for deterministic tests. Defaults to wall-clock. */
   readonly now?: () => Date;
 }
@@ -103,6 +118,33 @@ export interface SubmissionService {
     actor: SubmissionActor,
     pagination?: Pagination,
   ): Promise<PublicSubmission[]>;
+  /**
+   * The authenticated recycler's own completed (RECYCLED) job history, newest
+   * first. Scoped exclusively to `actor.userId` — there is no way to request
+   * another recycler's history through this method.
+   */
+  getRecyclerHistory(
+    actor: SubmissionActor,
+    pagination?: Pagination,
+  ): Promise<RecyclerHistoryEntry[]>;
+
+  // --- Device Intelligence linkage (P10.1) -----------------------------------
+
+  /**
+   * Records the device_ai identifiers for a submission. Callable by the
+   * submission's assigned collector (the natural point in the existing
+   * register→confirm→finalize flow where the physical device and the pickup
+   * job are both in hand) or an admin override.
+   */
+  linkDevice(actor: SubmissionActor, id: string, input: LinkDeviceInput): Promise<PublicSubmission>;
+
+  /**
+   * Resolves the submission lifecycle for a device_ai device_id or eco_id, for
+   * the Consumer Device Passport's "Collection & Recycling" section. Visibility
+   * matches loadForAudit(): owner, admin/government, or the assigned
+   * collector/recycler — never a stranger's device.
+   */
+  getByDevice(actor: SubmissionActor, identifier: string): Promise<SubmissionLifecycleView>;
 }
 
 function isAdmin(actor: SubmissionActor): boolean {
@@ -159,8 +201,80 @@ function toPublicSubmission(record: SubmissionRecord): PublicSubmission {
     recyclerNotes: record.recyclerNotes,
     recoveredWeight: record.recoveredWeight,
     materialRecovery: record.materialRecovery,
+    deviceId: record.deviceId,
+    ecoId: record.ecoId,
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
+  };
+}
+
+/**
+ * Maps a RECYCLED submission record to a recycler's history entry. Reuses the
+ * exact stored values (including the reward module's already-computed
+ * co2Saved/energySaved/landfillDiverted) — no recalculation happens here.
+ */
+function toRecyclerHistoryEntry(record: SubmissionRecord): RecyclerHistoryEntry {
+  return {
+    id: record.id,
+    category: record.category,
+    estimatedWeight: record.estimatedWeight,
+    recoveredWeight: record.recoveredWeight,
+    recycledAt: record.recycledAt?.toISOString() ?? null,
+    materialRecovery: record.materialRecovery,
+    recyclerNotes: record.recyclerNotes,
+    co2Saved: record.co2Saved,
+    energySaved: record.energySaved,
+    landfillDiverted: record.landfillDiverted,
+  };
+}
+
+/**
+ * Status order for deriving lifecycle milestones — mirrors the documented
+ * order in allowedTransitions above. REJECTED/COMPLETED are terminal states
+ * with no code path that sets them today (see submission.service.ts audit,
+ * P10.1), so they intentionally fall outside this ordered happy path rather
+ * than being assigned a fabricated position in it.
+ */
+const LIFECYCLE_STATUS_ORDER: readonly SubmissionStatus[] = [
+  'PENDING',
+  'ASSIGNED',
+  'ACCEPTED',
+  'IN_PROGRESS',
+  'COLLECTED',
+  'RECYCLING',
+  'RECYCLED',
+];
+
+function reachedStatus(status: SubmissionStatus, target: SubmissionStatus): boolean {
+  const current = LIFECYCLE_STATUS_ORDER.indexOf(status);
+  const at = LIFECYCLE_STATUS_ORDER.indexOf(target);
+  return current >= 0 && at >= 0 && current >= at;
+}
+
+/**
+ * Builds the Device Passport's submission-lifecycle view from a linked
+ * Submission record. Every field reuses a value the Submission domain already
+ * persists (see reward.service.ts for the sustainability metrics) — nothing
+ * here is recomputed or invented. `pickupScheduledAt` genuinely holds the
+ * pickup start time (see startPickup() below), not a future-scheduled time.
+ */
+function toLifecycleView(record: SubmissionRecord): SubmissionLifecycleView {
+  return {
+    submissionId: record.id,
+    status: record.status,
+    collectorAssigned: record.assignedCollectorId !== null,
+    pickupAccepted: reachedStatus(record.status, 'ACCEPTED'),
+    pickupStarted: reachedStatus(record.status, 'IN_PROGRESS'),
+    collected: reachedStatus(record.status, 'COLLECTED'),
+    recyclingStarted: reachedStatus(record.status, 'RECYCLING'),
+    recycled: reachedStatus(record.status, 'RECYCLED'),
+    pickupStartedAt: record.pickupScheduledAt?.toISOString() ?? null,
+    recyclingStartedAt: record.processingStartedAt?.toISOString() ?? null,
+    recycledAt: record.recycledAt?.toISOString() ?? null,
+    recoveredWeight: record.recoveredWeight,
+    co2Saved: record.co2Saved,
+    energySaved: record.energySaved,
+    landfillDiverted: record.landfillDiverted,
   };
 }
 
@@ -185,19 +299,31 @@ export function createSubmissionService(deps: SubmissionServiceDeps): Submission
   }
 
   /**
-   * Loads a submission for a read-only lookup, visible to its owner or any
-   * canAudit() actor (admin or government). Kept distinct from
-   * loadAccessible(): update()/delete() must stay admin-only overrides, but
-   * getById() is a pure read and should match list()'s audit visibility.
+   * The audit-visibility predicate: owner, any canAudit() actor (admin or
+   * government), or the assigned collector/recycler. Shared by loadForAudit()
+   * (fetch-by-id) and getByDevice() (fetch-by-device-identifier) so the rule
+   * is judged in exactly one place regardless of how the record was found.
+   */
+  function assertAuditVisible(actor: SubmissionActor, record: SubmissionRecord): void {
+    const isOwner = record.userId === actor.userId;
+    const isAssignedCollector = record.assignedCollectorId === actor.userId;
+    const isAssignedRecycler = record.assignedRecyclerId === actor.userId;
+    if (!canAudit(actor) && !isOwner && !isAssignedCollector && !isAssignedRecycler) {
+      throw new NotFoundError('Submission not found.');
+    }
+  }
+
+  /**
+   * Loads a submission for a read-only lookup, visible to its owner, any
+   * canAudit() actor (admin or government), or its assigned collector/recycler.
+   * Kept distinct from loadAccessible(): update()/delete() must stay admin-only overrides.
    */
   async function loadForAudit(actor: SubmissionActor, id: string): Promise<SubmissionRecord> {
     const record = await deps.submissions.findById(id);
     if (!record) {
       throw new NotFoundError('Submission not found.');
     }
-    if (!canAudit(actor) && record.userId !== actor.userId) {
-      throw new NotFoundError('Submission not found.');
-    }
+    assertAuditVisible(actor, record);
     return record;
   }
 
@@ -219,6 +345,37 @@ export function createSubmissionService(deps: SubmissionServiceDeps): Submission
   }
 
   /**
+   * Fires an in-app notification without letting a notification-subsystem
+   * failure affect the caller. Every call site below invokes this only
+   * *after* the triggering business transition has already been durably
+   * persisted, and none of these three writes is wrapped in a shared
+   * database transaction with the submission update (each is its own
+   * independent Prisma call) — so there is nothing to roll back here even in
+   * principle. A failure is logged and swallowed, matching the "best-effort,
+   * advisory" pattern already used elsewhere in this codebase (e.g.
+   * FabricExternalTrustLedger's best-effort on-chain pre-registration step).
+   * Idempotency (no duplicate notification for a repeated event) is handled
+   * one layer down, by the repository's upsert on the
+   * (userId, submissionId, type) unique constraint — never by trying to
+   * detect "did I already send this" here.
+   */
+  async function notifyBestEffort(
+    userId: string,
+    submissionId: string,
+    type: NotificationType,
+    message: string,
+  ): Promise<void> {
+    try {
+      await deps.notifications.createNotification(userId, submissionId, type, message);
+    } catch (err) {
+      deps.logger.warn(
+        { submissionId, type, err },
+        'Failed to record in-app notification (non-fatal; business transition already succeeded)',
+      );
+    }
+  }
+
+  /**
    * Runs one collector-driven status transition end to end: verify ownership,
    * validate the transition centrally, persist, and log. Keeps the four
    * workflow endpoints free of duplicated guard logic.
@@ -233,6 +390,16 @@ export function createSubmissionService(deps: SubmissionServiceDeps): Submission
     validateTransition(record.status, to);
     const updated = await deps.submissions.updateStatus(id, to);
     deps.logger.info({ submissionId: id, collectorId: actor.userId, actorId: actor.userId }, event);
+
+    if (to === 'COLLECTED') {
+      await notifyBestEffort(
+        updated.userId,
+        id,
+        'ITEM_COLLECTED',
+        `Your ${updated.category} has been collected and is ready for recycling.`,
+      );
+    }
+
     return toPublicSubmission(updated);
   }
 
@@ -333,6 +500,16 @@ export function createSubmissionService(deps: SubmissionServiceDeps): Submission
         { submissionId: id, collectorId, actorId: actor.userId },
         'Collector assigned',
       );
+
+      // Message deliberately carries only the real category — never the
+      // collector's name, phone, address, or any other private detail.
+      await notifyBestEffort(
+        updated.userId,
+        id,
+        'COLLECTOR_ASSIGNED',
+        `Your collector has been assigned for your ${updated.category} submission.`,
+      );
+
       return toPublicSubmission(updated);
     },
 
@@ -436,6 +613,18 @@ export function createSubmissionService(deps: SubmissionServiceDeps): Submission
         'Reward issued',
       );
 
+      // Only reached once BOTH the RECYCLED transition and reward issuance
+      // have genuinely succeeded (issueReward() throwing above would skip
+      // this entirely, matching "no notification if the transition fails").
+      // The GreenCoins figure is the real, backend-issued amount — never a
+      // guess — sourced from the same `reward` result returned to the caller.
+      await notifyBestEffort(
+        updated.userId,
+        id,
+        'RECYCLING_COMPLETED',
+        `Your ${updated.category} has been recycled and ${reward.greenCoinsAwarded} GreenCoins have been issued.`,
+      );
+
       return { submission: toPublicSubmission(updated), reward };
     },
 
@@ -445,6 +634,57 @@ export function createSubmissionService(deps: SubmissionServiceDeps): Submission
     ): Promise<PublicSubmission[]> {
       const records = await deps.submissions.findRecyclerAssignments(actor.userId, pagination);
       return records.map(toPublicSubmission);
+    },
+
+    async getRecyclerHistory(
+      actor: SubmissionActor,
+      pagination?: Pagination,
+    ): Promise<RecyclerHistoryEntry[]> {
+      // actor.userId comes from the verified access token (see
+      // getAuthContext() in the controller) — there is no request parameter
+      // for recyclerId, so a recycler can never be given another recycler's
+      // history by supplying a different id.
+      const records = await deps.submissions.findRecyclerHistory(actor.userId, pagination);
+      return records.map(toRecyclerHistoryEntry);
+    },
+
+    async linkDevice(
+      actor: SubmissionActor,
+      id: string,
+      input: LinkDeviceInput,
+    ): Promise<PublicSubmission> {
+      // Admin may link on behalf of any submission (override, matching the
+      // assign* actions' pattern); otherwise only the assigned collector —
+      // the collector holding the physical device is the only non-admin
+      // actor in a position to know its real device_id/eco_id.
+      const record = isAdmin(actor)
+        ? await deps.submissions.findById(id)
+        : await ensureCollectorOwnsSubmission(actor, id);
+      if (!record) {
+        throw new NotFoundError('Submission not found.');
+      }
+
+      const updated = await deps.submissions.linkDevice(id, {
+        deviceId: input.deviceId,
+        ecoId: input.ecoId ?? null,
+      });
+      deps.logger.info(
+        { submissionId: id, deviceId: input.deviceId, actorId: actor.userId },
+        'Device linked to submission',
+      );
+      return toPublicSubmission(updated);
+    },
+
+    async getByDevice(
+      actor: SubmissionActor,
+      identifier: string,
+    ): Promise<SubmissionLifecycleView> {
+      const record = await deps.submissions.findByDeviceOrEcoId(identifier);
+      if (!record) {
+        throw new NotFoundError('No submission is linked to this device.');
+      }
+      assertAuditVisible(actor, record);
+      return toLifecycleView(record);
     },
   };
 }

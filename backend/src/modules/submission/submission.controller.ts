@@ -6,11 +6,14 @@ import type {
   AssignRecyclerInput,
   CompleteRecyclingInput,
   CreateSubmissionInput,
+  LinkDeviceInput,
   UpdateSubmissionInput,
 } from './submission.schemas';
 import type { SubmissionActor, SubmissionService } from './submission.service';
 import type {
   CompleteRecyclingWithRewardResponse,
+  RecyclerHistoryResponse,
+  SubmissionLifecycleResponse,
   SubmissionListResponse,
   SubmissionResponse,
 } from './submission.types';
@@ -32,6 +35,10 @@ export interface SubmissionController {
   startRecycling(req: Request, res: Response): Promise<void>;
   completeRecycling(req: Request, res: Response): Promise<void>;
   recyclerDashboard(req: Request, res: Response): Promise<void>;
+  recyclerHistory(req: Request, res: Response): Promise<void>;
+  // Device Intelligence linkage (P10.1)
+  linkDevice(req: Request, res: Response): Promise<void>;
+  getByDevice(req: Request, res: Response): Promise<void>;
 }
 
 /** Reads the authenticated principal as the submission actor. */
@@ -145,6 +152,26 @@ export function createSubmissionController(service: SubmissionService): Submissi
     async recyclerDashboard(req: Request, res: Response): Promise<void> {
       const result = await service.getRecyclerDashboard(actorOf(req), paginationOf(req));
       const body: SubmissionListResponse = { success: true, data: result };
+      res.status(200).json(body);
+    },
+
+    async recyclerHistory(req: Request, res: Response): Promise<void> {
+      const result = await service.getRecyclerHistory(actorOf(req), paginationOf(req));
+      const body: RecyclerHistoryResponse = { success: true, data: result };
+      res.status(200).json(body);
+    },
+
+    async linkDevice(req: Request, res: Response): Promise<void> {
+      const { id } = req.params as { id: string };
+      const result = await service.linkDevice(actorOf(req), id, req.body as LinkDeviceInput);
+      const body: SubmissionResponse = { success: true, data: result };
+      res.status(200).json(body);
+    },
+
+    async getByDevice(req: Request, res: Response): Promise<void> {
+      const { identifier } = req.params as { identifier: string };
+      const result = await service.getByDevice(actorOf(req), identifier);
+      const body: SubmissionLifecycleResponse = { success: true, data: result };
       res.status(200).json(body);
     },
   };

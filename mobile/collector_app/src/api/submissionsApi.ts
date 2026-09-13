@@ -24,4 +24,16 @@ export const submissionsApi = {
   complete(id: string): Promise<PublicSubmission> {
     return apiClient<PublicSubmission>(`/submissions/${id}/complete`, { method: 'PATCH' });
   },
+  /**
+   * Cross-references this submission with the device_ai Device record just
+   * registered for the physical pickup (P10.1). `ecoId` is normally omitted —
+   * device_ai does not assign an EcoID until later enrichment/anchoring, well
+   * after this screen's confirm step.
+   */
+  linkDevice(id: string, input: { deviceId: string; ecoId?: string }): Promise<PublicSubmission> {
+    return apiClient<PublicSubmission>(`/submissions/${id}/device-link`, {
+      method: 'PATCH',
+      body: input,
+    });
+  },
 };

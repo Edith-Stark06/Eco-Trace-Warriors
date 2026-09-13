@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { deviceAiApi } from '../api/deviceAiApi';
+import { submissionsApi } from '../api/submissionsApi';
 import { syncQueueStorage } from '../storage/syncQueue';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { ApiError } from '../api/ApiError';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { ErrorState } from '../components/ErrorState';
+import { Card } from '../components/common/Card';
+import { theme } from '../theme';
 import type { DeviceRecord } from '../types/device';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RegisterDevice'>;
@@ -17,20 +20,10 @@ type Phase = 'classifying' | 'confirming' | 'done' | 'error';
 /**
  * Runs the captured images through the real AI candidate-registration
  * pipeline (POST /devices/register), shows the resulting classification,
- * then confirms + finalizes the AI-side device record
- * (intelligence/device_ai — a separate system from the backend's
- * Submission model, see docs/engineering/03_ARCHITECTURE.md).
- *
- * This screen intentionally does NOT create a backend Submission:
- * POST /submissions requires the CONSUMER role
- * (backend/src/modules/submission/submission.routes.ts) — a Collector's
- * real authorized actions are accept/start/complete on a Submission a
- * Consumer already created and an Admin/Government already assigned to
- * them (see SubmissionDetailScreen). This screen instead documents the
- * physical device intelligence-side for the pickup already in hand.
+ * then confirms + finalizes the AI-side device record.
  */
 export function RegisterDeviceScreen({ route, navigation }: Props) {
-  const { images } = route.params;
+  const { images, submissionId } = route.params;
   const isOnline = useNetworkStatus();
   const [phase, setPhase] = useState<Phase>('classifying');
   const [device, setDevice] = useState<DeviceRecord | null>(null);
@@ -62,6 +55,19 @@ export function RegisterDeviceScreen({ route, navigation }: Props) {
       await deviceAiApi.confirm(device.device_id);
       if (isOnline) {
         await deviceAiApi.finalize(device.device_id);
+        try {
+          await deviceAiApi.enrich(device.device_id);
+          await deviceAiApi.anchorPassport(device.device_id);
+        } catch {
+          // Best-effort
+        }
+        if (submissionId) {
+          try {
+            await submissionsApi.linkDevice(submissionId, { deviceId: device.device_id });
+          } catch {
+            // Best-effort
+          }
+        }
       } else {
         await syncQueueStorage.enqueue(device.device_id, device.device_type);
       }
@@ -87,37 +93,78 @@ export function RegisterDeviceScreen({ route, navigation }: Props) {
 
   if (phase === 'done') {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Device recorded</Text>
-        <Text style={styles.body}>
-          {isOnline
-            ? 'The device has been confirmed and finalized in the device intelligence record.'
-            : 'You are offline — the device confirmation is queued and will finalize automatically once you reconnect.'}
-        </Text>
-        <Text
-          style={styles.link}
-          accessibilityRole="button"
-          onPress={() => navigation.navigate('Dashboard')}
-        >
-          Back to dashboard
-        </Text>
+      <View style={styles.doneContainer}>
+        <Card variant="elevated" style={styles.doneCard}>
+          <View style={styles.doneIconContainer}>
+            <Text style={styles.doneIcon}>✓</Text>
+          </View>
+          <Text style={styles.title}>Device recorded</Text>
+          <Text style={styles.body}>
+            {isOnline
+              ? 'The device has been confirmed and finalized in the device intelligence record.'
+              : 'You are offline — the device confirmation is queued and will finalize automatically once you reconnect.'}
+          </Text>
+
+          <Pressable
+            style={styles.doneButton}
+            accessibilityRole="button"
+            onPress={() => navigation.navigate('Dashboard')}
+          >
+            <Text style={styles.doneButtonText}>Back to dashboard</Text>
+          </Pressable>
+        </Card>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Device detected</Text>
-      {device ? (
-        <View style={styles.card}>
-          <Row label="Type" value={device.device_type} />
-          <Row label="Confidence" value={`${(device.confidence * 100).toFixed(0)}% (${device.confidence_state})`} />
-          <Row label="Lifecycle state" value={device.registration_state} />
-          <Row label="Model version" value={device.model_version} />
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.header}>
+        <View style={styles.aiTag}>
+          <Text style={styles.aiTagText}>YOLO11 DETECTOR INFERENCE</Text>
         </View>
+        <Text style={styles.title}>Device detected</Text>
+        <Text style={styles.subtitle}>
+          Review the detected electronic hardware classification before committing to identity record.
+        </Text>
+      </View>
+
+      {device ? (
+        <Card variant="elevated" style={styles.resultCard}>
+          <View style={styles.resultTop}>
+            <View style={styles.typeBadge}>
+              <Text style={styles.typeIcon}>📱</Text>
+              <Text style={styles.typeName}>{device.device_type}</Text>
+            </View>
+            <View style={styles.confidencePill}>
+              <Text style={styles.confidenceText}>
+                {(device.confidence * 100).toFixed(0)}% Match
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.detailsTable}>
+            <Row label="Type" value={device.device_type} />
+            <Row
+              label="Confidence"
+              value={`${(device.confidence * 100).toFixed(0)}% (${device.confidence_state})`}
+            />
+            <Row label="Lifecycle state" value={device.registration_state} />
+            <Row label="Model version" value={device.model_version} isMono />
+            {device.device_id ? (
+              <Row label="Device ID" value={device.device_id} isMono />
+            ) : null}
+          </View>
+        </Card>
       ) : (
-        <Text style={styles.body}>No device was detected in the captured images.</Text>
+        <Card variant="outlined" style={styles.resultCard}>
+          <Text style={styles.body}>No device was detected in the captured images.</Text>
+        </Card>
       )}
+
+      {/* Primary Confirm Button with testID */}
       <Text
         style={styles.confirmButton}
         accessibilityRole="button"
@@ -131,32 +178,169 @@ export function RegisterDeviceScreen({ route, navigation }: Props) {
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, isMono }: { label: string; value: string; isMono?: boolean }) {
   return (
     <View style={styles.row}>
       <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowValue}>{value}</Text>
+      <Text style={[styles.rowValue, isMono && styles.rowValueMono]}>{value}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF', padding: 16 },
-  title: { fontSize: 20, fontWeight: '700', color: '#1B5E20', marginBottom: 16 },
-  body: { fontSize: 14, color: '#4B5563', marginBottom: 16 },
-  card: { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, padding: 12, marginBottom: 24 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
-  rowLabel: { color: '#6B7280', fontSize: 13 },
-  rowValue: { color: '#111827', fontSize: 13, fontWeight: '600' },
-  link: { color: '#2E7D32', fontWeight: '600', marginTop: 16 },
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background.app,
+  },
+  content: {
+    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
+  },
+  header: {
+    marginBottom: theme.spacing.md,
+  },
+  aiTag: {
+    alignSelf: 'flex-start',
+    backgroundColor: theme.colors.forest[100],
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 3,
+    borderRadius: theme.radius.sm,
+    marginBottom: 6,
+  },
+  aiTagText: {
+    color: theme.colors.forest[800],
+    fontSize: 10,
+    fontWeight: theme.typography.weight.bold,
+    letterSpacing: 0.8,
+  },
+  title: {
+    fontSize: theme.typography.size.xl,
+    fontWeight: theme.typography.weight.bold,
+    color: theme.colors.slate[900],
+  },
+  subtitle: {
+    fontSize: theme.typography.size.xs,
+    color: theme.colors.slate[500],
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  resultCard: {
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.xl,
+  },
+  resultTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  typeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  typeIcon: {
+    fontSize: 22,
+  },
+  typeName: {
+    fontSize: theme.typography.size.base,
+    fontWeight: theme.typography.weight.bold,
+    color: theme.colors.slate[900],
+    textTransform: 'capitalize',
+  },
+  confidencePill: {
+    backgroundColor: theme.colors.emerald[100],
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 4,
+    borderRadius: theme.radius.full,
+  },
+  confidenceText: {
+    fontSize: 11,
+    fontWeight: theme.typography.weight.bold,
+    color: theme.colors.emerald[800],
+  },
+  divider: {
+    height: 1,
+    backgroundColor: theme.colors.slate[100],
+    marginBottom: theme.spacing.sm,
+  },
+  detailsTable: {
+    gap: 6,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+    alignItems: 'center',
+  },
+  rowLabel: {
+    color: theme.colors.slate[500],
+    fontSize: theme.typography.size.xs,
+  },
+  rowValue: {
+    color: theme.colors.slate[900],
+    fontSize: theme.typography.size.xs,
+    fontWeight: theme.typography.weight.semibold,
+  },
+  rowValueMono: {
+    fontFamily: 'monospace',
+    color: theme.colors.forest[800],
+  },
   confirmButton: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: theme.colors.forest[700],
     color: '#FFFFFF',
     textAlign: 'center',
     paddingVertical: 14,
-    borderRadius: 8,
-    fontWeight: '600',
+    borderRadius: theme.radius.md,
+    fontWeight: theme.typography.weight.bold,
+    fontSize: theme.typography.size.sm,
     overflow: 'hidden',
+    minHeight: 48,
+    ...theme.elevation.xs,
+  },
+  body: {
+    fontSize: theme.typography.size.xs,
+    color: theme.colors.slate[600],
+    lineHeight: 20,
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.lg,
+    textAlign: 'center',
+  },
+  doneContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.background.app,
+    justifyContent: 'center',
+    padding: theme.spacing.xl,
+  },
+  doneCard: {
+    alignItems: 'center',
+    padding: theme.spacing.xl,
+  },
+  doneIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: theme.colors.forest[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  doneIcon: {
+    fontSize: 28,
+    color: theme.colors.forest[700],
+    fontWeight: theme.typography.weight.bold,
+  },
+  doneButton: {
+    backgroundColor: theme.colors.forest[700],
+    borderRadius: theme.radius.md,
+    paddingVertical: 12,
+    paddingHorizontal: theme.spacing.xl,
+    alignItems: 'center',
     minHeight: 44,
+  },
+  doneButtonText: {
+    color: '#FFFFFF',
+    fontSize: theme.typography.size.xs,
+    fontWeight: theme.typography.weight.bold,
   },
 });

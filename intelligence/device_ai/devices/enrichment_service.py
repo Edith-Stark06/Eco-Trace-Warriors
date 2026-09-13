@@ -30,7 +30,7 @@ from .enrichment_models import (
 )
 from .material import MaterialIntelligence, ProfileBasedMaterialIntelligence
 from .models import DeviceEvent, DeviceEventType, DeviceRecord
-from .repository import DeviceRepository
+from .repository import DeviceRepository, resolve_device
 
 
 def _utc_now() -> datetime:
@@ -68,7 +68,8 @@ class DeviceIntelligenceService:
         """Run intelligence enrichment pipeline on a device and persist changes.
 
         Args:
-            device_id: Identifier of the target device record.
+            device_id: Identifier of the target device record — device_id or
+                public EcoID, both resolve to the same record.
             ocr_text: Optional recognized OCR text string for brand discovery.
             ocr_confidence: Optional OCR recognition confidence score.
             manual_condition: Optional condition inspection label.
@@ -79,7 +80,7 @@ class DeviceIntelligenceService:
         Raises:
             DeviceNotFoundError: If ``device_id`` does not exist in repository.
         """
-        record = self._repository.get(device_id)
+        record = resolve_device(self._repository, device_id)
         if record is None:
             raise DeviceNotFoundError(
                 f"Device '{device_id}' not found for intelligence enrichment.",
@@ -112,7 +113,7 @@ class DeviceIntelligenceService:
 
         # 5. Assemble Aggregate Enrichment
         enrichment = DeviceEnrichment(
-            device_id=device_id,
+            device_id=record.device_id,
             brand=brand_assessment,
             condition=condition_assessment,
             materials=material_assessment,
@@ -152,7 +153,7 @@ class DeviceIntelligenceService:
             self._repository.save_enrichment(enrichment)
 
         logger.bind(
-            device_id=device_id,
+            device_id=record.device_id,
             brand=brand_assessment.value,
             condition=condition_assessment.value,
             carbon_score=carbon_assessment.carbon_score,
@@ -167,7 +168,8 @@ class DeviceIntelligenceService:
         """Retrieve existing or compute baseline intelligence for a device record.
 
         Args:
-            device_id: Target device identifier.
+            device_id: Target device identifier — device_id or public EcoID,
+                both resolve to the same record.
 
         Returns:
             A tuple of ``(device_record, device_enrichment)``.
@@ -175,7 +177,7 @@ class DeviceIntelligenceService:
         Raises:
             DeviceNotFoundError: If ``device_id`` is not found.
         """
-        record = self._repository.get(device_id)
+        record = resolve_device(self._repository, device_id)
         if record is None:
             raise DeviceNotFoundError(
                 f"Device '{device_id}' not found.",
@@ -187,4 +189,4 @@ class DeviceIntelligenceService:
             return record, enrichment
 
         # Generate on-the-fly baseline enrichment if not yet enriched
-        return self.enrich_device(device_id)
+        return self.enrich_device(record.device_id)

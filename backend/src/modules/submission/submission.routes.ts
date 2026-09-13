@@ -8,6 +8,8 @@ import {
   assignRecyclerSchema,
   completeRecyclingSchema,
   createSubmissionSchema,
+  deviceIdentifierParamSchema,
+  linkDeviceSchema,
   submissionIdSchema,
   updateSubmissionSchema,
 } from './submission.schemas';
@@ -184,6 +186,51 @@ export function createSubmissionRouter(
     validate({ query: paginationQuerySchema }),
     (req, res, next) => {
       controller.recyclerDashboard(req, res).catch(next);
+    },
+  );
+
+  // Recycler history: the authenticated recycler's own completed (RECYCLED)
+  // jobs, newest first. Scoped to the caller's own id from the verified
+  // access token only — the route takes no recyclerId parameter, so there is
+  // no client-suppliable value that could target another recycler's history.
+  router.get(
+    '/recycler/submissions/history',
+    authenticate,
+    authorize(UserRole.RECYCLER),
+    validate({ query: paginationQuerySchema }),
+    (req, res, next) => {
+      controller.recyclerHistory(req, res).catch(next);
+    },
+  );
+
+  // --- Device Intelligence linkage (P10.1) -----------------------------------
+  // Cross-references a Submission with intelligence/device_ai's Device
+  // record so the Consumer Device Passport can show the real pickup/recycling
+  // lifecycle. See docs/engineering/03_ARCHITECTURE.md (two-system split).
+
+  // Collector (or admin override) records the device_id/eco_id for a
+  // submission they are handling — mirrors the existing register→confirm→
+  // finalize device_ai flow, run against the submission already in hand.
+  router.patch(
+    '/submissions/:id/device-link',
+    authenticate,
+    authorize(UserRole.COLLECTOR, UserRole.ADMIN),
+    validate({ params: submissionIdSchema, body: linkDeviceSchema }),
+    (req, res, next) => {
+      controller.linkDevice(req, res).catch(next);
+    },
+  );
+
+  // Resolves the submission lifecycle for a device_id or eco_id. Two path
+  // segments after '/submissions/' so this never collides with
+  // '/submissions/:id' above. Open to any authenticated role — the service
+  // enforces the same visibility rule as getById().
+  router.get(
+    '/submissions/by-device/:identifier',
+    authenticate,
+    validate({ params: deviceIdentifierParamSchema }),
+    (req, res, next) => {
+      controller.getByDevice(req, res).catch(next);
     },
   );
 

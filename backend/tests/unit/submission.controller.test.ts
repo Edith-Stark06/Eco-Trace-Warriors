@@ -2,7 +2,12 @@
 import type { Request, Response } from 'express';
 import { UserRole } from '@prisma/client';
 import { createSubmissionController } from '@modules/submission';
-import type { PublicSubmission, SubmissionService } from '@modules/submission';
+import type {
+  PublicSubmission,
+  RecyclerHistoryEntry,
+  SubmissionLifecycleView,
+  SubmissionService,
+} from '@modules/submission';
 
 const publicSubmission: PublicSubmission = {
   id: 'sub-1',
@@ -24,8 +29,41 @@ const publicSubmission: PublicSubmission = {
   recyclerNotes: null,
   recoveredWeight: null,
   materialRecovery: null,
+  deviceId: null,
+  ecoId: null,
   createdAt: '2026-07-20T00:00:00.000Z',
   updatedAt: '2026-07-20T00:00:00.000Z',
+};
+
+const lifecycleView: SubmissionLifecycleView = {
+  submissionId: 'sub-1',
+  status: 'RECYCLED',
+  collectorAssigned: true,
+  pickupAccepted: true,
+  pickupStarted: true,
+  collected: true,
+  recyclingStarted: true,
+  recycled: true,
+  pickupStartedAt: '2026-07-21T08:00:00.000Z',
+  recyclingStartedAt: '2026-07-22T09:00:00.000Z',
+  recycledAt: '2026-07-23T09:00:00.000Z',
+  recoveredWeight: 2.3,
+  co2Saved: 62.5,
+  energySaved: 37.5,
+  landfillDiverted: 2.5,
+};
+
+const recyclerHistoryEntry: RecyclerHistoryEntry = {
+  id: 'sub-7',
+  category: 'Laptop',
+  estimatedWeight: 2.5,
+  recoveredWeight: 2.3,
+  recycledAt: '2026-07-23T09:00:00.000Z',
+  materialRecovery: null,
+  recyclerNotes: null,
+  co2Saved: 62.5,
+  energySaved: 37.5,
+  landfillDiverted: 2.5,
 };
 
 function buildService(overrides: Partial<SubmissionService> = {}): jest.Mocked<SubmissionService> {
@@ -44,6 +82,9 @@ function buildService(overrides: Partial<SubmissionService> = {}): jest.Mocked<S
     startRecycling: jest.fn().mockResolvedValue(publicSubmission),
     completeRecycling: jest.fn().mockResolvedValue(publicSubmission),
     getRecyclerDashboard: jest.fn().mockResolvedValue([publicSubmission]),
+    getRecyclerHistory: jest.fn().mockResolvedValue([recyclerHistoryEntry]),
+    linkDevice: jest.fn().mockResolvedValue({ ...publicSubmission, deviceId: 'device-abc' }),
+    getByDevice: jest.fn().mockResolvedValue(lifecycleView),
     ...overrides,
   } as jest.Mocked<SubmissionService>;
 }
@@ -258,5 +299,48 @@ describe('createSubmissionController', () => {
     });
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ success: true, data: [publicSubmission] });
+  });
+
+  it('recyclerHistory → 200 with an array payload and forwards pagination', async () => {
+    const service = buildService();
+    const res = buildRes();
+    const query = { limit: 20, offset: 0 } as unknown as Request['query'];
+
+    await createSubmissionController(service).recyclerHistory(buildReq({ query }), res);
+
+    expect(service.getRecyclerHistory).toHaveBeenCalledWith(expect.anything(), {
+      limit: 20,
+      offset: 0,
+    });
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ success: true, data: [recyclerHistoryEntry] });
+  });
+
+  it('linkDevice → 200 and forwards id + body to the service', async () => {
+    const service = buildService();
+    const res = buildRes();
+    const body = { deviceId: 'device-abc' };
+
+    await createSubmissionController(service).linkDevice(
+      buildReq({ params: { id: 'sub-1' }, body }),
+      res,
+    );
+
+    expect(service.linkDevice).toHaveBeenCalledWith(expect.anything(), 'sub-1', body);
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it('getByDevice → 200 with the lifecycle view payload', async () => {
+    const service = buildService();
+    const res = buildRes();
+
+    await createSubmissionController(service).getByDevice(
+      buildReq({ params: { identifier: 'device-abc' } }),
+      res,
+    );
+
+    expect(service.getByDevice).toHaveBeenCalledWith(expect.anything(), 'device-abc');
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ success: true, data: lifecycleView });
   });
 });

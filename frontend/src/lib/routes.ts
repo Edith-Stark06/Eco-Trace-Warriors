@@ -18,6 +18,7 @@ export const ROUTES = {
   collectorAssignmentDetails: '/collector/submissions/:id',
   recycler: '/recycler',
   recyclerAssignmentDetails: '/recycler/submissions/:id',
+  recyclerHistory: '/recycler/history',
   government: '/government',
   settings: '/settings',
   notFound: '*',

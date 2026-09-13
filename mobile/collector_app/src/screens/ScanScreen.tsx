@@ -4,14 +4,13 @@ import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'ex
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { ErrorState } from '../components/ErrorState';
+import { theme } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Scan'>;
 
 /**
  * QR/barcode scanner for an existing device identifier — uses
- * expo-camera's built-in barcode scanning (CameraView), matching
- * barcode_scanner_service.dart's capability without a separate
- * expo-barcode-scanner dependency (merged into expo-camera since SDK 51).
+ * expo-camera's built-in barcode scanning (CameraView).
  */
 export function ScanScreen({ navigation }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
@@ -56,12 +55,24 @@ export function ScanScreen({ navigation }: Props) {
         onBarcodeScanned={handled ? undefined : handleScan}
       />
       <View style={styles.overlay}>
-        <View style={styles.frame} accessibilityLabel="Scan frame" />
-        <Text style={styles.hint}>Align the device QR/barcode within the frame</Text>
+        <View style={styles.frame} accessibilityLabel="Scan frame">
+          <View style={[styles.corner, styles.cornerTL]} />
+          <View style={[styles.corner, styles.cornerTR]} />
+          <View style={[styles.corner, styles.cornerBL]} />
+          <View style={[styles.corner, styles.cornerBR]} />
+        </View>
+
+        <View style={styles.instructionBadge}>
+          <Text style={styles.instructionIcon}>🔍</Text>
+          <Text style={styles.hint}>Align the device QR/barcode within the frame</Text>
+        </View>
+
         {lastError ? (
-          <Text style={styles.error} accessibilityRole="alert">
-            {lastError}
-          </Text>
+          <View style={styles.errorBox}>
+            <Text style={styles.error} accessibilityRole="alert">
+              {lastError}
+            </Text>
+          </View>
         ) : null}
       </View>
     </View>
@@ -80,7 +91,79 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  frame: { width: 240, height: 240, borderWidth: 3, borderColor: '#4ADE80', borderRadius: 12 },
-  hint: { color: '#FFFFFF', marginTop: 16, fontSize: 14 },
-  error: { color: '#FCA5A5', marginTop: 8, fontSize: 13 },
+  frame: {
+    width: 240,
+    height: 240,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: theme.radius.lg,
+    position: 'relative',
+  },
+  corner: {
+    position: 'absolute',
+    width: 24,
+    height: 24,
+    borderColor: theme.colors.forest[400],
+  },
+  cornerTL: {
+    top: -2,
+    left: -2,
+    borderTopWidth: 4,
+    borderLeftWidth: 4,
+    borderTopLeftRadius: theme.radius.md,
+  },
+  cornerTR: {
+    top: -2,
+    right: -2,
+    borderTopWidth: 4,
+    borderRightWidth: 4,
+    borderTopRightRadius: theme.radius.md,
+  },
+  cornerBL: {
+    bottom: -2,
+    left: -2,
+    borderBottomWidth: 4,
+    borderLeftWidth: 4,
+    borderBottomLeftRadius: theme.radius.md,
+  },
+  cornerBR: {
+    bottom: -2,
+    right: -2,
+    borderBottomWidth: 4,
+    borderRightWidth: 4,
+    borderBottomRightRadius: theme.radius.md,
+  },
+  instructionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.radius.full,
+    marginTop: theme.spacing.xl,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  instructionIcon: {
+    fontSize: 14,
+  },
+  hint: {
+    color: '#FFFFFF',
+    marginTop: 0,
+    fontSize: theme.typography.size.xs,
+    fontWeight: theme.typography.weight.medium,
+  },
+  errorBox: {
+    backgroundColor: 'rgba(153, 27, 27, 0.9)',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.radius.sm,
+    marginTop: theme.spacing.md,
+  },
+  error: {
+    color: '#FFFFFF',
+    fontSize: theme.typography.size.xs,
+    fontWeight: theme.typography.weight.medium,
+  },
 });

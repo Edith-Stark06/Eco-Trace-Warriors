@@ -122,3 +122,23 @@ export interface CompleteRecyclingResult {
   submission: Submission;
   reward: RewardSummary;
 }
+
+/**
+ * One completed job in the authenticated recycler's own history — GET
+ * /recycler/submissions/history (backend `RecyclerHistoryEntry`). Trimmed
+ * relative to `Submission` (no owner/collector ids, address, or imagery) and
+ * additive (carries the real, already-computed co2Saved/energySaved/
+ * landfillDiverted the reward module stored at completion time).
+ */
+export interface RecyclerHistoryEntry {
+  id: string;
+  category: string;
+  estimatedWeight: number;
+  recoveredWeight: number | null;
+  recycledAt: string | null;
+  materialRecovery: unknown | null;
+  recyclerNotes: string | null;
+  co2Saved: number | null;
+  energySaved: number | null;
+  landfillDiverted: number | null;
+}

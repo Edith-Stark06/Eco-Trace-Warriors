@@ -91,6 +91,7 @@ class PostgresDeviceRepository:
             if model is None:
                 model = DeviceModel(
                     device_id=device.device_id,
+                    eco_id=device.metadata.get("eco_id"),
                     capture_id=device.capture_id,
                     class_id=device.class_id,
                     device_type=device.device_type,
@@ -109,6 +110,7 @@ class PostgresDeviceRepository:
                 )
                 session.add(model)
             else:
+                model.eco_id = device.metadata.get("eco_id")
                 model.capture_id = device.capture_id
                 model.class_id = device.class_id
                 model.device_type = device.device_type
@@ -128,6 +130,15 @@ class PostgresDeviceRepository:
         """Retrieve a DeviceRecord by ID."""
         with session_scope(self._session_factory) as session:
             model = session.get(DeviceModel, device_id)
+            if model is None:
+                return None
+            return _model_to_domain(model)
+
+    def get_by_eco_id(self, eco_id: str) -> DeviceRecord | None:
+        """Retrieve a DeviceRecord by its public EcoID via the indexed ``eco_id`` column."""
+        with session_scope(self._session_factory) as session:
+            stmt = select(DeviceModel).where(DeviceModel.eco_id == eco_id)
+            model = session.scalars(stmt).first()
             if model is None:
                 return None
             return _model_to_domain(model)
@@ -274,6 +285,7 @@ class PostgresDeviceRepository:
             if model is None:
                 model = DeviceModel(
                     device_id=device.device_id,
+                    eco_id=device.metadata.get("eco_id"),
                     capture_id=device.capture_id,
                     class_id=device.class_id,
                     device_type=device.device_type,
@@ -292,6 +304,7 @@ class PostgresDeviceRepository:
                 )
                 session.add(model)
             else:
+                model.eco_id = device.metadata.get("eco_id")
                 model.capture_id = device.capture_id
                 model.class_id = device.class_id
                 model.device_type = device.device_type

@@ -308,6 +308,32 @@ describe('deviceAiApi lifecycle methods', () => {
     );
   });
 
+  it('enrich: sends POST /devices/:id/enrich', async () => {
+    const mockRes = { success: true, device: { device_id: 'dev-123' }, intelligence: {} };
+    const fetchMock = jest.fn().mockResolvedValue(jsonResponse(200, mockRes));
+    globalThis.fetch = fetchMock;
+
+    const result = await deviceAiApi.enrich('dev-123');
+    expect(result).toEqual(mockRes);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/devices/dev-123/enrich'),
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  it('anchorPassport: sends POST /devices/:id/passport/anchor', async () => {
+    const mockRes = { success: true, anchor: { anchor_id: 'anc-1' }, is_new: true };
+    const fetchMock = jest.fn().mockResolvedValue(jsonResponse(201, mockRes));
+    globalThis.fetch = fetchMock;
+
+    const result = await deviceAiApi.anchorPassport('dev-123');
+    expect(result).toEqual(mockRes);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/devices/dev-123/passport/anchor'),
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
   it('getPassport: sends GET /devices/:id/passport', async () => {
     const mockRes = { device_id: 'dev-123', passport: {} };
     const fetchMock = jest.fn().mockResolvedValue(jsonResponse(200, mockRes));

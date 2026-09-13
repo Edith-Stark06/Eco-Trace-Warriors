@@ -45,6 +45,12 @@ Environment variables
 ``MAX_IMAGES``      Maximum number of images accepted per request.
 ``MAX_FILE_SIZE``   Maximum size, in bytes, of a single uploaded image.
 ``LOG_LEVEL``       Log verbosity (``DEBUG``/``INFO``/``WARNING``/...).
+``FORECAST_MIN_HISTORY_DAYS`` Minimum daily history (days) required before forecasting.
+``FORECAST_DEFAULT_LOOKBACK`` Default LSTM lookback window (days).
+``FORECAST_DEFAULT_HORIZON`` Default forecast horizon (days).
+``FORECAST_DEFAULT_EPOCHS`` Default forecasting LSTM training epochs.
+``FORECAST_DEFAULT_BATCH_SIZE`` Default forecasting LSTM mini-batch size.
+``FORECAST_LSTM_UNITS`` Hidden units in the forecasting LSTM layer.
 """
 
 from __future__ import annotations
@@ -53,7 +59,13 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, ValidationInfo, computed_field, field_validator, model_validator
+from pydantic import (
+    Field,
+    ValidationInfo,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Media types accepted by the prediction endpoint. Declared here (single
@@ -792,6 +804,53 @@ class Settings(BaseSettings):
             "on every route except the public health/meta endpoints. Unset by "
             "default (open, unchanged pre-P8.7 behavior); required in production."
         ),
+    )
+
+    # --- E-waste demand forecasting (P10.1) --------------------------------
+    # Daily-granularity LSTM time-series forecasting over the backend's real
+    # Submission.recycledAt/recoveredWeight history (docs/engineering/05_API.md
+    # Analytics section). torch is an optional dependency here exactly as for
+    # the detector/CLIP encoder (requirements-detector.txt) — forecasting/model.py
+    # degrades to MODEL_BACKEND_UNAVAILABLE, never a crash, when it is absent.
+    forecast_min_history_days: int = Field(
+        default=30,
+        ge=1,
+        description=(
+            "Minimum number of zero-filled calendar days of daily recycling-"
+            "weight history required before a forecast is attempted. Below "
+            "this, the service reports INSUFFICIENT_HISTORICAL_DATA rather "
+            "than training on too little data."
+        ),
+    )
+    forecast_default_lookback: int = Field(
+        default=14,
+        ge=3,
+        le=180,
+        description="Default LSTM lookback window (prior days fed into the model).",
+    )
+    forecast_default_horizon: int = Field(
+        default=30,
+        ge=1,
+        le=90,
+        description="Default forecast horizon in days when the caller omits one.",
+    )
+    forecast_default_epochs: int = Field(
+        default=60,
+        ge=1,
+        le=1000,
+        description="Default training epochs for the forecasting LSTM.",
+    )
+    forecast_default_batch_size: int = Field(
+        default=8,
+        ge=1,
+        le=256,
+        description="Default mini-batch size for forecasting LSTM training.",
+    )
+    forecast_lstm_units: int = Field(
+        default=32,
+        ge=1,
+        le=512,
+        description="Hidden units in the forecasting LSTM layer.",
     )
 
     @field_validator("min_images")

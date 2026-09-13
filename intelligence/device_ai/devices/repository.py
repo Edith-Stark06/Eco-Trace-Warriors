@@ -31,6 +31,10 @@ class DeviceRepository(Protocol):
         """Return the record for ``device_id``, or ``None`` if not found."""
         ...
 
+    def get_by_eco_id(self, eco_id: str) -> DeviceRecord | None:
+        """Return the record whose public EcoID is ``eco_id``, or ``None`` if not found."""
+        ...
+
     def exists(self, device_id: str) -> bool:
         """Return whether a record exists for ``device_id``."""
         ...
@@ -68,6 +72,28 @@ class DeviceRepository(Protocol):
         ...
 
 
+def resolve_device(repository: DeviceRepository, identifier: str) -> DeviceRecord | None:
+    """Resolve ``identifier`` to a device record by canonical device_id, falling
+    back to the public EcoID when no device_id matches.
+
+    Shared by every read path that accepts a scanned/typed identifier (device
+    registration lookups, intelligence enrichment, passport/trust anchoring)
+    so device_id and EcoID resolution never drifts between them.
+
+    Args:
+        repository: The active device repository.
+        identifier: A device_id (e.g. ``DEV-2026-XXXXXXXX-01``) or EcoID
+            (e.g. ``ET-2026-XXXXXXXX``).
+
+    Returns:
+        The matching :class:`DeviceRecord`, or ``None`` if neither lookup hits.
+    """
+    record = repository.get(identifier)
+    if record is not None:
+        return record
+    return repository.get_by_eco_id(identifier)
+
+
 class InMemoryDeviceRepository:
     """Non-durable, thread-safe in-memory repository backed by dictionaries."""
 
@@ -82,6 +108,13 @@ class InMemoryDeviceRepository:
     def get(self, device_id: str) -> DeviceRecord | None:
         """Retrieve record by device ID."""
         return self._records.get(device_id)
+
+    def get_by_eco_id(self, eco_id: str) -> DeviceRecord | None:
+        """Retrieve record by its public EcoID (scans metadata; reference backend only)."""
+        for record in self._records.values():
+            if record.metadata.get("eco_id") == eco_id:
+                return record
+        return None
 
     def exists(self, device_id: str) -> bool:
         """Check presence of device ID."""
@@ -169,6 +202,19 @@ class JsonFileDeviceRepository:
             return DeviceRecord.from_dict(data)
         except Exception:
             return None
+
+    def get_by_eco_id(self, eco_id: str) -> DeviceRecord | None:
+        """Scan the store directory for the record with a matching public EcoID (reference backend only)."""
+        if not self._store_dir.is_dir():
+            return None
+        for path in self._store_dir.glob("*.json"):
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+                if data.get("metadata", {}).get("eco_id") == eco_id:
+                    return DeviceRecord.from_dict(data)
+            except Exception:
+                continue
+        return None
 
     def exists(self, device_id: str) -> bool:
         """Check if JSON record exists."""

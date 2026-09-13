@@ -52,6 +52,34 @@ describe('useSyncManager', () => {
     expect(result.current.conflictCount).toBe(0);
   });
 
+  it('triggers enrichment and local anchoring after a successful finalize', async () => {
+    syncQueueMock.getAll.mockResolvedValue([item({ deviceId: 'dev-001' })]);
+    deviceAiApiMock.finalize.mockResolvedValue({ success: true, device: {} as never, previous_state: 'CONFIRMED', current_state: 'REGISTERED' });
+    deviceAiApiMock.enrich.mockResolvedValue({ success: true, device: {} as never, intelligence: {} as never, request_id: null });
+    deviceAiApiMock.anchorPassport.mockResolvedValue({ success: true, anchor: {} as never, is_new: true, request_id: null });
+
+    await renderHook(() => useSyncManager());
+
+    await waitFor(() => {
+      expect(deviceAiApiMock.enrich).toHaveBeenCalledWith('dev-001');
+    });
+    expect(deviceAiApiMock.anchorPassport).toHaveBeenCalledWith('dev-001');
+    expect(syncQueueMock.remove).toHaveBeenCalledWith('q1');
+  });
+
+  it('still removes the item from the queue when enrichment/anchoring fails after a successful finalize (best-effort)', async () => {
+    syncQueueMock.getAll.mockResolvedValue([item({ deviceId: 'dev-001' })]);
+    deviceAiApiMock.finalize.mockResolvedValue({ success: true, device: {} as never, previous_state: 'CONFIRMED', current_state: 'REGISTERED' });
+    deviceAiApiMock.enrich.mockRejectedValue(new ApiError('enrichment unavailable', { code: 'DEVICE_AI_ERROR', status: 500 }));
+
+    await renderHook(() => useSyncManager());
+
+    await waitFor(() => {
+      expect(syncQueueMock.remove).toHaveBeenCalledWith('q1');
+    });
+    expect(syncQueueMock.update).not.toHaveBeenCalledWith('q1', expect.objectContaining({ status: 'failed' }));
+  });
+
   it('keeps a validation failure as pending with a backoff window and increments attempts (bounded retry)', async () => {
     syncQueueMock.getAll.mockResolvedValue([item({ deviceId: 'dev-002', attempts: 2 })]);
     deviceAiApiMock.finalize.mockRejectedValue(

@@ -95,7 +95,9 @@ Phases 0–2 are complete (repository, this handbook, and the backend foundation
 
 - FastAPI service scaffold per `08_AI.md`
 - Device classification (YOLOv8) + condition assessment
-- Demand forecasting (Prophet); rule-based fraud scoring
+- Demand forecasting: shipped in P10.1 as a small LSTM (PyTorch), not the
+  originally-planned Prophet — see `08_AI.md`/`05_API.md`; rule-based fraud
+  scoring remains open
 - Backend AI client with graceful degradation
 
 ## Phase 9 — Mobile Applications (React Native + Expo)
@@ -109,7 +111,9 @@ Phases 0–2 are complete (repository, this handbook, and the backend foundation
 ## Phase 10 — Dashboard
 
 - React + Tailwind scaffold per `07_FRONTEND.md`
-- Admin management views; government analytics (heatmaps, statistics, forecast)
+- Admin management views; government analytics (overview, regional
+  breakdown, environmental impact, real LSTM demand forecast — P10.1); no
+  heatmap/chart visualization is bundled (table-based UI throughout)
 
 ## Phase 11 — Deployment
 

@@ -15,7 +15,7 @@ services:
       PORT: 3000
       API_PREFIX: /api/v1
       LOG_LEVEL: debug
-      DATABASE_URL: postgresql://ecotrace:ecotrace@postgres:5432/ecotrace?schema=public
+      DATABASE_URL: postgresql://ecotrace:ecotrace123@postgres:5432/ecotrace?schema=public
     ports:
       - '3000:3000'
     depends_on:
@@ -27,7 +27,7 @@ services:
     container_name: ecotrace-postgres
     environment:
       POSTGRES_USER: ecotrace
-      POSTGRES_PASSWORD: ecotrace
+      POSTGRES_PASSWORD: ecotrace123
       POSTGRES_DB: ecotrace
     ports:
       - '5432:5432'
