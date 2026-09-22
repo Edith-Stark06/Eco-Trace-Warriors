@@ -1,0 +1,65 @@
+{
+  "all_sha256_reconciled": true,
+  "all_unchanged": true,
+  "artifacts": {
+    "candidate_inventory": [
+      "candidate_inventory.json",
+      "candidate_inventory.md"
+    ],
+    "integrity_verification": [
+      "integrity_verification.json"
+    ],
+    "inventory": [
+      "inventory.json",
+      "inventory.md"
+    ],
+    "preqa_report": [
+      "preqa_report.json",
+      "preqa_report.md"
+    ],
+    "second_review_sample": [
+      "second_review_sample.json",
+      "second_review_sample.md"
+    ],
+    "signoff_template": [
+      "signoff_template.json"
+    ],
+    "visual_qa_per_class": [
+      "smartphone/qa_data.json",
+      "tablet/qa_data.json",
+      "monitor/qa_data.json",
+      "printer/qa_data.json"
+    ]
+  },
+  "attestations": [
+    "Dataset v1.0 is NOT RELEASED.",
+    "No human QA decision has been fabricated or inferred.",
+    "Every reviewable item is PENDING_REVIEW.",
+    "Zero images have been promoted to a Dataset v1.0 candidate."
+  ],
+  "class_count": 4,
+  "classes": [
+    "smartphone",
+    "tablet",
+    "monitor",
+    "printer"
+  ],
+  "dataset_v1_released": false,
+  "generated_at": "2026-08-10T00:00:00+00:00",
+  "is_dataset_v1": false,
+  "is_released": false,
+  "no_human_decision_fabricated": true,
+  "package": "multiclass-human-qa",
+  "package_version": "p4-3-4-multiclass-human-qa-v1",
+  "pending_review_count": 301,
+  "promoted_count": 0,
+  "review_root": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1",
+  "second_review_sample_size": 60,
+  "source": "Open Images V7",
+  "source_unchanged": true,
+  "sprint": "P4.3.4",
+  "staging_root": "dataset_acquisition/staging",
+  "staging_unchanged": true,
+  "taxonomy_version": "1.0.0",
+  "total_reviewable_items": 301
+}

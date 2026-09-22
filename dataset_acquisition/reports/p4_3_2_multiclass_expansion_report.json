@@ -1,0 +1,187 @@
+{
+  "acquisition_status": [
+    {
+      "class_id": 2,
+      "converted": 100,
+      "downloaded": 100,
+      "ecotrace_class": "tablet",
+      "failure_reason": "NOT_MEASURED",
+      "mapping_status": "MAPPED",
+      "quality_measured": true,
+      "requested": 100,
+      "source_class": "Tablet computer",
+      "staged_data": true,
+      "state": "QA_PENDING",
+      "status_report": "p4_3_2_real_tablet.json",
+      "valid_images": 100
+    },
+    {
+      "class_id": 5,
+      "converted": 99,
+      "downloaded": 99,
+      "ecotrace_class": "monitor",
+      "failure_reason": "NOT_MEASURED",
+      "mapping_status": "MAPPED",
+      "quality_measured": true,
+      "requested": 100,
+      "source_class": "Computer monitor",
+      "staged_data": true,
+      "state": "QA_PENDING",
+      "status_report": "p4_3_2_real_monitor.json",
+      "valid_images": 99
+    },
+    {
+      "class_id": 8,
+      "converted": 0,
+      "downloaded": 0,
+      "ecotrace_class": "printer",
+      "failure_reason": "numpy._core._exceptions._ArrayMemoryError: Unable to allocate 111. MiB for an array with shape (14610229,) and data type object",
+      "mapping_status": "MAPPED",
+      "quality_measured": false,
+      "requested": 100,
+      "source_class": "Printer",
+      "staged_data": false,
+      "state": "DOWNLOAD_FAILED",
+      "status_report": "p4_3_2_real_printer.json",
+      "valid_images": 0
+    }
+  ],
+  "batch_root": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/staging/openimages_multiclass_v1",
+  "classes": [
+    {
+      "annotation_issue_counts": {},
+      "class_id": 5,
+      "class_id_counts": {
+        "5": 161
+      },
+      "counts": {
+        "conversion_error_count": 0,
+        "images_converted": 99,
+        "images_failed": 0,
+        "images_on_disk": 99,
+        "labels_on_disk": 99,
+        "paired": 99,
+        "provenance_records": 99,
+        "provenance_sha_verified": 99,
+        "source_images_found": 99,
+        "source_labels_found": 99,
+        "total_boxes": 161,
+        "total_converted_objects": 161,
+        "total_labels": 99,
+        "valid_annotations": 99,
+        "valid_images": 99,
+        "within_class_exact_duplicates": 0,
+        "within_class_near_duplicates": 1
+      },
+      "ecotrace_class": "monitor",
+      "image_issue_counts": {},
+      "images_without_labels": [],
+      "labels_without_images": [],
+      "provenance_missing_for": [],
+      "provenance_sha_mismatched": [],
+      "qa_status": "QA_PENDING",
+      "quality_flag_counts": {
+        "blurry": 12,
+        "dark": 2
+      },
+      "source_class": "Computer monitor",
+      "staging_dir": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/staging/openimages_multiclass_v1/openimages_monitor_v1"
+    },
+    {
+      "annotation_issue_counts": {},
+      "class_id": 2,
+      "class_id_counts": {
+        "2": 124
+      },
+      "counts": {
+        "conversion_error_count": 0,
+        "images_converted": 100,
+        "images_failed": 0,
+        "images_on_disk": 100,
+        "labels_on_disk": 100,
+        "paired": 100,
+        "provenance_records": 100,
+        "provenance_sha_verified": 100,
+        "source_images_found": 100,
+        "source_labels_found": 100,
+        "total_boxes": 124,
+        "total_converted_objects": 124,
+        "total_labels": 100,
+        "valid_annotations": 100,
+        "valid_images": 100,
+        "within_class_exact_duplicates": 0,
+        "within_class_near_duplicates": 2
+      },
+      "ecotrace_class": "tablet",
+      "image_issue_counts": {},
+      "images_without_labels": [],
+      "labels_without_images": [],
+      "provenance_missing_for": [],
+      "provenance_sha_mismatched": [],
+      "qa_status": "QA_PENDING",
+      "quality_flag_counts": {
+        "blurry": 23,
+        "dark": 1
+      },
+      "source_class": "Tablet computer",
+      "staging_dir": "D:/Documents/Projects/Eco-Trace-Warriors/dataset_acquisition/staging/openimages_multiclass_v1/openimages_tablet_v1"
+    }
+  ],
+  "created_at": "2026-08-10T00:00:00+00:00",
+  "cross_class_duplicates": {
+    "cross_class_pair_count": 0,
+    "pairs": [],
+    "total_pairs_in_batch": 3
+  },
+  "is_dataset_v1": false,
+  "is_released": false,
+  "pilot_protection": {
+    "openimages_laptop_canonical_v1": {
+      "baseline": {
+        "exists": true,
+        "file_count": 47,
+        "total_bytes": 6110063
+      },
+      "exists": true,
+      "file_count": 47,
+      "newest_mtime": 1786226672.759,
+      "total_bytes": 6110063,
+      "unchanged": true
+    },
+    "openimages_laptop_v1": {
+      "baseline": {
+        "exists": true,
+        "file_count": 72,
+        "total_bytes": 10525045
+      },
+      "exists": true,
+      "file_count": 72,
+      "newest_mtime": 1786215228.854,
+      "total_bytes": 10525045,
+      "unchanged": true
+    },
+    "openimages_smartphone_v1": {
+      "baseline": {
+        "exists": true,
+        "file_count": 15,
+        "total_bytes": 1003504
+      },
+      "exists": true,
+      "file_count": 15,
+      "newest_mtime": 1786303320.771,
+      "total_bytes": 1003504,
+      "unchanged": true
+    }
+  },
+  "qa_boundary": "QA_PENDING",
+  "sprint": "P4.3.2",
+  "taxonomy_version": "1.0.0",
+  "thresholds": {
+    "blur_threshold": 100.0,
+    "brightness_bright_threshold": 220.0,
+    "brightness_dark_threshold": 40.0,
+    "duplicate_hamming_threshold": 5,
+    "max_image_dimension": 12000,
+    "min_image_dimension": 32
+  }
+}

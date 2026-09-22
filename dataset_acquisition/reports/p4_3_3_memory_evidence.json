@@ -1,0 +1,27 @@
+{
+  "note": "Measured memory evidence for the P4.3.3 low-memory printer scan. All figures are real, captured on this host with tracemalloc (Python-level peak) and the Windows GetProcessMemoryInfo PeakWorkingSetSize (whole-process high-water mark) around a real scan of the full 1.19 GB Open Images train bbox CSV at --limit 20. No figure is invented. The P4.3.2 OOM (numpy _ArrayMemoryError on the ~14.6M-row full read) did not occur.",
+  "sprint": "P4.3.3",
+  "measurement": {
+    "csv_path": "dataset_acquisition/OIDv4_ToolKit/OID/csv_folder/train-annotations-bbox.csv",
+    "csv_bytes": 1194033454,
+    "csv_gib": 1.11,
+    "csv_rows_total_approx": 14610229,
+    "scan_limit": 20,
+    "class": "Printer",
+    "class_mid": "/m/01m4t",
+    "selected_images": 20,
+    "matched_rows": 31,
+    "rows_read": 1000000,
+    "chunks_read": 2,
+    "chunk_size": 500000,
+    "scan_seconds_approx": 1.1,
+    "py_peak_tracemalloc_bytes": 50673852,
+    "py_peak_tracemalloc_mib": 48.3,
+    "proc_peak_working_set_bytes": 184156160,
+    "proc_peak_working_set_mib": 175.6,
+    "proc_peak_over_csv_ratio": 0.154,
+    "method": "tracemalloc.get_traced_memory() for Python peak; ctypes psapi.GetProcessMemoryInfo PeakWorkingSetSize for process peak (includes interpreter + pandas + numpy).",
+    "oom_reproduced": false,
+    "interpretation": "The scan streams only the leading chunks (early-exit after the bounded distinct-ImageID limit is reached) and narrows to 11 of 13 columns with float32/int8/string dtypes, so the resident set stays a small fraction of the 1.11 GiB file instead of ballooning past host memory as the vendored full pd.read_csv did in P4.3.2."
+  }
+}

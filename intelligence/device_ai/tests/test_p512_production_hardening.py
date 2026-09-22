@@ -509,6 +509,30 @@ def test_alembic_chain_001_002_003_complete_cycle(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _protected_assets_root_available() -> bool:
+    """True when the external ``dataset_acquisition`` root actually exists.
+
+    CI checks out only the Git repository — the ~29GB protected training/
+    evaluation tree lives outside Git entirely (on ``ECOTRACE_DATASET_ROOT``,
+    or the in-repo fallback path) and is never present in a clean checkout by
+    design (see ``acquisition/config.py::dataset_acquisition_root``). This
+    distinguishes that expected absence from a genuine missing/corrupted
+    asset in an environment where the external data actually is mounted, so
+    the hash audit below still runs — and still enforces — everywhere the
+    protected assets exist.
+    """
+    return dataset_acquisition_root().exists()
+
+
+@pytest.mark.skipif(
+    not _protected_assets_root_available(),
+    reason=(
+        "dataset_acquisition root is not present in this environment "
+        "(expected in CI: the protected ML checkpoints/dataset manifests "
+        "live on the external ECOTRACE_DATASET_ROOT drive and are "
+        "intentionally excluded from Git — see acquisition/config.py)"
+    ),
+)
 def test_protected_assets_sha256_verification() -> None:
     """Audit that all 6 protected ML checkpoints and dataset manifests match exact SHA-256 digests."""
     targets = {

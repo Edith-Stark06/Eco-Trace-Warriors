@@ -1,0 +1,47 @@
+{
+  "classes": [
+    {
+      "class_id": 2,
+      "conversion_errors": 0,
+      "converted": 0,
+      "downloaded": 0,
+      "duplicates": 0,
+      "ecotrace_class": "tablet",
+      "mapping_status": "MAPPED",
+      "messages": [
+        "would download up to 100 'Tablet computer' image(s) and stage to 'dataset_acquisition/staging/openimages_multiclass_v1/openimages_tablet_v1'"
+      ],
+      "open_images_class": "Tablet computer",
+      "provenance_note": "images=per-image-Flickr(VARY-verify); annotations=CC-BY-4.0(Google)",
+      "qa_accepted": 0,
+      "qa_pending": 0,
+      "qa_rejected": 0,
+      "requested": 100,
+      "staging_dir": "",
+      "state": "DRY_RUN",
+      "valid_annotations": 0,
+      "valid_images": 0
+    }
+  ],
+  "conversion_version": "openimages-multiclass-v1",
+  "created_at": "2026-08-10T00:00:00+00:00",
+  "dry_run": true,
+  "is_dataset_v1": false,
+  "is_released": false,
+  "limit_per_class": 100,
+  "run_label": "p4_3_2",
+  "source": "Open Images V7",
+  "summary": {
+    "by_state": {
+      "DRY_RUN": 1
+    },
+    "classes_selected": 1,
+    "total_converted": 0,
+    "total_downloaded": 0,
+    "total_qa_accepted": 0,
+    "total_qa_pending": 0,
+    "total_requested": 100,
+    "total_valid_images": 0
+  },
+  "taxonomy_version": "1.0.0"
+}

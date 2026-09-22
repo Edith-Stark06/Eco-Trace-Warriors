@@ -1,0 +1,66 @@
+{
+  "candidate_root": "dataset_acquisition/candidate/p4_3_5_dataset_v1_candidate/images",
+  "detector": "device_ai.dataset.duplicates.DuplicateDetector",
+  "expansion_root": "dataset_acquisition/staging/p4_3_6_expansion_v1",
+  "expansion_samples_to_drop": [
+    "expansion/laptop/f663d03a10e841bf.jpg",
+    "expansion/television/34932ec3bf06d3ef.jpg"
+  ],
+  "flagged_pair_hash_detail": [
+    {
+      "ahash": 1,
+      "dhash": 40,
+      "duplicate_dropped": "expansion/laptop/f663d03a10e841bf.jpg",
+      "min": 1,
+      "phash": 32,
+      "representative_kept": "candidate/tablet/d4285391c9dbfbe8.jpg",
+      "sha256_equal": false
+    },
+    {
+      "ahash": 5,
+      "dhash": 22,
+      "duplicate_dropped": "expansion/television/34932ec3bf06d3ef.jpg",
+      "min": 5,
+      "phash": 22,
+      "representative_kept": "candidate/tablet/293b420b3319821c.jpg",
+      "sha256_equal": false
+    }
+  ],
+  "generated_note": "Records analysed via frozen MetadataGenerator; combined scan ordered candidate-first so only expansion samples can be flagged.",
+  "hamming_threshold": 5,
+  "premerge_confirmation": {
+    "combined_total": 371,
+    "num_duplicates_after_drop": 0
+  },
+  "removal_policy": "Only expansion samples flagged in scenario B are dropped before merge; source staging is never modified; candidate-252 is never touched.",
+  "scenario_a_expansion_vs_self": {
+    "duplicate_paths": [],
+    "num_duplicates": 0,
+    "pairs": [],
+    "total_images": 121
+  },
+  "scenario_b_combined_candidate_first": {
+    "flagged_candidate_paths": [],
+    "flagged_expansion_paths": [
+      "expansion/laptop/f663d03a10e841bf.jpg",
+      "expansion/television/34932ec3bf06d3ef.jpg"
+    ],
+    "num_duplicates": 2,
+    "pairs": [
+      {
+        "distance": 1,
+        "duplicate": "expansion/laptop/f663d03a10e841bf.jpg",
+        "exact": false,
+        "source": "candidate/tablet/d4285391c9dbfbe8.jpg"
+      },
+      {
+        "distance": 5,
+        "duplicate": "expansion/television/34932ec3bf06d3ef.jpg",
+        "exact": false,
+        "source": "candidate/tablet/293b420b3319821c.jpg"
+      }
+    ],
+    "total_images": 373
+  },
+  "sprint": "P4.3.6"
+}

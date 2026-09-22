@@ -1,0 +1,106 @@
+{
+  "blur_threshold": 100.0,
+  "blurry_count": 1,
+  "contact_sheets": [
+    "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/smartphone/contact_sheet_p01.jpg"
+  ],
+  "ecotrace_class": "smartphone",
+  "ecotrace_class_id": 1,
+  "page_count": 1,
+  "qa_status": "QA_PENDING",
+  "tiles": [
+    {
+      "blur": 127.18,
+      "box_count": 1,
+      "class_ids": [
+        1
+      ],
+      "filename": "00e3bf5e2d0f4368.jpg",
+      "height": 691,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/smartphone/previews/qa01_00e3bf5e2d0f4368.jpg",
+      "qa_id": 1,
+      "stem": "00e3bf5e2d0f4368",
+      "width": 1024
+    },
+    {
+      "blur": 32.1,
+      "box_count": 2,
+      "class_ids": [
+        1,
+        1
+      ],
+      "filename": "1b3648579c67f15d.jpg",
+      "height": 768,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/smartphone/previews/qa02_1b3648579c67f15d.jpg",
+      "qa_id": 2,
+      "stem": "1b3648579c67f15d",
+      "width": 1024
+    },
+    {
+      "blur": 539.54,
+      "box_count": 5,
+      "class_ids": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "filename": "7ceca2578743018d.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/smartphone/previews/qa03_7ceca2578743018d.jpg",
+      "qa_id": 3,
+      "stem": "7ceca2578743018d",
+      "width": 1024
+    },
+    {
+      "blur": 3055.07,
+      "box_count": 3,
+      "class_ids": [
+        1,
+        1,
+        1
+      ],
+      "filename": "8cae6fdeca55a98f.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/smartphone/previews/qa04_8cae6fdeca55a98f.jpg",
+      "qa_id": 4,
+      "stem": "8cae6fdeca55a98f",
+      "width": 1024
+    },
+    {
+      "blur": 363.08,
+      "box_count": 1,
+      "class_ids": [
+        1
+      ],
+      "filename": "d8546cdc3ee78b37.jpg",
+      "height": 682,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/smartphone/previews/qa05_d8546cdc3ee78b37.jpg",
+      "qa_id": 5,
+      "stem": "d8546cdc3ee78b37",
+      "width": 1024
+    },
+    {
+      "blur": 469.15,
+      "box_count": 1,
+      "class_ids": [
+        1
+      ],
+      "filename": "e5725d1341315559.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_4_multiclass_qa_v1/smartphone/previews/qa06_e5725d1341315559.jpg",
+      "qa_id": 6,
+      "stem": "e5725d1341315559",
+      "width": 768
+    }
+  ],
+  "total_images": 6,
+  "total_objects": 13
+}

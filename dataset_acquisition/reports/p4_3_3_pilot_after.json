@@ -1,0 +1,58 @@
+{
+  "all_protected_unchanged": true,
+  "captured_stage": "after",
+  "note": "After-fingerprints captured post P4.3.3 printer acquisition, each pilot at its real staging path; compared against p4_3_3_pilot_baseline.json. unchanged derived from file_count+total_bytes.",
+  "pilot_protection": {
+    "openimages_laptop_canonical_v1": {
+      "baseline_file_count": 47,
+      "baseline_total_bytes": 6110063,
+      "exists": true,
+      "file_count": 47,
+      "newest_mtime": 1786226672.759,
+      "path": "dataset_acquisition/staging/openimages_laptop_canonical_v1",
+      "total_bytes": 6110063,
+      "unchanged": true
+    },
+    "openimages_laptop_v1": {
+      "baseline_file_count": 72,
+      "baseline_total_bytes": 10525045,
+      "exists": true,
+      "file_count": 72,
+      "newest_mtime": 1786215228.854,
+      "path": "dataset_acquisition/staging/openimages_laptop_v1",
+      "total_bytes": 10525045,
+      "unchanged": true
+    },
+    "openimages_monitor_v1": {
+      "baseline_file_count": 302,
+      "baseline_total_bytes": 44514158,
+      "exists": true,
+      "file_count": 302,
+      "newest_mtime": 1786310217.127,
+      "path": "dataset_acquisition/staging/openimages_multiclass_v1/openimages_monitor_v1",
+      "total_bytes": 44514158,
+      "unchanged": true
+    },
+    "openimages_smartphone_v1": {
+      "baseline_file_count": 15,
+      "baseline_total_bytes": 1003504,
+      "exists": true,
+      "file_count": 15,
+      "newest_mtime": 1786303320.771,
+      "path": "dataset_acquisition/staging/openimages_smartphone_v1",
+      "total_bytes": 1003504,
+      "unchanged": true
+    },
+    "openimages_tablet_v1": {
+      "baseline_file_count": 305,
+      "baseline_total_bytes": 42838399,
+      "exists": true,
+      "file_count": 305,
+      "newest_mtime": 1786310205.722,
+      "path": "dataset_acquisition/staging/openimages_multiclass_v1/openimages_tablet_v1",
+      "total_bytes": 42838399,
+      "unchanged": true
+    }
+  },
+  "sprint": "P4.3.3"
+}

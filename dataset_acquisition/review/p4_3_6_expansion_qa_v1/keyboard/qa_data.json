@@ -1,0 +1,294 @@
+{
+  "blur_threshold": 100.0,
+  "blurry_count": 3,
+  "contact_sheet": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/keyboard/contact_sheet.jpg",
+  "qa_status": "QA_PENDING",
+  "tiles": [
+    {
+      "blur": 348.96,
+      "box_count": 1,
+      "class_ids": [
+        9
+      ],
+      "filename": "00f186cc78e9d697.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/keyboard/previews/qa01_00f186cc78e9d697.jpg",
+      "qa_id": 1,
+      "stem": "00f186cc78e9d697",
+      "width": 1024
+    },
+    {
+      "blur": 53.26,
+      "box_count": 2,
+      "class_ids": [
+        9,
+        9
+      ],
+      "filename": "0b5ef17e3c01ac99.jpg",
+      "height": 768,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/keyboard/previews/qa02_0b5ef17e3c01ac99.jpg",
+      "qa_id": 2,
+      "stem": "0b5ef17e3c01ac99",
+      "width": 1024
+    },
+    {
+      "blur": 701.61,
+      "box_count": 1,
+      "class_ids": [
+        9
+      ],
+      "filename": "21140251f6675d3a.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/keyboard/previews/qa03_21140251f6675d3a.jpg",
+      "qa_id": 3,
+      "stem": "21140251f6675d3a",
+      "width": 1024
+    },
+    {
+      "blur": 271.65,
+      "box_count": 1,
+      "class_ids": [
+        9
+      ],
+      "filename": "2398cc31dbb29d35.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/keyboard/previews/qa04_2398cc31dbb29d35.jpg",
+      "qa_id": 4,
+      "stem": "2398cc31dbb29d35",
+      "width": 1024
+    },
+    {
+      "blur": 178.72,
+      "box_count": 1,
+      "class_ids": [
+        9
+      ],
+      "filename": "2ce393f639aafea7.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/keyboard/previews/qa05_2ce393f639aafea7.jpg",
+      "qa_id": 5,
+      "stem": "2ce393f639aafea7",
+      "width": 1024
+    },
+    {
+      "blur": 774.65,
+      "box_count": 1,
+      "class_ids": [
+        9
+      ],
+      "filename": "362e1ab5cb798298.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/keyboard/previews/qa06_362e1ab5cb798298.jpg",
+      "qa_id": 6,
+      "stem": "362e1ab5cb798298",
+      "width": 1024
+    },
+    {
+      "blur": 196.85,
+      "box_count": 2,
+      "class_ids": [
+        9,
+        9
+      ],
+      "filename": "3964b8d7456c0cc8.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/keyboard/previews/qa07_3964b8d7456c0cc8.jpg",
+      "qa_id": 7,
+      "stem": "3964b8d7456c0cc8",
+      "width": 1024
+    },
+    {
+      "blur": 185.88,
+      "box_count": 1,
+      "class_ids": [
+        9
+      ],
+      "filename": "53081e7dd2a033dc.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/keyboard/previews/qa08_53081e7dd2a033dc.jpg",
+      "qa_id": 8,
+      "stem": "53081e7dd2a033dc",
+      "width": 1024
+    },
+    {
+      "blur": 60.54,
+      "box_count": 1,
+      "class_ids": [
+        9
+      ],
+      "filename": "55d6ba1a035196d6.jpg",
+      "height": 1024,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/keyboard/previews/qa09_55d6ba1a035196d6.jpg",
+      "qa_id": 9,
+      "stem": "55d6ba1a035196d6",
+      "width": 1024
+    },
+    {
+      "blur": 1228.17,
+      "box_count": 2,
+      "class_ids": [
+        9,
+        9
+      ],
+      "filename": "6e503380ea195c1c.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/keyboard/previews/qa10_6e503380ea195c1c.jpg",
+      "qa_id": 10,
+      "stem": "6e503380ea195c1c",
+      "width": 1024
+    },
+    {
+      "blur": 114.68,
+      "box_count": 1,
+      "class_ids": [
+        9
+      ],
+      "filename": "72ea3c2746f8a103.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/keyboard/previews/qa11_72ea3c2746f8a103.jpg",
+      "qa_id": 11,
+      "stem": "72ea3c2746f8a103",
+      "width": 1024
+    },
+    {
+      "blur": 419.74,
+      "box_count": 1,
+      "class_ids": [
+        9
+      ],
+      "filename": "8b1dfd2843af36d8.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/keyboard/previews/qa12_8b1dfd2843af36d8.jpg",
+      "qa_id": 12,
+      "stem": "8b1dfd2843af36d8",
+      "width": 1024
+    },
+    {
+      "blur": 121.98,
+      "box_count": 1,
+      "class_ids": [
+        9
+      ],
+      "filename": "8f786b29df7a337a.jpg",
+      "height": 704,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/keyboard/previews/qa13_8f786b29df7a337a.jpg",
+      "qa_id": 13,
+      "stem": "8f786b29df7a337a",
+      "width": 1024
+    },
+    {
+      "blur": 201.61,
+      "box_count": 1,
+      "class_ids": [
+        9
+      ],
+      "filename": "9a9944579aca4507.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/keyboard/previews/qa14_9a9944579aca4507.jpg",
+      "qa_id": 14,
+      "stem": "9a9944579aca4507",
+      "width": 1024
+    },
+    {
+      "blur": 2007.42,
+      "box_count": 1,
+      "class_ids": [
+        9
+      ],
+      "filename": "9ff5c43ad942f775.jpg",
+      "height": 742,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/keyboard/previews/qa15_9ff5c43ad942f775.jpg",
+      "qa_id": 15,
+      "stem": "9ff5c43ad942f775",
+      "width": 1024
+    },
+    {
+      "blur": 125.55,
+      "box_count": 1,
+      "class_ids": [
+        9
+      ],
+      "filename": "aa6e96626e55c21e.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/keyboard/previews/qa16_aa6e96626e55c21e.jpg",
+      "qa_id": 16,
+      "stem": "aa6e96626e55c21e",
+      "width": 1024
+    },
+    {
+      "blur": 182.38,
+      "box_count": 1,
+      "class_ids": [
+        9
+      ],
+      "filename": "acaf2a8ebc3415c7.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/keyboard/previews/qa17_acaf2a8ebc3415c7.jpg",
+      "qa_id": 17,
+      "stem": "acaf2a8ebc3415c7",
+      "width": 1024
+    },
+    {
+      "blur": 85.47,
+      "box_count": 1,
+      "class_ids": [
+        9
+      ],
+      "filename": "acf24a6b0b601675.jpg",
+      "height": 683,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/keyboard/previews/qa18_acf24a6b0b601675.jpg",
+      "qa_id": 18,
+      "stem": "acf24a6b0b601675",
+      "width": 1024
+    },
+    {
+      "blur": 338.63,
+      "box_count": 1,
+      "class_ids": [
+        9
+      ],
+      "filename": "d7600d60f635288b.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/keyboard/previews/qa19_d7600d60f635288b.jpg",
+      "qa_id": 19,
+      "stem": "d7600d60f635288b",
+      "width": 1024
+    },
+    {
+      "blur": 154.51,
+      "box_count": 2,
+      "class_ids": [
+        9,
+        9
+      ],
+      "filename": "e5a32c0baa07ab72.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/keyboard/previews/qa20_e5a32c0baa07ab72.jpg",
+      "qa_id": 20,
+      "stem": "e5a32c0baa07ab72",
+      "width": 1024
+    }
+  ],
+  "total_images": 20,
+  "total_objects": 24
+}
