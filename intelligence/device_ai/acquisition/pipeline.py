@@ -427,7 +427,11 @@ def run_pipeline(
         ]
         return result
 
-    taxonomy_id = int(preflight.frozen_values.get("router_class_id", -1))
+    taxonomy_id = int(
+        preflight.frozen_values.get(
+            "target_class_id", preflight.frozen_values.get("router_class_id", -1)
+        )
+    )
     num_classes = int(preflight.frozen_values.get("num_classes", 0))
 
     # ------------------------------------------------------------- connectivity
@@ -515,7 +519,9 @@ def run_pipeline(
             candidate = _with_root(candidate, local_root)
 
         labels, detected, error = read_source_labels(candidate)
-        verdict = verify_source(candidate, labels=labels)
+        verdict = verify_source(
+            candidate, labels=labels, target_class_name=config.target_class
+        )
         if error:
             verdict = _append_reason(verdict, f"format: {error}")
         verdicts.append(verdict)
@@ -581,7 +587,7 @@ def run_pipeline(
         OK if ingest.images_retained else BLOCKED,
         (
             f"{ingest.images_retained} image(s) staged with {ingest.boxes_staged} "
-            f"router box(es) at taxonomy id {taxonomy_id}; "
+            f"{config.target_class} box(es) at taxonomy id {taxonomy_id}; "
             f"{ingest.images_rejected} source image(s) rejected"
         ),
         ingest.to_dict(),
@@ -807,6 +813,7 @@ def _ingest_all(
             taxonomy_class=config.target_class,
             taxonomy_id=taxonomy_id,
             import_timestamp=timestamp,
+            source_version=verdict.candidate.version,
             dry_run=dry_run,
         )
         combined = IngestOutcome(
@@ -834,13 +841,14 @@ def _readiness_stage(
 ) -> tuple[str, str, str, dict[str, object]]:
     """Run the injected readiness audit over the staged wave (never simulated)."""
     scope = {
-        "scope": "ROUTER_WAVE_VALIDATION",
+        "scope": f"{config.target_class.upper()}_WAVE_VALIDATION",
         "not": "FULL_DATASET_RELEASE_READINESS",
         "note": (
-            "This audit covers the router wave in isolation. Coverage is expected "
-            "to report INCOMPLETE because the 19-class taxonomy is not yet covered "
-            "by this batch; that is a coverage fact, not a pipeline failure. The "
-            "protected P4.3.5/P4.3.6 batches are not merged by this pipeline."
+            f"This audit covers the {config.target_class} wave in isolation. "
+            "Coverage is expected to report INCOMPLETE because the 19-class "
+            "taxonomy is not yet covered by this batch; that is a coverage fact, "
+            "not a pipeline failure. The protected P4.3.5/P4.3.6 batches are not "
+            "merged by this pipeline."
         ),
     }
     if readiness_audit is None:
@@ -872,7 +880,7 @@ def _readiness_stage(
     return (
         "readiness",
         OK if overall in {"READY", "INCOMPLETE"} else INCOMPLETE,
-        f"readiness audit over the router wave: {overall}",
+        f"readiness audit over the {config.target_class} wave: {overall}",
         {**scope, "report": report},
     )
 

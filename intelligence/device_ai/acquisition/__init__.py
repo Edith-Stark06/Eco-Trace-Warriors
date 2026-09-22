@@ -37,6 +37,7 @@ from .config import (
     EXPECTED_TAXONOMY_VERSION,
     TARGET_CLASS_NAME,
     AcquisitionConfig,
+    TargetClass,
 )
 from .gates import SourceVerdict, verify_source
 from .pipeline import (
@@ -48,9 +49,17 @@ from .pipeline import (
     run_pipeline,
 )
 from .preflight import PreflightResult, run_preflight
+from .promotion import PromotionDecision, evaluate_promotion
+from .semantics import (
+    TargetSemantics,
+    build_target_semantics,
+    evaluate_label,
+    evaluate_source_label,
+)
 
 __all__ = [
     "AcquisitionConfig",
+    "TargetClass",
     "TARGET_CLASS_NAME",
     "EXPECTED_CLASS_ID",
     "EXPECTED_NUM_CLASSES",
@@ -61,6 +70,12 @@ __all__ = [
     "run_preflight",
     "SourceVerdict",
     "verify_source",
+    "TargetSemantics",
+    "build_target_semantics",
+    "evaluate_label",
+    "evaluate_source_label",
+    "PromotionDecision",
+    "evaluate_promotion",
     "LocalSourceSpec",
     "RunResult",
     "run_pipeline",
