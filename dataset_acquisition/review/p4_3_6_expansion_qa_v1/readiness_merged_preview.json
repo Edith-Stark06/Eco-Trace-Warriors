@@ -1,0 +1,217 @@
+{
+  "gate_states": {
+    "annotation_validation": "READY",
+    "coverage": "INCOMPLETE",
+    "data_presence": "READY",
+    "duplicates": "READY",
+    "image_validation": "READY",
+    "split": "INCOMPLETE",
+    "taxonomy": "READY"
+  },
+  "gates": [
+    {
+      "detail": {
+        "class_names": [
+          "laptop",
+          "smartphone",
+          "tablet",
+          "desktop",
+          "server",
+          "monitor",
+          "crt_monitor",
+          "television",
+          "printer",
+          "keyboard",
+          "mouse",
+          "router",
+          "power_supply",
+          "cable",
+          "camera",
+          "game_console",
+          "smartwatch",
+          "headphones",
+          "battery"
+        ],
+        "contiguous_ids_ok": true,
+        "count_ok": true,
+        "expected_num_classes": 19,
+        "expected_version": "1.0.0",
+        "num_classes": 19,
+        "version": "1.0.0",
+        "version_ok": true
+      },
+      "name": "taxonomy",
+      "state": "READY",
+      "summary": "taxonomy v1.0.0 with 19 classes (ids 0-18) verified",
+      "verdict": "pass"
+    },
+    {
+      "detail": {
+        "image_count": 371,
+        "images_root": "dataset_acquisition/staging/p4_3_6_merged_preview/images",
+        "label_file_count": 371,
+        "labels_root": "dataset_acquisition/staging/p4_3_6_merged_preview/labels"
+      },
+      "name": "data_presence",
+      "state": "READY",
+      "summary": "371 images and 371 label files present",
+      "verdict": "pass"
+    },
+    {
+      "detail": {
+        "is_valid": true,
+        "summary": {
+          "corrupted": 0,
+          "duplicate_filenames": 0,
+          "duplicate_hashes": 0,
+          "invalid_aspect_ratio": 0,
+          "oversized_files": 0,
+          "oversized_resolution": 0,
+          "total_issues": 0,
+          "undersized": 0,
+          "unsupported_extensions": 0
+        },
+        "total_files_scanned": 371,
+        "total_images": 371
+      },
+      "name": "image_validation",
+      "state": "READY",
+      "summary": "371 images passed structural validation",
+      "verdict": "pass"
+    },
+    {
+      "detail": {
+        "issue_counts_by_code": {},
+        "summary": {
+          "empty_labels": 0,
+          "images_without_labels": 0,
+          "is_valid": true,
+          "issue_count": 0,
+          "labels_without_images": 0,
+          "total_boxes": 532,
+          "total_labels": 371
+        }
+      },
+      "name": "annotation_validation",
+      "state": "READY",
+      "summary": "532 boxes across 371 labels valid",
+      "verdict": "pass"
+    },
+    {
+      "detail": {
+        "annotation_completeness": 1.0,
+        "images_without_labels": 0,
+        "missing_classes": [
+          "desktop",
+          "server",
+          "crt_monitor",
+          "router",
+          "power_supply",
+          "cable",
+          "game_console",
+          "smartwatch",
+          "battery"
+        ],
+        "total_boxes": 532,
+        "total_images": 371,
+        "total_labelled_images": 371
+      },
+      "name": "coverage",
+      "state": "INCOMPLETE",
+      "summary": "coverage incomplete: 9 class(es) missing",
+      "verdict": "fail"
+    },
+    {
+      "detail": {
+        "duplicate_paths": [],
+        "hamming_threshold": 5,
+        "num_duplicates": 0,
+        "total_images": 371
+      },
+      "name": "duplicates",
+      "state": "READY",
+      "summary": "no duplicates among 371 images",
+      "verdict": "pass"
+    },
+    {
+      "detail": {
+        "classes_absent_from_split": {
+          "test": [
+            0
+          ]
+        },
+        "classes_per_split": {
+          "test": [
+            1,
+            2,
+            5,
+            7,
+            8,
+            9,
+            10,
+            14,
+            17
+          ],
+          "train": [
+            0,
+            1,
+            2,
+            5,
+            7,
+            8,
+            9,
+            10,
+            14,
+            17
+          ],
+          "val": [
+            0,
+            1,
+            2,
+            5,
+            7,
+            8,
+            9,
+            10,
+            14,
+            17
+          ]
+        },
+        "classes_present": [
+          0,
+          1,
+          2,
+          5,
+          7,
+          8,
+          9,
+          10,
+          14,
+          17
+        ],
+        "counts": {
+          "test": 38,
+          "train": 259,
+          "val": 74
+        },
+        "leakage": [],
+        "ratios": [
+          0.7,
+          0.2,
+          0.1
+        ],
+        "seed": 42,
+        "uncovered": []
+      },
+      "name": "split",
+      "state": "INCOMPLETE",
+      "summary": "one or more classes absent from a split",
+      "verdict": "fail"
+    }
+  ],
+  "images_root": "dataset_acquisition/staging/p4_3_6_merged_preview/images",
+  "is_ready": false,
+  "labels_root": "dataset_acquisition/staging/p4_3_6_merged_preview/labels",
+  "overall": "INCOMPLETE",
+  "sprint": "P4.2.3"
+}

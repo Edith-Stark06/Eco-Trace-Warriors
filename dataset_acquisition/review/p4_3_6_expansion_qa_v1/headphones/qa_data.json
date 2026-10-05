@@ -1,0 +1,296 @@
+{
+  "blur_threshold": 100.0,
+  "blurry_count": 14,
+  "contact_sheet": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/headphones/contact_sheet.jpg",
+  "qa_status": "QA_PENDING",
+  "tiles": [
+    {
+      "blur": 609.46,
+      "box_count": 1,
+      "class_ids": [
+        17
+      ],
+      "filename": "0209221ebb2ecb97.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/headphones/previews/qa01_0209221ebb2ecb97.jpg",
+      "qa_id": 1,
+      "stem": "0209221ebb2ecb97",
+      "width": 1024
+    },
+    {
+      "blur": 25.21,
+      "box_count": 1,
+      "class_ids": [
+        17
+      ],
+      "filename": "03f5c7a11e1c343a.jpg",
+      "height": 685,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/headphones/previews/qa02_03f5c7a11e1c343a.jpg",
+      "qa_id": 2,
+      "stem": "03f5c7a11e1c343a",
+      "width": 1024
+    },
+    {
+      "blur": 82.76,
+      "box_count": 1,
+      "class_ids": [
+        17
+      ],
+      "filename": "0737a40eb72e18f9.jpg",
+      "height": 680,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/headphones/previews/qa03_0737a40eb72e18f9.jpg",
+      "qa_id": 3,
+      "stem": "0737a40eb72e18f9",
+      "width": 1024
+    },
+    {
+      "blur": 28.5,
+      "box_count": 1,
+      "class_ids": [
+        17
+      ],
+      "filename": "0b46826c2cc1f5f7.jpg",
+      "height": 1024,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/headphones/previews/qa04_0b46826c2cc1f5f7.jpg",
+      "qa_id": 4,
+      "stem": "0b46826c2cc1f5f7",
+      "width": 1024
+    },
+    {
+      "blur": 74.11,
+      "box_count": 2,
+      "class_ids": [
+        17,
+        17
+      ],
+      "filename": "102717fb3afc170a.jpg",
+      "height": 1024,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/headphones/previews/qa05_102717fb3afc170a.jpg",
+      "qa_id": 5,
+      "stem": "102717fb3afc170a",
+      "width": 769
+    },
+    {
+      "blur": 29.94,
+      "box_count": 1,
+      "class_ids": [
+        17
+      ],
+      "filename": "144f3db06baf3f85.jpg",
+      "height": 768,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/headphones/previews/qa06_144f3db06baf3f85.jpg",
+      "qa_id": 6,
+      "stem": "144f3db06baf3f85",
+      "width": 1024
+    },
+    {
+      "blur": 49.83,
+      "box_count": 1,
+      "class_ids": [
+        17
+      ],
+      "filename": "1b48ff7f6210d390.jpg",
+      "height": 768,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/headphones/previews/qa07_1b48ff7f6210d390.jpg",
+      "qa_id": 7,
+      "stem": "1b48ff7f6210d390",
+      "width": 1024
+    },
+    {
+      "blur": 1753.83,
+      "box_count": 1,
+      "class_ids": [
+        17
+      ],
+      "filename": "2024b40f3c27068f.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/headphones/previews/qa08_2024b40f3c27068f.jpg",
+      "qa_id": 8,
+      "stem": "2024b40f3c27068f",
+      "width": 553
+    },
+    {
+      "blur": 53.28,
+      "box_count": 1,
+      "class_ids": [
+        17
+      ],
+      "filename": "39b89b43221ae839.jpg",
+      "height": 575,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/headphones/previews/qa09_39b89b43221ae839.jpg",
+      "qa_id": 9,
+      "stem": "39b89b43221ae839",
+      "width": 1024
+    },
+    {
+      "blur": 43.29,
+      "box_count": 1,
+      "class_ids": [
+        17
+      ],
+      "filename": "3a5596c993144cda.jpg",
+      "height": 1024,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/headphones/previews/qa10_3a5596c993144cda.jpg",
+      "qa_id": 10,
+      "stem": "3a5596c993144cda",
+      "width": 683
+    },
+    {
+      "blur": 43.73,
+      "box_count": 1,
+      "class_ids": [
+        17
+      ],
+      "filename": "3c90135e0537483b.jpg",
+      "height": 768,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/headphones/previews/qa11_3c90135e0537483b.jpg",
+      "qa_id": 11,
+      "stem": "3c90135e0537483b",
+      "width": 1024
+    },
+    {
+      "blur": 531.15,
+      "box_count": 3,
+      "class_ids": [
+        17,
+        17,
+        17
+      ],
+      "filename": "3e5cb9dc27219731.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/headphones/previews/qa12_3e5cb9dc27219731.jpg",
+      "qa_id": 12,
+      "stem": "3e5cb9dc27219731",
+      "width": 678
+    },
+    {
+      "blur": 302.53,
+      "box_count": 1,
+      "class_ids": [
+        17
+      ],
+      "filename": "570b786fa047b915.jpg",
+      "height": 899,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/headphones/previews/qa13_570b786fa047b915.jpg",
+      "qa_id": 13,
+      "stem": "570b786fa047b915",
+      "width": 1024
+    },
+    {
+      "blur": 1626.0,
+      "box_count": 2,
+      "class_ids": [
+        17,
+        17
+      ],
+      "filename": "6fefdcf7f72bfd09.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/headphones/previews/qa14_6fefdcf7f72bfd09.jpg",
+      "qa_id": 14,
+      "stem": "6fefdcf7f72bfd09",
+      "width": 576
+    },
+    {
+      "blur": 98.27,
+      "box_count": 1,
+      "class_ids": [
+        17
+      ],
+      "filename": "8395ba66dcf68177.jpg",
+      "height": 683,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/headphones/previews/qa15_8395ba66dcf68177.jpg",
+      "qa_id": 15,
+      "stem": "8395ba66dcf68177",
+      "width": 1024
+    },
+    {
+      "blur": 77.99,
+      "box_count": 1,
+      "class_ids": [
+        17
+      ],
+      "filename": "887d3b3f275be0c1.jpg",
+      "height": 678,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/headphones/previews/qa16_887d3b3f275be0c1.jpg",
+      "qa_id": 16,
+      "stem": "887d3b3f275be0c1",
+      "width": 1024
+    },
+    {
+      "blur": 670.44,
+      "box_count": 1,
+      "class_ids": [
+        17
+      ],
+      "filename": "8e8d7e8afa74811f.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/headphones/previews/qa17_8e8d7e8afa74811f.jpg",
+      "qa_id": 17,
+      "stem": "8e8d7e8afa74811f",
+      "width": 768
+    },
+    {
+      "blur": 56.91,
+      "box_count": 2,
+      "class_ids": [
+        17,
+        17
+      ],
+      "filename": "c5de186420965532.jpg",
+      "height": 1024,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/headphones/previews/qa18_c5de186420965532.jpg",
+      "qa_id": 18,
+      "stem": "c5de186420965532",
+      "width": 1024
+    },
+    {
+      "blur": 40.92,
+      "box_count": 2,
+      "class_ids": [
+        17,
+        17
+      ],
+      "filename": "e4e2643e4bd72ca4.jpg",
+      "height": 683,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/headphones/previews/qa19_e4e2643e4bd72ca4.jpg",
+      "qa_id": 19,
+      "stem": "e4e2643e4bd72ca4",
+      "width": 1024
+    },
+    {
+      "blur": 76.83,
+      "box_count": 1,
+      "class_ids": [
+        17
+      ],
+      "filename": "e6dabfb27f4d737c.jpg",
+      "height": 768,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/headphones/previews/qa20_e6dabfb27f4d737c.jpg",
+      "qa_id": 20,
+      "stem": "e6dabfb27f4d737c",
+      "width": 1024
+    }
+  ],
+  "total_images": 20,
+  "total_objects": 26
+}
