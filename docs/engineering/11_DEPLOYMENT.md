@@ -32,7 +32,7 @@ This document defines how EcoTrace India is packaged, deployed, and operated. De
 
 # Deployment Principles
 
-- **Everything runs in Docker.** Every service (backend, dashboard, AI, database, Fabric network, NGINX) is containerized; the full stack starts with one command for the IEEE YESIST 2026 demo (`03_ARCHITECTURE.md` → Architecture Goals).
+- **Everything runs in Docker.** Every service (backend, dashboard, AI, database, Fabric network, NGINX) is containerized; the full stack starts with one command for the demo environment (`03_ARCHITECTURE.md` → Architecture Goals).
 - **Build once, configure per environment.** Images are environment-agnostic; behavior differs only via environment variables.
 - **No manual steps.** Anything done twice is scripted in `scripts/` or `deployment/`.
 - **Secrets never enter images or Git** (`02_PROJECT_RULES.md`).
@@ -45,7 +45,7 @@ This document defines how EcoTrace India is packaged, deployed, and operated. De
 |---|---|---|---|
 | `local` | Developer machines | any | Disposable, seeded |
 | `ci` | Automated test runs | PR branches | Ephemeral per run |
-| `demo` | IEEE YESIST 2026 demonstration | `main` release | Seeded demo dataset |
+| `demo` | Product demonstration | `main` release | Seeded demo dataset |
 | `prod` (future) | Real deployment | `main` | Real data, backed up |
 
 Fabric network profiles per environment: single-node ordering in `local`/`ci`, 3-node Raft in `demo`/`prod` (`09_BLOCKCHAIN.md`).

@@ -386,6 +386,6 @@ tiny fakes, while the real backend paths are marked `# pragma: no cover`.
 
 ---
 
-_Part of **EcoTrace India** — IEEE YESIST 2026. See the module
+_Part of **EcoTrace India**. See the module
 [`README.md`](../../README.md), [`training/README.md`](../../training/README.md)
 and the platform-wide `docs/engineering/` standards._

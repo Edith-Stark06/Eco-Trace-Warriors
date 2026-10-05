@@ -30,7 +30,7 @@ import { ForecastPanel } from '@/features/government/components/ForecastPanel';
  *
  * Surfaces the real analytics endpoints (national overview, environmental
  * impact, regional breakdown, and the real LSTM demand forecast) as a
- * judge-facing intelligence dashboard: headline KPIs, ranked regional
+ * stakeholder-facing intelligence dashboard: headline KPIs, ranked regional
  * visualization, and a combined recycling-trend/forecast chart. There are NO
  * write actions — government users monitor, they do not edit submissions,
  * assign collectors, run workflows, or issue rewards (server-enforced:

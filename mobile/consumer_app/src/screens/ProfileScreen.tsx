@@ -60,7 +60,7 @@ export function ProfileScreen() {
       {/* Footer Version Tag */}
       <View style={styles.footer}>
         <Text style={styles.version}>API: {env.apiBaseUrl}</Text>
-        <Text style={styles.systemTag}>EcoTrace India • IEEE YESIST 2026</Text>
+        <Text style={styles.systemTag}>EcoTrace India</Text>
       </View>
     </View>
   );

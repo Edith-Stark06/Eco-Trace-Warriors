@@ -10,7 +10,7 @@
   "blockchain_infrastructure_discovered": {
     "chaincode": "blockchain/chaincode/ecotrace-lifecycle",
     "backend_fabric_client": "backend/src/infrastructure/fabric/fabric.client.ts (TypeScript interface placeholder for Phase 7)",
-    "documentation": "docs/engineering/09_BLOCKCHAIN.md (IEEE YESIST 2026 specification: ecotrace-channel, EcoTraceOrg, on-chain EcoID/hash link)",
+    "documentation": "docs/engineering/09_BLOCKCHAIN.md (target specification: ecotrace-channel, EcoTraceOrg, on-chain EcoID/hash link)",
     "live_network_status": "NOT RUNNING (Adapter implemented with explicit UNAVAILABLE status when offline)"
   },
   "protected_assets_sha256": {

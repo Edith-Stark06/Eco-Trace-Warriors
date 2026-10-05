@@ -41,7 +41,7 @@ Derived from `PROJECT.md`:
 - **Simplicity** — a modular monolith backend, not premature microservices.
 - **Scalability path** — clean module boundaries that permit later extraction into services.
 - **Security** — least privilege, validated input, no secrets in code.
-- **Demonstrability** — the whole stack must run locally via Docker for IEEE YESIST 2026.
+- **Demonstrability** — the whole stack must run locally via Docker.
 
 ---
 
@@ -208,7 +208,7 @@ Significant decisions are recorded here as concise ADRs. New ADRs are appended w
 ## ADR-001 — Modular monolith backend
 
 - **Decision:** One Express application with internal modules, not microservices.
-- **Rationale:** Small team, competition timeline, simpler deployment and debugging; module boundaries preserve a path to later extraction.
+- **Rationale:** Small team, fast delivery timeline, simpler deployment and debugging; module boundaries preserve a path to later extraction.
 
 ## ADR-002 — Backend as sole blockchain gateway (SUPERSEDED, P8.9)
 

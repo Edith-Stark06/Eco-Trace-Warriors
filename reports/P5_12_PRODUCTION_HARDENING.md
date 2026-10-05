@@ -80,6 +80,6 @@ All 6 frozen assets verified 100% byte-for-byte unchanged:
 ## 4. Release Certification
 
 The EcoTrace Device Intelligence and Trust Architecture is hereby certified **RELEASE READY** for:
-- IEEE YESIST 2026 Submission and Demonstration
+- Product Demonstration
 - Research and Open Source Publication
 - Production Microservice Deployment

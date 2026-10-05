@@ -227,5 +227,5 @@ Per `CLAUDE.md` database rules:
 
 # Seed Data
 
-- Seeds live in `database/seeds/` and provide demo data for IEEE YESIST 2026 demonstrations: sample users per role, devices, collections, and reward history.
+- Seeds live in `database/seeds/` and provide demo data for product demonstrations: sample users per role, devices, collections, and reward history.
 - Seeds must be idempotent and must never run against production-like environments automatically.

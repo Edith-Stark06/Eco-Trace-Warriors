@@ -28,8 +28,7 @@ Every AI agent working on this repository shares one objective:
 
 Build EcoTrace India into a production-quality AI-powered blockchain-enabled e-waste lifecycle management platform suitable for:
 
-- IEEE YESIST 2026
-- Demonstrations
+- Product demonstrations
 - Research
 - Open Source
 - Future Commercialization
@@ -496,7 +495,7 @@ EcoTrace India should evolve into:
 - A production-ready platform
 - A research-quality software system
 - A maintainable open-source repository
-- A showcase project for IEEE YESIST 2026
+- A reference-quality engineering codebase
 
 Every contribution should move the project closer to these goals.
 
