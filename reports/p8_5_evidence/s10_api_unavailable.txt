@@ -1,0 +1,18 @@
+=== S10.1 Backend UP, sanity check ===
+{"success":true,"data":{"status":"ok","service":"ecotrace-backend","version":"0.1.0","environment":"production","uptime":122.04442986,"timestamp":"2026-09-01T05:11:06.633Z"}}
+HTTP_STATUS:200
+=== S10.2 Stopping backend container (simulating API unavailable) ===
+ Container ecotrace-backend  Stopping
+ Container ecotrace-backend  Stopped
+=== S10.3 Client request against a stopped backend (expect connection refused, no silent success) ===
+
+CURL_EXIT_CODE:7
+HTTP_STATUS:000
+=== S10.4 Restarting backend ===
+ Container ecotrace-postgres  Waiting
+ Container ecotrace-postgres  Healthy
+ Container ecotrace-backend  Starting
+ Container ecotrace-backend  Started
+=== S10.5 Backend recovered ===
+{"success":true,"data":{"status":"ok","service":"ecotrace-backend","version":"0.1.0","environment":"production","uptime":5.154594921,"timestamp":"2026-09-01T05:11:17.884Z"}}
+HTTP_STATUS:200

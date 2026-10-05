@@ -1,0 +1,90 @@
+# Dependencies
+node_modules/
+.venv/
+venv/
+
+# Builds & Caches
+dist/
+build/
+coverage/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Secrets, certificates, and crypto material (never commit) — P6.2 Fabric identities
+*.key
+*.pem
+*.p12
+*.pfx
+wallet/
+credentials/
+crypto-config/
+
+# Locally-generated TLS material (P9.1) — deployment/tls/generate_local_cert.sh
+# writes tls.crt/tls.key here; never commit generated cert/key material, even
+# self-signed local ones.
+deployment/tls/*.crt
+deployment/tls/*.key
+
+# Logs
+*.log
+
+# Python build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Large Model Binaries & Weights (never commit)
+*.pt
+*.pth
+*.onnx
+*.bin
+*.safetensors
+weights/
+owlvit_local/
+
+# ML Experiment Outputs & Runs (never commit)
+runs/
+mlruns/
+
+# Large Datasets & Intermediate Images (never commit)
+dataset_acquisition/candidate/
+dataset_acquisition/staging/
+dataset_acquisition/training/
+dataset_acquisition/evaluation/
+
+# NTFS-side Docker mirror (2026-09) — a narrow, gitignored copy of just the
+# protected checkpoint(s) Docker actually mounts, kept alongside the repo
+# because Docker Desktop's WSL2 backend cannot bind-mount file contents from
+# the exFAT/removable drive that holds the authoritative dataset
+# (ECOTRACE_DATASET_ROOT). See docker-compose.yml's device-ai mount comment.
+# Already covered by the *.pt rule above; explicit for clarity.
+docker_data/
+
+# Temporary scratch scripts and debug files at repo root (never commit)
+/tmp_*.py
+/check_model_attrs.py
+/test_class_weights.py
+/verify_output.json
+
+# P9.2 local/demo Hyperledger Fabric test-network bootstrap (never commit) —
+# vendored fabric-samples clone (~350MB), downloaded platform binaries, and
+# real (if local-only) generated CA identities/private keys/TLS material for
+# a disposable test network. Reproducible via
+# reports/P9_2_LIVE_FABRIC.md's documented bootstrap steps; never checked in.
+blockchain/fabric-network/bootstrap/

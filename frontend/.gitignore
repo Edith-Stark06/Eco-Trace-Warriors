@@ -1,0 +1,21 @@
+# Local build output
+dist
+dist-ssr
+
+# Dependencies
+node_modules
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment (never commit real secrets; .env.example is the template)
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.DS_Store
+*.local
+.vscode/*
+!.vscode/extensions.json

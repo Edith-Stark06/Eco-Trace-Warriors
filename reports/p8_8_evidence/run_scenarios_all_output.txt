@@ -1,0 +1,137 @@
+======================================================================
+EcoTrace India - End-to-End Device Lifecycle Demonstration
+Target: http://localhost:8100
+======================================================================
+
+[1/10] Checking service health
+    status=healthy inference_mode=single_model
+
+[2/10] Registering a device from a capture
+    device_id=DEV-2026-B90AB065-01 device_type=mouse
+
+[3/10] Confirming the device (DETECTED -> CONFIRMED)
+    {
+  "current_state": "CONFIRMED"
+}
+
+[4/10] Finalizing registration (CONFIRMED -> REGISTERED)
+    {
+  "current_state": "REGISTERED"
+}
+
+[5/10] Enriching with device intelligence (brand/condition/material/carbon)
+    carbon_score=0.446
+
+[6/10] Generating the Device Passport
+    eco_id=ET-2026-A8A46983 carbon_score=0.446
+
+[7/10] Verifying the Device Passport (local)
+    verification_status=VERIFIED fingerprint=f394a0149892f025...
+
+[8/10] Creating a local Trust Anchor
+    anchor_id=anc-60cdd19dee5b status=ANCHORED
+
+[9/10] Creating an external (blockchain-abstraction) Trust Anchor - MOCKED unless FABRIC_ENABLED=true against a live peer
+    provider=hyperledger_fabric status=ANCHORED
+
+[10/10] Verifying full trust status + consumer-style read query
+    local=VERIFIED external=VERIFIED overall=VERIFIED
+    read-back device_id=DEV-2026-B90AB065-01 (the 'consumer query' read path)
+
+======================================================================
+Demo complete - 10/10 steps succeeded.
+======================================================================
+
+NOTE - honestly disclosed scope: this demonstrates the real, working device intelligence lifecycle end-to-end. It does NOT demonstrate a live Hyperledger Fabric anchor (no Fabric network exists in this environment - see reports/P6_2_FABRIC_GATEWAY_INTEGRATION.md) and does NOT demonstrate a dashboard visualization of this specific device (the frontend's Submission model and this AI device-lifecycle model are architecturally disconnected - see reports/P6_5_BACKEND_BLOCKCHAIN_INTEGRATION.md and reports/P7_8_DEMO_ENVIRONMENT.md).
+======================================================================
+EcoTrace India - Backend Stakeholder Lifecycle Demonstration
+Target: http://localhost:3000/api/v1
+======================================================================
+
+[1/9] Logging in as all 5 demo role accounts
+    logged in: admin, government, collector, recycler, consumer
+
+[2/9] Consumer creates a submission (PENDING)
+    submission_id=cff3e81a-2609-487d-a286-22b198961834 status=PENDING
+
+[3/9] Admin assigns a Collector (PENDING -> ASSIGNED)
+    status=ASSIGNED
+
+[4/9] Collector accepts -> starts -> completes the pickup
+    accept: status=ACCEPTED
+    start: status=IN_PROGRESS
+    complete: status=COLLECTED
+
+[5/9] Admin assigns a Recycler
+    status=COLLECTED assignedRecyclerId=189d4c57-103e-4717-b576-dea640b58b3d
+
+[6/9] Recycler starts -> completes recycling (reward auto-issued)
+    status=RECYCLED recoveredWeight=2.1kg
+    reward: greenCoinsAwarded=112 updatedBalance=721 co2Saved=57.49999999999999kg
+
+[7/9] Consumer verifies their own submission (QR-scan-equivalent read)
+    status=RECYCLED materialRecovery={'copper': 0.6, 'plastic': 1.1, 'aluminum': 0.4}
+
+[8/9] Admin + Government view the audit trail (all submissions)
+    admin sees 6 submissions, government sees 6 submissions
+
+[9/9] Consumer checks reward balance
+    greenCoins=721 totalCO2Saved=592.5kg
+
+======================================================================
+Demo complete - 9/9 steps succeeded.
+======================================================================
+
+NOTE - honestly disclosed scope: this demonstrates the real, working Submission lifecycle end-to-end against the real backend + Postgres. It is architecturally separate from the AI device-intelligence lifecycle (scripts/demo/run_demo.py) - see reports/P6_5_BACKEND_BLOCKCHAIN_INTEGRATION.md and reports/P8_5_COMPLETE_E2E.md for why.
+ Container ecotrace-device-ai  Stopping
+ Container ecotrace-device-ai  Stopped
+ Container ecotrace-postgres  Waiting
+ Container ecotrace-postgres  Healthy
+ Container ecotrace-device-ai  Starting
+ Container ecotrace-device-ai  Started
+======================================================================
+SCENARIO: happy-path
+======================================================================
+
+[PASS] happy-path: both the AI device lifecycle and the backend stakeholder lifecycle completed successfully.
+======================================================================
+SCENARIO: trust-mismatch
+======================================================================
+[1/5] Registering a device...
+    device_id=DEV-2026-7283D242-01
+[2/5] Confirming, finalizing, enriching, and anchoring locally...
+    local anchor created: status=ANCHORED
+[3/5] Mutating the passport AFTER anchoring (genuine data divergence, not a simulated flag)...
+[4/5] Verifying the local trust anchor against the now-mutated passport...
+    verification status=MISMATCH
+[5/5] Confirming the system refuses to create an EXTERNAL anchor from this mismatched local passport...
+    HTTP 400: Cannot anchor device 'DEV-2026-7283D242-01' externally: device passport is in MISMATCH state. Passport must be locally verified before external anchoring.
+
+[PASS] trust-mismatch: a real local trust MISMATCH was triggered and correctly surfaced (never silently downgraded to success), and the system correctly refused to anchor an unverified passport externally.
+======================================================================
+SCENARIO: blockchain-unavailable
+======================================================================
+[1/4] Confirming the blockchain health proxy is reachable...
+    before: HTTP 200, status=disabled
+[2/4] Stopping the device-ai container (simulating an outage)...
+[3/4] Querying the proxy again while device-ai is down...
+    during: HTTP 200, status=proxy_unreachable
+    backend's own health during the outage: HTTP 200, status=ok (no cascading failure)
+[4/4] Restarting device-ai...
+    after restart: HTTP 200, status=disabled
+
+[PASS] blockchain-unavailable: the proxy degraded gracefully (never a 5xx, never a fabricated status) with no cascading failure, and recovered cleanly once device-ai was restarted.
+======================================================================
+SCENARIO: invalid-device
+======================================================================
+[1/1] Looking up a device that was never registered (DEV-NONEXISTENT-28EFC185)...
+    HTTP 404: {'success': False, 'error': {'code': 'DEVICE_NOT_FOUND', 'message': "Device 'DEV-NONEXISTENT-28EFC185' not found.", 'details': {'device_id': 'DEV-NONEXISTENT-28EFC185'}}, 'request_id': 'c3b6fb55929d4754930be5570546db01'}
+
+[PASS] invalid-device: a clean, honest 404 - no fabricated or corrupted passport was returned.
+
+======================================================================
+SUMMARY
+  PASS: happy-path
+  PASS: trust-mismatch
+  PASS: blockchain-unavailable
+  PASS: invalid-device

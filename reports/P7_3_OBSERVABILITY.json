@@ -1,0 +1,60 @@
+{
+  "phase": "P7.3",
+  "title": "Observability, Logging & Health Monitoring",
+  "status": "PASS",
+  "timestamp": "2026-09-01T00:00:00Z",
+  "existing_surface_audited": {
+    "backend": "structured Pino logging, request-id correlation, /health, /ready (DB ping), /system/blockchain/health — already production-grade",
+    "python_device_ai": "structured Loguru logging with request-id context, /, /health (component status), /system/blockchain/health",
+    "frontend": "ServerError/SkeletonCards/AdminUnavailable already give every section real loading/error/unavailable states (P6.6)",
+    "mobile": "mapDioExceptionToFailure already translates every network failure to a user-facing message"
+  },
+  "design_decision": "did not add /health/live, /health/ready, /health/blockchain as parallel route aliases — the existing /health+/ready(+/system/blockchain/health) trio already delivers liveness+readiness+dependency health; adding duplicate routes for the same capability would violate the no-duplicate-logic / no-unrequested-churn rule",
+  "gaps_fixed": [
+    { "id": 1, "component": "backend_metrics", "summary": "no request/blockchain metrics existed; added dependency-free MetricsRegistry + GET /api/v1/metrics + blockchain onCheck hook, deliberately not Prometheus (no scrape target in this environment)" },
+    { "id": 2, "component": "device_ai_health_db_check", "summary": "/health never checked database connectivity; added ping_engine() and a conditional database component, only when a backend actually uses postgres (mirrors P7.2's production-safety rule)" },
+    { "id": 3, "component": "device_ai_metrics", "summary": "no request/Fabric-transaction metrics; added utils/metrics.py wired into existing RequestContextMiddleware + GET /metrics; Fabric tx counters recorded at the submitTransaction/evaluateTransaction call surface, not the internal P6.2 RPC implementation" },
+    { "id": 4, "component": "mobile_structured_logging", "summary": "no structured logging or connectivity diagnostics existed; added AppLogger (dart:developer-backed, kDebugMode-gated) to both apps, wired into api_exception.dart (both) and sync_manager.dart/sync_providers.dart (collector only, per its offline-queue design)" }
+  ],
+  "tests": {
+    "backend_metrics_unit": { "passed": 7, "total": 7 },
+    "backend_metrics_integration": { "passed": 3, "total": 3 },
+    "backend_blockchain_service_updated": { "passed": 7, "total": 7 },
+    "backend_full_suite": { "passed": 336, "total": 336, "note": "326 P7.2 baseline + 10 new" },
+    "backend_lint_typecheck_build": { "lint_errors": 0, "typecheck_errors": 0, "build": "success" },
+    "python_p73_observability_new": { "passed": 11, "total": 11 },
+    "python_p62_updated": { "passed": 46, "total": 46, "note": "43 P6.2 baseline + 3 new" },
+    "python_full_suite": { "passed": 1095, "total": 1095, "note": "1081 P7.2 baseline + 14 new; pre-existing benchmark flake did not reproduce this run" },
+    "collector_flutter": { "analyze_issues": 0, "passed": 22, "total": 22, "note": "18 baseline + 4 new" },
+    "consumer_flutter": { "analyze_issues": 0, "passed": 13, "total": 13, "note": "9 baseline + 4 new" },
+    "frontend_typecheck_lint": { "typecheck_errors": 0, "lint_errors": 0, "note": "unaffected, no files touched" },
+    "new_code_lint_hygiene": "ruff/mypy scoped to every touched file; 1 genuine mypy error in this phase's own new code found and fixed; all other findings confirmed pre-existing via git diff and left untouched"
+  },
+  "security_considerations": [
+    "GET /metrics (both services) public read-only, exposes only aggregate counts/timings by route template, no raw URLs/bodies/PII — same sensitivity bar as existing /health",
+    "ping_engine() never logs connection strings or credentials",
+    "AppLogger never activates in release builds (kDebugMode gate) — no production mobile log sink exists at all"
+  ],
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "protected_assets_status": "6/6 MATCH (before and after)",
+  "environmental_limitations": [
+    "No metrics scrape target (Prometheus/Grafana) exists in this environment — addressed by design with a lightweight JSON summary instead of an unused dependency, not left as an open gap"
+  ],
+  "release_blockers": [],
+  "definition_of_done": {
+    "existing_surface_audited_before_adding": true,
+    "real_gaps_fixed_with_tests": true,
+    "no_new_sensitive_data_exposure": true,
+    "new_code_lint_type_hygiene_clean": true,
+    "protected_assets_verified": true,
+    "no_unrelated_refactoring_no_broken_endpoints": true
+  },
+  "next_task": "P7.4 — Security Hardening & Threat Model"
+}

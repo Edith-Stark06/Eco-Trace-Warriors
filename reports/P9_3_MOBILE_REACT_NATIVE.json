@@ -1,0 +1,162 @@
+{
+  "phase": "P9.3",
+  "title": "Mobile Architecture Migration: Flutter/Dart to React Native + Expo SDK 57",
+  "status": "PASS WITH LIMITATIONS",
+  "scope": "Complete replacement of the Flutter/Dart mobile stack with two independent React Native + Expo SDK 57 + TypeScript apps (Collector, Consumer), including full Flutter/Dart purge, real backend/device_ai API integration, offline-first sync, backend-mediated blockchain/trust verification, accessibility, security review, real tests, and full-system regression.",
+  "baseline": {
+    "branch": "develop",
+    "head_before_purge": "d30d0d6",
+    "head_after_purge_commit": "31d40c4",
+    "p9_1_verdict": "COMPLETE WITH ENVIRONMENTAL LIMITATIONS",
+    "p9_2_verdict": "LIVE FABRIC — ACHIEVED",
+    "protected_assets_verified_before": true
+  },
+  "flutter_dart_purge": {
+    "current_tree_files_removed": 90,
+    "lines_removed": 8337,
+    "removal_commit": "31d40c4",
+    "removal_commit_message": "chore(mobile): remove flutter and dart architecture",
+    "local_flutter_sdk_removed": true,
+    "local_flutter_sdk_path": "D:\\Documents\\DevTools\\flutter (outside the repository, EcoTrace-specific, ~3.3GB)",
+    "user_wide_pub_cache_preserved": true,
+    "git_history_secret_audit": {
+      "historical_flutter_dart_files_found": 87,
+      "secret_patterns_found": 0,
+      "history_rewritten": false,
+      "reason": "no secrets found; history rewrite not warranted and not authorized"
+    },
+    "remaining_flutter_dart_doc_references": "intentional 'migrated from Flutter/Dart' historical notes only, in README.md, PROJECT.md, AGENTS.md, CLAUDE.md, docs/engineering/{01_CLAUDE,03_ARCHITECTURE,12_ROADMAP}.md, plus a disclosed partial-coverage superseded-banner in docs/engineering/07_FRONTEND.md"
+  },
+  "react_native_implementation": {
+    "generator": "create-expo-app (official Expo tooling, not hand-picked versions)",
+    "versions": {
+      "expo": "57.0.18",
+      "react-native": "0.86.3",
+      "react": "19.2.3",
+      "typescript": "~6.0.3"
+    },
+    "apps": ["mobile/collector_app", "mobile/consumer_app"],
+    "architecture": "src/{api,auth,components,config,hooks,navigation,screens,storage,types} per app, TypeScript throughout, no shared codebase between apps",
+    "collector_app_features": [
+      "auth (login, secure-store session persistence, role gate, logout)",
+      "camera capture (expo-camera, preview/retake)",
+      "QR/barcode scan (expo-camera built-in onBarcodeScanned)",
+      "AI device classification via POST /devices/register, confirm/finalize",
+      "dashboard: GET /collector/submissions",
+      "lifecycle actions: accept/start/complete matching real backend state machine",
+      "offline-first AsyncStorage queue for AI device confirmations",
+      "submission history with pending/failed/retry states",
+      "error handling for API/network/auth/permission failures"
+    ],
+    "consumer_app_features": [
+      "auth (register matching real registerSchema, login, secure-store, role gate, logout)",
+      "report e-waste: real POST /submissions (CONSUMER-only), offline-queued",
+      "scan + device passport: GET /devices/{id}/passport, /trust, /passport/verify",
+      "rewards: GET /rewards/balance, /rewards/history",
+      "submission history with offline queue status/retry",
+      "education screen (static content)",
+      "profile screen"
+    ]
+  },
+  "real_defects_found_and_fixed": [
+    {
+      "id": 1,
+      "description": "Collector app's RegisterDeviceScreen and offline sync queue incorrectly called submissionsApi.create() (POST /submissions), which requires the CONSUMER role per backend/src/modules/submission/submission.routes.ts's real authorize() middleware — a Collector would receive 403",
+      "root_cause": "assumption made before reading the real authorization middleware",
+      "fix": "removed create()/CreateSubmissionInput from the Collector app's API layer entirely; RegisterDeviceScreen now only confirms/finalizes the AI-side device record (the real authorized Collector action); offline queue re-scoped from 'pending submissions' to 'pending device confirmations'",
+      "verified": true,
+      "verification_method": "direct inspection of submission.routes.ts's authorize(UserRole.X) calls for every endpoint used by either app"
+    }
+  ],
+  "blockchain_architecture": "Mobile apps never touch Fabric directly. Consumer app's DevicePassportScreen reads exclusively through intelligence/device_ai's REST API (/passport, /trust, /passport/verify), which owns the real FabricGatewayClient validated against a genuine local Fabric network in P9.2. No Fabric SDK, peer address, wallet, or private key exists in either app.",
+  "real_ecosystem_findings": [
+    {
+      "finding": "@testing-library/react-native 14.0.1's render() returns a Promise on this React 19.2.3 / react-native 0.86.3 / test-renderer stack",
+      "verification": "direct debug instrumentation showed render() returning {} (unresolved Promise) until awaited"
+    },
+    {
+      "finding": "fireEvent.press/.changeText/.scroll also return Promises on this stack and must be awaited",
+      "verification": "confirmed via fire-event.d.ts's real Promise<void>/Promise<undefined> signatures and an 'overlapping act() calls' warning before the fix"
+    },
+    {
+      "finding": "eslint-config-expo's flat config enables react-hooks/set-state-in-effect, flagging 4 instances of calling a useCallback-wrapped async function directly from useEffect across both apps",
+      "fix": "inlined the initial fetch in the effect body with a cancelled guard; kept the useCallback version only for explicit manual refresh",
+      "verified": true
+    }
+  ],
+  "accessibility": {
+    "status": "PASS — MOCK/LOCAL",
+    "detail": "Every interactive control has accessibilityRole/accessibilityLabel; form inputs use nativeID/accessibilityLabelledBy; busy/disabled states use accessibilityState not color alone; error/status banners use accessibilityRole=alert or accessibilityLiveRegion=polite; 44x44pt minimum touch targets throughout. No live screen-reader (TalkBack/VoiceOver) device walkthrough was performed — no device/emulator exists in this environment."
+  },
+  "security_review": [
+    "Token storage via expo-secure-store (Keychain/Keystore-backed), never AsyncStorage",
+    "No hardcoded secrets — API URLs and service API key are EXPO_PUBLIC_* build-time env vars",
+    "No Fabric credentials in mobile code",
+    "assertSecureApiUrl() throws in release builds if API URLs are not HTTPS (P8.7 pattern)",
+    "Logout clears secure storage and calls real POST /auth/logout",
+    "No sensitive data logged in production code paths",
+    "Client-side validation is UX-only; backend Zod schemas remain the real authority"
+  ],
+  "tests": [
+    {"name": "Collector app typecheck", "result": "PASS — VERIFIED", "detail": "tsc --noEmit, 0 errors"},
+    {"name": "Collector app lint", "result": "PASS — VERIFIED", "detail": "eslint ., 0 errors, 0 warnings"},
+    {"name": "Collector app tests", "result": "PASS — VERIFIED", "detail": "12/12 (Jest + React Native Testing Library)"},
+    {"name": "Consumer app typecheck", "result": "PASS — VERIFIED", "detail": "tsc --noEmit, 0 errors"},
+    {"name": "Consumer app lint", "result": "PASS — VERIFIED", "detail": "eslint ., 0 errors, 0 warnings"},
+    {"name": "Consumer app tests", "result": "PASS — VERIFIED", "detail": "10/10 (Jest + React Native Testing Library)"},
+    {"name": "Android build", "result": "BLOCKED — ENVIRONMENT", "detail": "no Android SDK present"},
+    {"name": "iOS build", "result": "BLOCKED — ENVIRONMENT", "detail": "requires macOS + Xcode; this is a Windows environment"},
+    {"name": "Backend regression", "result": "PASS — VERIFIED", "detail": "341/341"},
+    {"name": "Chaincode regression", "result": "PASS — VERIFIED", "detail": "47/47"},
+    {"name": "device_ai regression", "result": "PASS — VERIFIED", "detail": "1121/1121, 0 errors, 0 failures (junitxml authoritative)"},
+    {"name": "Frontend regression", "result": "PASS — VERIFIED", "detail": "typecheck clean, lint clean; untouched this phase"}
+  ],
+  "e2e_status": "PASS WITH LIMITATIONS — screens and API wiring implemented and individually verified against real endpoints/authorization; a live device/emulator tap-through of the full journey was not performed (no Android/iOS runtime in this environment)",
+  "performance": "BLOCKED — ENVIRONMENT — no physical device or emulator exists to measure startup/navigation/scan-response latency; not fabricated",
+  "ci": "No pre-existing mobile CI job existed to remove. A new React Native CI job was not added in this phase — disclosed, deliberately deferred to keep scope bounded, not silently omitted.",
+  "files_changed": {
+    "removed": "90 tracked Flutter/Dart files (8337 lines) across both apps, commit 31d40c4",
+    "added": [
+      "mobile/collector_app/** (full Expo TypeScript project)",
+      "mobile/consumer_app/** (full Expo TypeScript project)",
+      "docs/mobile/README.md"
+    ],
+    "modified": [
+      "README.md", "PROJECT.md", "AGENTS.md", "CLAUDE.md",
+      "docs/engineering/01_CLAUDE.md", "docs/engineering/02_PROJECT_RULES.md",
+      "docs/engineering/03_ARCHITECTURE.md", "docs/engineering/05_API.md",
+      "docs/engineering/07_FRONTEND.md", "docs/engineering/10_TESTING.md",
+      "docs/engineering/11_DEPLOYMENT.md", "docs/engineering/12_ROADMAP.md"
+    ],
+    "not_touched": ["backend/", "intelligence/device_ai/", "frontend/", "blockchain/", "docker-compose.yml", ".github/workflows/backend-ci.yml", "all 6 protected ML assets"]
+  },
+  "protected_asset_verification": {
+    "p442_yolo11n": {"expected": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92", "result": "MATCH"},
+    "p411_yolo11n_targeted_aug": {"expected": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c", "result": "MATCH"},
+    "p412_yolo11s": {"expected": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc", "result": "MATCH"},
+    "p414_yolo11n_targeted_aug": {"expected": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81", "result": "MATCH"},
+    "p45_data_yaml": {"expected": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b", "result": "MATCH"},
+    "p47_final_data_yaml": {"expected": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284", "result": "MATCH"},
+    "all_match": true
+  },
+  "environmental_limitations": [
+    {"item": "Android APK/AAB build", "classification": "BLOCKED — ENVIRONMENT", "detail": "No Android SDK present"},
+    {"item": "iOS build", "classification": "BLOCKED — ENVIRONMENT", "detail": "Requires macOS + Xcode"},
+    {"item": "Live screen-reader accessibility walkthrough", "classification": "PASS — MOCK/LOCAL", "detail": "Verified via accessibility-prop inspection, not a live device session"},
+    {"item": "Mobile-device performance measurement", "classification": "BLOCKED — ENVIRONMENT", "detail": "No physical device/emulator"},
+    {"item": "Running-app device-level E2E walkthrough", "classification": "PASS WITH LIMITATIONS", "detail": "Not exercised as a live tap-through"},
+    {"item": "React Native CI job", "classification": "Not implemented", "detail": "Deliberately deferred, disclosed"},
+    {"item": "docs/engineering/07_FRONTEND.md deep historical content", "classification": "Partially superseded-banner only", "detail": "Detailed subsections not individually rewritten"}
+  ],
+  "unresolved_issues": "None that block a pilot release on the currently-supported platforms (Metro/Expo Go dev, web preview). The Android/iOS build gap is environmental, not a functionality gap.",
+  "git_state": {
+    "branch": "develop",
+    "commits": [
+      "chore(mobile): remove flutter and dart architecture (31d40c4)"
+    ],
+    "force_push": false,
+    "history_rewritten": false,
+    "pushed_to": "origin/develop"
+  },
+  "final_verdict": "PASS WITH LIMITATIONS"
+}

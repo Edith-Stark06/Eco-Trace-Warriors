@@ -1,0 +1,73 @@
+{
+  "phase": "P7.9",
+  "title": "Performance, Reliability & Failure-Injection Testing",
+  "status": "PASS",
+  "timestamp": "2026-09-01T00:00:00Z",
+  "checklist_coverage": {
+    "api_latency": "not_brittle_tested_by_design — see reasoning",
+    "concurrent_requests": "NEW_THIS_PHASE",
+    "database_failures": "covered_P7_3",
+    "fabric_unavailable": "covered_P6_2_P6_7",
+    "fabric_timeout": "NEW_THIS_PHASE",
+    "fabric_transaction_rejection": "covered_P6_2",
+    "network_interruption": "covered_P6_7",
+    "duplicate_requests": "covered_P7_8",
+    "retry_behavior": "covered_P6_3",
+    "stale_trust_anchor": "covered_P5_9",
+    "trust_mismatch": "covered_P5_8",
+    "invalid_passport": "covered_P5_7",
+    "invalid_lifecycle_transition": "covered_P6_1_chaincode_and_backend_authorize",
+    "mobile_offline_mode": "covered_P6_3",
+    "sync_conflict": "covered_P6_3",
+    "large_image_upload": "covered_preexisting_test_predict",
+    "ocr_failure": "NEW_THIS_PHASE",
+    "barcode_failure": "NEW_THIS_PHASE"
+  },
+  "why_no_brittle_latency_assertion": "this project already has one known-flaky CPU-timer-dependent test (test_detector_benchmark.py, documented since P6.2, observed both passing and failing across different runs this session); adding another timing threshold would repeat exactly the mistake this phase's own brief warns against; the one place duration matters (Fabric timeout test) asserts on outcome (exception type) with a threshold an order of magnitude below the injected delay, never on measured wall-clock duration",
+  "new_tests_detail": {
+    "ocr_barcode_failure": {
+      "what_it_proves": "a backend/reader that raises mid-call returns a clean 500 standard envelope, no leaked exception text, verified against the real POST /ocr/extract route",
+      "discovery": "app.dependency_overrides could not intercept get_ocr_backend/get_barcode_reader individually since get_ocr_service calls them as plain functions, not Depends params — had to override get_ocr_service itself; found by running the first draft and diagnosing why the override had no effect"
+    },
+    "concurrency": {
+      "health_endpoint": "20 real threads, all 200, metrics registry count exactly 20 — no lost updates under its Lock",
+      "rate_limited_predict": "15 real threads against a limit of 5: exactly 5 succeed, exactly 10 rejected with 429 — no races in the counter under contention",
+      "self_found_bugs": "metrics test needed registry reset between runs (state bleed); rate-limit test needed a directly-shared RateLimiter instance, same lesson as P7.4's own override-lambda bug"
+    },
+    "fabric_timeout": {
+      "what_it_proves": "client's own fabric_timeout_seconds is actually enforced against a reachable-but-slow peer (new evaluate_delay_seconds field on FakeGatewayBehavior, default 0.0, zero behavior change to existing tests), distinct from the already-covered port-closed unavailable case",
+      "result": "raises FabricUnavailable via genuine grpc.StatusCode.DEADLINE_EXCEEDED with a 0.5s client timeout against a 2.0s server delay"
+    }
+  },
+  "tests": {
+    "test_p79_failure_injection_new": { "passed": 5, "total": 5 },
+    "python_full_suite": { "passed": 1109, "total": 1110, "note": "1 pre-existing unrelated benchmark-timing flake" },
+    "ruff_new_code": "0 findings",
+    "mypy_new_code": "0 errors — added cast(FastAPI, client.app) helper for upstream stub imprecision"
+  },
+  "security_considerations": [
+    "OCR/barcode failure tests re-verify under a genuine failure (not just source-reading) that exception internals never leak to a client",
+    "no new network-facing attack surface added"
+  ],
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "protected_assets_status": "6/6 MATCH (before and after)",
+  "environmental_limitations": [],
+  "release_blockers": [],
+  "definition_of_done": {
+    "every_checklist_category_mapped_to_real_evidence": true,
+    "deterministic_failure_injection_for_every_gap": true,
+    "no_brittle_timing_assertions_added": true,
+    "hardware_environment_differences_acknowledged": true,
+    "graceful_degradation_verified_under_new_injected_failures": true,
+    "protected_assets_verified": true,
+    "no_unrelated_refactoring": true
+  },
+  "next_task": "P7.10 — Final Production Release Audit"
+}

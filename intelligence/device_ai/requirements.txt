@@ -1,0 +1,47 @@
+# Device Intelligence Engine — core runtime dependencies (milestone M1.1)
+#
+# These are the only packages required to run the mock service, its tests
+# and tooling. Heavy model dependencies (PyTorch, Ultralytics, OpenCLIP,
+# EasyOCR, ONNX Runtime) are intentionally deferred to
+# requirements-models.txt so the base image stays small and fast to build.
+#
+# Pinned for reproducible builds (docs/engineering/08_AI.md).
+
+# --- Web framework & server ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20          # multipart/form-data (image uploads)
+
+# --- Configuration & validation ---
+pydantic==2.10.4
+pydantic-settings==2.7.1
+PyYAML==6.0.3                      # training/experiment config parsing (M1.3)
+
+# --- Imaging (mock hot path) ---
+pillow==11.1.0
+numpy==2.2.1
+
+# --- Logging ---
+loguru==0.7.3
+
+# --- P5.4/P5.9/P5.11 PostgreSQL persistence ---
+# Imported unconditionally at module load time (device_ai/devices/__init__.py
+# -> postgres_external_trust_repository.py), not gated behind
+# DEVICE_BACKEND=postgres — the service fails to even start without these,
+# regardless of which backend is configured. Missing from this file since at
+# least P5.4 and never caught because local development environments always
+# had them installed ad hoc; only surfaced by a real, clean `docker build`
+# (P7.5), which is exactly the class of bug that audit exists to catch.
+sqlalchemy==2.0.52
+psycopg[binary]==3.3.4
+alembic==1.19.1
+
+# --- P6.2 Fabric Gateway client ---
+# Hyperledger Fabric does not publish an official Python Gateway SDK (only
+# Go, Node.js, Java); the Gateway is a plain gRPC service, so grpcio is the
+# correct, standard transport for a Python client speaking its protocol
+# directly against the vendored `.proto` contract in blockchain/fabric-protos/
+# (see that directory's README and reports/P6_2_FABRIC_GATEWAY_INTEGRATION.md).
+grpcio==1.83.1
+protobuf==7.36.0                   # generated Fabric Gateway stub runtime
+cryptography==50.0.1               # X.509 identity loading + ECDSA proposal/tx signing

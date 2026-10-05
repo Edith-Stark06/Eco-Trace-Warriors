@@ -1,0 +1,275 @@
+{
+  "device_id": "DEV-2026-SCENARIO-01",
+  "anchor": {
+    "success": true,
+    "anchor": {
+      "anchor_id": "anc-79313d996d7b",
+      "device_id": "DEV-2026-SCENARIO-01",
+      "passport_fingerprint": "81117996b5ab4f07fc0d27659884bdee8f791f71fb9a104d88243238da0b8c04",
+      "algorithm": "sha256",
+      "anchored_at": "2026-09-01T05:10:04.800685+00:00",
+      "status": "ANCHORED",
+      "metadata": {}
+    },
+    "is_new": true,
+    "request_id": "c25abc80a96f4f22abb4579b43025205"
+  },
+  "enrich2_status": 200,
+  "enrich2_body": {
+    "success": true,
+    "device": {
+      "device_id": "DEV-2026-SCENARIO-01",
+      "capture_id": "p85-mismatch-scenario",
+      "class_id": 2,
+      "device_type": "tablet",
+      "confidence": 0.8,
+      "confidence_state": "HIGH_CONFIDENCE",
+      "bounding_box": [
+        10,
+        10,
+        200,
+        200
+      ],
+      "model_version": "1.0.0",
+      "inference_mode": "single_model",
+      "registration_state": "REGISTERED",
+      "condition": "UNKNOWN",
+      "materials": {
+        "Anodized aluminium enclosure": 200.0,
+        "Touch digitizer & LCD glass": 150.0,
+        "Lithium-ion polymer battery": 100.0,
+        "System logic board (PCB)": 30.0
+      },
+      "carbon_score": 2.495,
+      "metadata": {
+        "eco_id": "ET-2026-112390B3",
+        "image_count": 1,
+        "brand": {
+          "value": null,
+          "status": "UNKNOWN",
+          "source": "ocr",
+          "confidence": null,
+          "raw_text": null
+        },
+        "enrichment": {
+          "device_id": "DEV-2026-SCENARIO-01",
+          "brand": {
+            "value": null,
+            "status": "UNKNOWN",
+            "source": "ocr",
+            "confidence": null,
+            "raw_text": null
+          },
+          "condition": {
+            "value": "UNKNOWN",
+            "status": "UNAVAILABLE",
+            "source": "pending_assessment",
+            "confidence": null,
+            "notes": "Baseline condition policy: visual condition assessment model pending."
+          },
+          "materials": {
+            "materials": [
+              {
+                "material": "Anodized aluminium enclosure",
+                "category": "metals",
+                "mass_g": 200.0,
+                "recoverable": true,
+                "hazardous": false,
+                "basis": "device_profile"
+              },
+              {
+                "material": "Touch digitizer & LCD glass",
+                "category": "glass",
+                "mass_g": 150.0,
+                "recoverable": true,
+                "hazardous": false,
+                "basis": "device_profile"
+              },
+              {
+                "material": "Lithium-ion polymer battery",
+                "category": "battery",
+                "mass_g": 100.0,
+                "recoverable": true,
+                "hazardous": true,
+                "basis": "device_profile"
+              },
+              {
+                "material": "System logic board (PCB)",
+                "category": "circuit_boards",
+                "mass_g": 30.0,
+                "recoverable": true,
+                "hazardous": false,
+                "basis": "device_profile"
+              }
+            ],
+            "total_mass_g": 480.0,
+            "source": "device_profile",
+            "version": "v1.0.0",
+            "notes": "Nominal composition profile for category 'tablet'."
+          },
+          "carbon": {
+            "carbon_score": 2.495,
+            "methodology": "avoided_burden_co2e",
+            "version": "v1.0.0",
+            "source": "estimated_project_model",
+            "contributing_factors": {
+              "metals": 1.0,
+              "glass": 0.105,
+              "battery": 0.85,
+              "circuit_boards": 0.54
+            },
+            "notes": "Estimated avoided CO2e based on nominal recoverable material profile."
+          },
+          "enriched_at": "2026-09-01T05:10:04.847125+00:00"
+        }
+      },
+      "created_at": "2026-09-01T05:10:04.730976+00:00",
+      "updated_at": "2026-09-01T05:10:04.847174+00:00"
+    },
+    "intelligence": {
+      "device_id": "DEV-2026-SCENARIO-01",
+      "brand": {
+        "value": null,
+        "status": "UNKNOWN",
+        "source": "ocr",
+        "confidence": null,
+        "raw_text": null
+      },
+      "condition": {
+        "value": "UNKNOWN",
+        "status": "UNAVAILABLE",
+        "source": "pending_assessment",
+        "confidence": null,
+        "notes": "Baseline condition policy: visual condition assessment model pending."
+      },
+      "materials": {
+        "materials": [
+          {
+            "material": "Anodized aluminium enclosure",
+            "category": "metals",
+            "mass_g": 200.0,
+            "recoverable": true,
+            "hazardous": false,
+            "basis": "device_profile"
+          },
+          {
+            "material": "Touch digitizer & LCD glass",
+            "category": "glass",
+            "mass_g": 150.0,
+            "recoverable": true,
+            "hazardous": false,
+            "basis": "device_profile"
+          },
+          {
+            "material": "Lithium-ion polymer battery",
+            "category": "battery",
+            "mass_g": 100.0,
+            "recoverable": true,
+            "hazardous": true,
+            "basis": "device_profile"
+          },
+          {
+            "material": "System logic board (PCB)",
+            "category": "circuit_boards",
+            "mass_g": 30.0,
+            "recoverable": true,
+            "hazardous": false,
+            "basis": "device_profile"
+          }
+        ],
+        "total_mass_g": 480.0,
+        "source": "device_profile",
+        "version": "v1.0.0",
+        "notes": "Nominal composition profile for category 'tablet'."
+      },
+      "carbon": {
+        "carbon_score": 2.495,
+        "methodology": "avoided_burden_co2e",
+        "version": "v1.0.0",
+        "source": "estimated_project_model",
+        "contributing_factors": {
+          "metals": 1.0,
+          "glass": 0.105,
+          "battery": 0.85,
+          "circuit_boards": 0.54
+        },
+        "notes": "Estimated avoided CO2e based on nominal recoverable material profile."
+      },
+      "enriched_at": "2026-09-01T05:10:04.847125+00:00"
+    },
+    "request_id": "2a17c9c673844a219a988b83f8ab083f"
+  },
+  "verify_after_mutation": {
+    "success": true,
+    "verification": {
+      "device_id": "DEV-2026-SCENARIO-01",
+      "verification_status": "VERIFIED",
+      "passport_fingerprint": "66b62e07dac0c800b3950f5109444981d358c1741ecba6516c6191bbf04004b7",
+      "checks": {
+        "identity": "PASS",
+        "detection": "PASS",
+        "lifecycle": "PASS",
+        "audit_history": "PASS",
+        "provenance": "PASS",
+        "enrichment": "PASS"
+      },
+      "check_details": [
+        {
+          "name": "identity",
+          "status": "PASS",
+          "message": "Device identity and canonical taxonomy verified.",
+          "details": {
+            "device_type": "tablet",
+            "class_id": 2
+          }
+        },
+        {
+          "name": "detection",
+          "status": "PASS",
+          "message": "Computer vision detection attributes verified.",
+          "details": {
+            "confidence": 0.8,
+            "bounding_box": [
+              10,
+              10,
+              200,
+              200
+            ]
+          }
+        },
+        {
+          "name": "lifecycle",
+          "status": "PASS",
+          "message": "Lifecycle state 'REGISTERED' consistent with state machine.",
+          "details": {
+            "state": "REGISTERED"
+          }
+        },
+        {
+          "name": "audit_history",
+          "status": "PASS",
+          "message": "Audit trail verified: 5 chronological events without sequence violations.",
+          "details": {
+            "total_events": 5
+          }
+        },
+        {
+          "name": "provenance",
+          "status": "PASS",
+          "message": "Provenance integrity verified across brand, condition, material, and carbon facets.",
+          "details": {}
+        },
+        {
+          "name": "enrichment",
+          "status": "PASS",
+          "message": "Enrichment facets are consistent and mathematically sound.",
+          "details": {}
+        }
+      ],
+      "warnings": [],
+      "errors": [],
+      "verified_at": "2026-09-01T05:10:04.855539+00:00"
+    },
+    "request_id": "f01a7876e22b4ad4a8078ee4307f15a0"
+  }
+}

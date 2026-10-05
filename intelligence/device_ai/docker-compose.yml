@@ -1,0 +1,44 @@
+# Device Intelligence Engine — local orchestration
+#
+# Runs the mock AI microservice in isolation. The existing EcoTrace backend
+# is NOT modified; it will call this service over HTTP at the exposed port.
+
+services:
+  device-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ecotrace/device-ai:1.0.0
+    container_name: ecotrace-device-ai
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8100
+      LOG_LEVEL: INFO
+      JSON_LOGS: "false"
+      MODEL_DIR: /app/models
+      UPLOAD_DIR: /app/uploads
+      ARTIFACT_DIR: /app/artifacts
+      MLRUNS_DIR: /app/mlruns
+      EXPERIMENT_TRACKER: json
+      MAX_IMAGES: 6
+      MAX_FILE_SIZE: 10485760
+    ports:
+      - "8100:8100"
+    volumes:
+      # Persist model artifacts outside the image (future milestones).
+      - device-ai-models:/app/models
+      # Persist training artifacts and experiment runs (milestone M1.3).
+      - device-ai-artifacts:/app/artifacts
+      - device-ai-mlruns:/app/mlruns
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8100/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  device-ai-models:
+  device-ai-artifacts:
+  device-ai-mlruns:

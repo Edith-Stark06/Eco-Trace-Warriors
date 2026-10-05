@@ -1,0 +1,33 @@
+{
+  "corrupted": [],
+  "duplicate_filenames": [],
+  "duplicate_hashes": [
+    "laptop_field_000001_copy.png"
+  ],
+  "invalid_aspect_ratio": [],
+  "is_valid": false,
+  "issues": [
+    {
+      "code": "DUPLICATE_HASH",
+      "file": "laptop_field_000001_copy.png",
+      "message": "identical content to 'laptop_field_000001.png' (exact SHA-256 match)"
+    }
+  ],
+  "oversized_files": [],
+  "oversized_resolution": [],
+  "summary": {
+    "corrupted": 0,
+    "duplicate_filenames": 0,
+    "duplicate_hashes": 1,
+    "invalid_aspect_ratio": 0,
+    "oversized_files": 0,
+    "oversized_resolution": 0,
+    "total_issues": 1,
+    "undersized": 0,
+    "unsupported_extensions": 0
+  },
+  "total_files_scanned": 5,
+  "total_images": 5,
+  "undersized": [],
+  "unsupported_extensions": []
+}

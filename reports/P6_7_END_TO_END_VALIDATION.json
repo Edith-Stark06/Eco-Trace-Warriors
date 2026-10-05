@@ -1,0 +1,73 @@
+{
+  "phase": "P6.7",
+  "title": "End-to-End System Validation",
+  "status": "IMPLEMENTED_VERIFIED_WITH_ENVIRONMENTAL_LIMITATIONS",
+  "timestamp": "2026-09-01T00:00:00Z",
+  "environment_inventory": {
+    "python_device_ai_standalone": "available, verified live",
+    "node_backend_standalone_non_db_routes": "available, verified live",
+    "postgresql": "unavailable — no psql/pg_ctl, Docker daemon not running",
+    "live_fabric_network": "unavailable — no peer/orderer anywhere in repo or environment",
+    "flutter_sdk": "available (installed P6.3), analyze/test run for real",
+    "android_sdk": "unavailable — flutter doctor: Unable to locate Android SDK",
+    "docker": "binary present, daemon not running"
+  },
+  "live_cross_service_proof": {
+    "description": "Real Python uvicorn service (port 8100) and real Node backend (port 3099, tsx watch) run as separate live processes, backend pointed at the live Python service via DEVICE_AI_SERVICE_URL. No mocks on either side of the P6.5 proxy boundary.",
+    "happy_path": {
+      "python_direct": "GET http://127.0.0.1:8100/system/blockchain/health -> status=disabled, fabric_enabled=false (real, live)",
+      "backend_proxy": "GET http://127.0.0.1:3099/api/v1/system/blockchain/health -> status=disabled, fabricEnabled=false (correctly transformed to camelCase)"
+    },
+    "degradation_path": {
+      "action": "Python process killed mid-session; backend NOT restarted",
+      "result": "GET http://127.0.0.1:3099/api/v1/system/blockchain/health -> status=proxy_unreachable, message='Could not reach the device intelligence / Fabric Gateway service.'",
+      "http_status_code": 200,
+      "significance": "Proves the honest, non-fabricating degradation design (P6.5) holds against a real killed process, not just a simulated fetch rejection in a test double"
+    },
+    "additional_check": "GET /api/v1/health on backend confirmed status=ok with no database connection (NODE_ENV=development does not require DATABASE_URL)"
+  },
+  "consolidated_test_results": {
+    "intelligence_device_ai_python": { "passed": 1072, "total": 1073, "note": "1 pre-existing unrelated machine-timing failure, documented since P6.2" },
+    "p61_chaincode_jest": { "passed": 45, "total": 45 },
+    "backend_node_jest": { "passed": 323, "total": 323 },
+    "backend_lint_typecheck": { "lint_errors": 0, "typecheck_errors": 0 },
+    "collector_app_flutter": { "passed": 18, "total": 18, "analyze_issues": 0 },
+    "consumer_app_flutter": { "passed": 9, "total": 9, "analyze_issues": 0 },
+    "frontend_react": { "typecheck_errors": 0, "lint_errors": 0, "build": "success", "test_suite": "does not exist in this project (pre-existing)" },
+    "total_automated_tests_passing": 1467
+  },
+  "scenario_mapping_summary": {
+    "fully_covered": ["B", "C", "D", "G", "H", "J", "K", "M", "N", "O"],
+    "partially_covered": ["E", "F", "I", "L"],
+    "does_not_apply_to_real_backend": ["A"],
+    "notes": "Full scenario-by-scenario rationale in P6_7_END_TO_END_VALIDATION.md section 5. Scenario A does not apply because the real backend models pickup-logistics Submissions, not AI device registration by collectors (established in P6.3/P6.4)."
+  },
+  "honest_e2e_verdict": {
+    "mocked_fabric_e2e": "PASS",
+    "live_fabric_e2e": "BLOCKED_BY_ENVIRONMENT — no Hyperledger Fabric peer exists anywhere in this repository or execution environment",
+    "live_mobile_backend_e2e": "NOT_EXECUTED — no Postgres available; only the one database-free route (blockchain health) was proven live",
+    "conflation_check": "mocked and live results reported separately, never conflated, per standing instruction"
+  },
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "protected_assets_status": "ALL MATCH",
+  "limitations": [
+    "No live Fabric peer in this environment — Fabric integration verified only via authentic-protocol mocked/fake-server tests",
+    "No Postgres/Docker in this environment — database-backed routes not exercised in a live mobile-to-backend run",
+    "Flutter apps verified via analyze/test only, not run against a live backend (no Android SDK / emulator)"
+  ],
+  "definition_of_done": {
+    "fresh_test_suite_reruns_all_components": true,
+    "live_unmocked_cross_service_proof": true,
+    "scenario_by_scenario_mapping_no_silent_skips": true,
+    "live_fabric_and_mobile_e2e_honestly_reported_as_blocked": true,
+    "protected_assets_verified": true
+  },
+  "next_task": "P6.8 — Production Hardening"
+}

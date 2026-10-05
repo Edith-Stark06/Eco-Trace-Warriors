@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "189d4c57-103e-4717-b576-dea640b58b3d",
+      "fullName": "Authorized Recycler",
+      "email": "recycler@ecotrace.com",
+      "phone": "9999999994",
+      "region": "Chennai",
+      "role": "RECYCLER",
+      "emailVerified": true,
+      "createdAt": "2026-07-27T13:16:00.932Z"
+    },
+    "accessToken": "[REDACTED_JWT_DEV_TOKEN]",
+    "refreshToken": "[REDACTED_JWT_DEV_TOKEN]"
+  }
+}

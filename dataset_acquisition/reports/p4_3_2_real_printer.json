@@ -1,0 +1,47 @@
+{
+  "classes": [
+    {
+      "class_id": 8,
+      "conversion_errors": 0,
+      "converted": 0,
+      "downloaded": 0,
+      "duplicates": 0,
+      "ecotrace_class": "printer",
+      "mapping_status": "MAPPED",
+      "messages": [
+        "download failed: Traceback (most recent call last):\n  File \"<string>\", line 12, in <module>\n  File \"<frozen runpy>\", line 287, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"main.py\", line 37, in <module>\n    bounding_boxes_images(args, DEFAULT_OID_DIR)\n  File \"D:\\Documents\\Projects\\Eco-Trace-Warriors\\dataset_acquisition\\OIDv4_ToolKit\\modules\\bounding_boxes.py\", line 60, in bounding_boxes_images\n    df_val = TTV(csv_dir, name_file, args.yes)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Documents\\Projects\\Eco-Trace-Warriors\\dataset_acquisition\\OIDv4_ToolKit\\modules\\csv_downloader.py\", line 21, in TTV\n    df_val = pd.read_csv(CSV)\n             ^^^^^^^^^^^^^^^^\n  File \"D:\\Documents\\Projects\\Eco-Trace-Warriors\\dataset_acquisition\\.venv\\Lib\\site-packages\\pandas\\io\\parsers\\readers.py\", line 873, in read_csv\n    return _read(filepath_or_buffer, kwds)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Documents\\Projects\\Eco-Trace-Warriors\\dataset_acquisition\\.venv\\Lib\\site-packages\\pandas\\io\\parsers\\readers.py\", line 306, in _read\n    return parser.read(nrows)\n           ^^^^^^^^^^^^^^^^^^\n  File \"D:\\Documents\\Projects\\Eco-Trace-Warriors\\dataset_acquisition\\.venv\\Lib\\site-packages\\pandas\\io\\parsers\\readers.py\", line 1947, in read\n    ) = self._engine.read(  # type: ignore[attr-defined]\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Documents\\Projects\\Eco-Trace-Warriors\\dataset_acquisition\\.venv\\Lib\\site-packages\\pandas\\io\\parsers\\c_parser_wrapper.py\", line 217, in read\n    data = _concatenate_chunks(chunks, self.names)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Documents\\Projects\\Eco-Trace-Warriors\\dataset_acquisition\\.venv\\Lib\\site-packages\\pandas\\io\\parsers\\c_parser_wrapper.py\", line 359, in _concatenate_chunks\n    result[name] = concat_compat(arrs)\n                   ^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Documents\\Projects\\Eco-Trace-Warriors\\dataset_acquisition\\.venv\\Lib\\site-packages\\pandas\\core\\dtypes\\concat.py\", line 78, in concat_compat\n    return np.concatenate(to_concat_arrs, axis=axis)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nnumpy._core._exceptions._ArrayMemoryError: Unable to allocate 111. MiB for an array with shape (14610229,) and data type object"
+      ],
+      "open_images_class": "Printer",
+      "provenance_note": "images=per-image-Flickr(VARY-verify); annotations=CC-BY-4.0(Google)",
+      "qa_accepted": 0,
+      "qa_pending": 0,
+      "qa_rejected": 0,
+      "requested": 100,
+      "staging_dir": "",
+      "state": "DOWNLOAD_FAILED",
+      "valid_annotations": 0,
+      "valid_images": 0
+    }
+  ],
+  "conversion_version": "openimages-multiclass-v1",
+  "created_at": "2026-08-10T00:00:00+00:00",
+  "dry_run": false,
+  "is_dataset_v1": false,
+  "is_released": false,
+  "limit_per_class": 100,
+  "run_label": "p4_3_2",
+  "source": "Open Images V7",
+  "summary": {
+    "by_state": {
+      "DOWNLOAD_FAILED": 1
+    },
+    "classes_selected": 1,
+    "total_converted": 0,
+    "total_downloaded": 0,
+    "total_qa_accepted": 0,
+    "total_qa_pending": 0,
+    "total_requested": 100,
+    "total_valid_images": 0
+  },
+  "taxonomy_version": "1.0.0"
+}

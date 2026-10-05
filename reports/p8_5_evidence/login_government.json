@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "08ddf0da-7560-4d96-b90b-6b921e66160d",
+      "fullName": "Government Officer",
+      "email": "government@ecotrace.com",
+      "phone": "9999999992",
+      "region": "Tamil Nadu",
+      "role": "GOVERNMENT",
+      "emailVerified": true,
+      "createdAt": "2026-07-27T13:16:00.919Z"
+    },
+    "accessToken": "[REDACTED_JWT_DEV_TOKEN]",
+    "refreshToken": "[REDACTED_JWT_DEV_TOKEN]"
+  }
+}

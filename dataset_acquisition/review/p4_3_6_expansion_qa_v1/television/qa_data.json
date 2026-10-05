@@ -1,0 +1,301 @@
+{
+  "blur_threshold": 100.0,
+  "blurry_count": 4,
+  "contact_sheet": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/television/contact_sheet.jpg",
+  "qa_status": "QA_PENDING",
+  "tiles": [
+    {
+      "blur": 93.4,
+      "box_count": 1,
+      "class_ids": [
+        7
+      ],
+      "filename": "07defa25281b15c4.jpg",
+      "height": 681,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/television/previews/qa01_07defa25281b15c4.jpg",
+      "qa_id": 1,
+      "stem": "07defa25281b15c4",
+      "width": 1024
+    },
+    {
+      "blur": 60.92,
+      "box_count": 1,
+      "class_ids": [
+        7
+      ],
+      "filename": "0ac854a215464b09.jpg",
+      "height": 768,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/television/previews/qa02_0ac854a215464b09.jpg",
+      "qa_id": 2,
+      "stem": "0ac854a215464b09",
+      "width": 1024
+    },
+    {
+      "blur": 121.01,
+      "box_count": 1,
+      "class_ids": [
+        7
+      ],
+      "filename": "0b35c0ed157b4ca4.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/television/previews/qa03_0b35c0ed157b4ca4.jpg",
+      "qa_id": 3,
+      "stem": "0b35c0ed157b4ca4",
+      "width": 1024
+    },
+    {
+      "blur": 41.72,
+      "box_count": 4,
+      "class_ids": [
+        7,
+        7,
+        7,
+        7
+      ],
+      "filename": "0c62dcc3e2acf40f.jpg",
+      "height": 1024,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/television/previews/qa04_0c62dcc3e2acf40f.jpg",
+      "qa_id": 4,
+      "stem": "0c62dcc3e2acf40f",
+      "width": 1024
+    },
+    {
+      "blur": 513.64,
+      "box_count": 2,
+      "class_ids": [
+        7,
+        7
+      ],
+      "filename": "0ffb3c07045c167a.jpg",
+      "height": 765,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/television/previews/qa05_0ffb3c07045c167a.jpg",
+      "qa_id": 5,
+      "stem": "0ffb3c07045c167a",
+      "width": 1024
+    },
+    {
+      "blur": 444.69,
+      "box_count": 1,
+      "class_ids": [
+        7
+      ],
+      "filename": "106a464c1209d3a6.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/television/previews/qa06_106a464c1209d3a6.jpg",
+      "qa_id": 6,
+      "stem": "106a464c1209d3a6",
+      "width": 1024
+    },
+    {
+      "blur": 1502.69,
+      "box_count": 5,
+      "class_ids": [
+        7,
+        7,
+        7,
+        7,
+        7
+      ],
+      "filename": "2c9b26ec123bdccd.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/television/previews/qa07_2c9b26ec123bdccd.jpg",
+      "qa_id": 7,
+      "stem": "2c9b26ec123bdccd",
+      "width": 1024
+    },
+    {
+      "blur": 654.58,
+      "box_count": 1,
+      "class_ids": [
+        7
+      ],
+      "filename": "3b515a2960c79812.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/television/previews/qa08_3b515a2960c79812.jpg",
+      "qa_id": 8,
+      "stem": "3b515a2960c79812",
+      "width": 1024
+    },
+    {
+      "blur": 1940.71,
+      "box_count": 1,
+      "class_ids": [
+        7
+      ],
+      "filename": "4aa44871b9b6585e.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/television/previews/qa09_4aa44871b9b6585e.jpg",
+      "qa_id": 9,
+      "stem": "4aa44871b9b6585e",
+      "width": 1024
+    },
+    {
+      "blur": 64.53,
+      "box_count": 1,
+      "class_ids": [
+        7
+      ],
+      "filename": "563d755665772681.jpg",
+      "height": 810,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/television/previews/qa10_563d755665772681.jpg",
+      "qa_id": 10,
+      "stem": "563d755665772681",
+      "width": 1024
+    },
+    {
+      "blur": 612.58,
+      "box_count": 1,
+      "class_ids": [
+        7
+      ],
+      "filename": "678d0f6b7ada3d1f.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/television/previews/qa11_678d0f6b7ada3d1f.jpg",
+      "qa_id": 11,
+      "stem": "678d0f6b7ada3d1f",
+      "width": 1024
+    },
+    {
+      "blur": 207.19,
+      "box_count": 1,
+      "class_ids": [
+        7
+      ],
+      "filename": "76eb9c86052909bc.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/television/previews/qa12_76eb9c86052909bc.jpg",
+      "qa_id": 12,
+      "stem": "76eb9c86052909bc",
+      "width": 768
+    },
+    {
+      "blur": 258.46,
+      "box_count": 1,
+      "class_ids": [
+        7
+      ],
+      "filename": "95a12fd157c6502e.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/television/previews/qa13_95a12fd157c6502e.jpg",
+      "qa_id": 13,
+      "stem": "95a12fd157c6502e",
+      "width": 1024
+    },
+    {
+      "blur": 1787.23,
+      "box_count": 10,
+      "class_ids": [
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7
+      ],
+      "filename": "9e9612ea86fa4982.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/television/previews/qa14_9e9612ea86fa4982.jpg",
+      "qa_id": 14,
+      "stem": "9e9612ea86fa4982",
+      "width": 683
+    },
+    {
+      "blur": 302.27,
+      "box_count": 1,
+      "class_ids": [
+        7
+      ],
+      "filename": "a3176a302f865f19.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/television/previews/qa15_a3176a302f865f19.jpg",
+      "qa_id": 15,
+      "stem": "a3176a302f865f19",
+      "width": 683
+    },
+    {
+      "blur": 104.98,
+      "box_count": 1,
+      "class_ids": [
+        7
+      ],
+      "filename": "a51101ec8f1ddb8b.jpg",
+      "height": 678,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/television/previews/qa16_a51101ec8f1ddb8b.jpg",
+      "qa_id": 16,
+      "stem": "a51101ec8f1ddb8b",
+      "width": 1024
+    },
+    {
+      "blur": 128.85,
+      "box_count": 1,
+      "class_ids": [
+        7
+      ],
+      "filename": "e99a5edb33322253.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/television/previews/qa17_e99a5edb33322253.jpg",
+      "qa_id": 17,
+      "stem": "e99a5edb33322253",
+      "width": 1024
+    },
+    {
+      "blur": 108.7,
+      "box_count": 1,
+      "class_ids": [
+        7
+      ],
+      "filename": "f155f857d552e57b.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/television/previews/qa18_f155f857d552e57b.jpg",
+      "qa_id": 18,
+      "stem": "f155f857d552e57b",
+      "width": 1024
+    },
+    {
+      "blur": 192.06,
+      "box_count": 9,
+      "class_ids": [
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7
+      ],
+      "filename": "fc800bbdaad28067.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/television/previews/qa19_fc800bbdaad28067.jpg",
+      "qa_id": 19,
+      "stem": "fc800bbdaad28067",
+      "width": 1024
+    }
+  ],
+  "total_images": 19,
+  "total_objects": 44
+}

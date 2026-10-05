@@ -1,0 +1,66 @@
+{
+  "phase": "P7.2",
+  "title": "Production Configuration & Environment Management",
+  "status": "PASS",
+  "timestamp": "2026-09-01T00:00:00Z",
+  "findings": [
+    { "id": 1, "component": "backend_env_schema", "classification": "PASS", "summary": "already fails fast in production on placeholder secrets / missing DATABASE_URL / matching secrets" },
+    { "id": 2, "component": "device_ai_settings", "classification": "FIXED", "summary": "no production-safety validator existed; added model_validator rejecting postgres backends without DATABASE_URL and FABRIC_ENABLED without identity material, in production only" },
+    { "id": 3, "component": "root_env_example", "classification": "FIXED", "summary": "was empty; populated as an index to the 4 real per-service templates" },
+    { "id": 4, "component": "docker_compose_password", "classification": "FIXED", "summary": "hardcoded ecotrace123 parameterized via ${POSTGRES_PASSWORD:-ecotrace123}, fully backward compatible" },
+    { "id": 5, "component": "docker_compose_healthcheck", "classification": "FIXED", "summary": "added pg_isready healthcheck to postgres service" },
+    { "id": 6, "component": "secret_scan", "classification": "PASS", "summary": "0 findings across ts/tsx/js/py/dart/yml/yaml/json" },
+    { "id": 7, "component": "hardcoded_localhost_scan", "classification": "PASS", "summary": "1 hit, frontend/src/lib/env.ts VITE_API_BASE_URL fallback default — this is the configurable mechanism itself, not a bug" },
+    { "id": 8, "component": "mobile_api_config", "classification": "PASS", "summary": "already uses --dart-define API_BASE_URL override, no change needed" },
+    { "id": 9, "component": "deployment_doc_config_section", "classification": "FIXED", "summary": "referenced non-existent deployment/env/ directory; corrected to describe actual per-service .env.example layout" },
+    { "id": 10, "component": "deployment_doc_rest", "classification": "DEFERRED_TO_P7_5", "summary": "NGINX/deployment-docker/CI sections are aspirational and don't match actual repo layout; will be corrected once against P7.5's real deployment artifacts rather than twice" },
+    { "id": 11, "component": "ai_legacy_directory", "classification": "INFORMATIONAL", "summary": "dead scaffold, superseded by intelligence/device_ai, no config work performed" }
+  ],
+  "process_note": {
+    "what_happened": "an initial Write call for backend/tests/unit/config.test.ts overwrote an existing 17-test file instead of creating a new one",
+    "how_caught": "git status showed the file as modified, not new, immediately after",
+    "fix": "restored original via git checkout HEAD, then appended only the 3 genuinely new test cases as an addition",
+    "verified": "20/20 in the file, 326/326 full suite (323 baseline + 3 net-new), no coverage lost"
+  },
+  "changes": [
+    { "file": "intelligence/device_ai/configs/settings.py", "change": "added _validate_production_safety model_validator" },
+    { "file": "intelligence/device_ai/tests/test_p72_production_config_validation.py", "change": "new file, 8 tests" },
+    { "file": "backend/tests/unit/config.test.ts", "change": "3 net-new test cases appended to the restored original 17" },
+    { "file": "docker-compose.yml", "change": "parameterized Postgres credentials/port with unchanged defaults; added healthcheck" },
+    { "file": ".env.example", "change": "populated as an index (was empty)" },
+    { "file": "docs/engineering/11_DEPLOYMENT.md", "change": "Configuration Management section corrected to match actual implementation" }
+  ],
+  "tests": {
+    "python_device_ai": { "passed": 1081, "total": 1081, "note": "1073 baseline + 8 new; pre-existing benchmark flake did not reproduce this run (failed in P7.1, passed here, no code change to that test in between)" },
+    "new_python_config_tests": { "passed": 8, "total": 8 },
+    "backend_jest": { "passed": 326, "total": 326, "note": "323 baseline + 3 net-new" },
+    "backend_lint_typecheck": { "lint_errors": 0, "typecheck_errors": 0 },
+    "docker_compose_config_validation": "resolves without error"
+  },
+  "security_considerations": [
+    "no real secrets committed or handled",
+    "closes a real gap: production Fabric misconfiguration now fails at startup instead of at first transaction attempt"
+  ],
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "protected_assets_status": "6/6 MATCH (before and after)",
+  "environmental_limitations": [
+    "docker-compose.yml change was validated via `docker compose config` only; not applied to the already-running ecotrace-postgres container to avoid unnecessary risk to its real pre-existing data"
+  ],
+  "release_blockers": [],
+  "definition_of_done": {
+    "configuration_audited_all_services": true,
+    "real_gap_found_and_fixed_with_tests": true,
+    "secret_scan_clean": true,
+    "docs_updated_for_this_phases_changes": true,
+    "mistake_caught_corrected_and_disclosed": true,
+    "no_unrelated_refactoring": true
+  },
+  "next_task": "P7.3 — Observability, Logging & Health Monitoring"
+}

@@ -1,0 +1,29 @@
+# Default composed training configuration for the Device Intelligence Engine.
+#
+# This file mirrors Hydra's `defaults` composition: each entry loads the
+# same-named YAML in this directory and is placed under a matching key. The
+# light-weight PyYAML loader in `training/config.py` understands this syntax,
+# so runs work today without hydra-core installed; the same file is directly
+# compatible with a full Hydra pipeline when that optional dependency is added.
+#
+# Nothing here trains a model — it only describes a run.
+
+defaults:
+  - training
+  - optimizer
+
+# Logical model name; also the key used by the JSON-backed model registry.
+model_name: device-detector
+
+# Trainer registry key selecting which BaseTrainer subclass runs. The base
+# platform ships no real trainers (M1.3 constraint); "mock" is exercised by
+# the test suite to validate the lifecycle end to end.
+trainer: mock
+
+# Experiment grouping label for the tracker.
+experiment_name: die-training
+
+# Free-form run metadata.
+tags:
+  milestone: M1.3
+  stage: platform

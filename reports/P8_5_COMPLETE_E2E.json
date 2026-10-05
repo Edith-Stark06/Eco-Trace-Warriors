@@ -1,0 +1,94 @@
+{
+  "phase": "P8.5",
+  "title": "Complete Stakeholder End-to-End Workflow Validation",
+  "status": "PASS_LIVE_FABRIC_BLOCKED_BY_ENVIRONMENT",
+  "timestamp": "2026-09-01T05:15:00Z",
+  "method": "real docker-compose stack (postgres+backend+device-ai+frontend), 5 seeded real role accounts, genuine HTTP requests, evidence captured under reports/p8_5_evidence/",
+  "real_defect_found_and_fixed": {
+    "description": "GOVERNMENT role had system-wide write/assignment authority (canAssign: ADMIN|GOVERNMENT) over submissions but list()/getById() gated all-submission visibility on isAdmin() (ADMIN only) — a government actor could route work to any submission by id but could not list or view any submission except their own (which is always empty), discovered live via GET /submissions returning [] for government@ecotrace.com",
+    "discovered_by": "live P8.5 Government/Admin audit trail scenario execution against the real running stack",
+    "root_cause_classification": "genuine production defect (authorization inconsistency: write power without matching read/audit visibility)",
+    "fix": "added canAudit() (ADMIN|GOVERNMENT) used only by list() and new loadForAudit()/getById(); update()/delete() deliberately left on the original isAdmin()-only loadAccessible(), preserving Admin's exclusive override authority",
+    "file": "backend/src/modules/submission/submission.service.ts",
+    "tests_added": {
+      "file": "backend/tests/unit/submission.service.test.ts",
+      "count": 2,
+      "names": [
+        "list: returns every submission for a government actor (audit visibility, P8.5)",
+        "getById: returns the submission for a government actor regardless of owner (audit visibility, P8.5)"
+      ]
+    },
+    "verified_live_post_fix": "GET /submissions as government@ecotrace.com now returns both real submissions, identical to admin@ecotrace.com; consumer's own-scope list unaffected"
+  },
+  "scenarios": {
+    "1_full_lifecycle_collector_to_consumer": "PASS_LIVE",
+    "2_collector_to_recycler": "PASS_LIVE",
+    "3_recycler_to_material_recovery": "PASS_LIVE",
+    "4_consumer_qr_verification": "PASS_LIVE_scope_honest",
+    "5_government_admin_audit_trail": "REAL_GAP_FOUND_AND_FIXED_then_PASS_LIVE",
+    "6_invalid_corrupted_passport": "PASS_LIVE",
+    "7_local_trust_mismatch": "PASS_LIVE_genuinely_triggered",
+    "8_blockchain_mismatch": "PASS_LIVE_external_anchor_correctly_blocked_on_mismatched_local_passport",
+    "9_blockchain_unavailable": "PASS_LIVE_graceful_degradation_no_cascading_failure",
+    "10_api_unavailable": "PASS_LIVE_honest_failure_clean_recovery"
+  },
+  "invariants_verified": {
+    "no_impossible_transitions": true,
+    "no_trust_bypasses": true,
+    "no_unauthorized_mutations": true,
+    "no_duplicate_reward_or_anchor_side_effects": true,
+    "no_corrupted_passport_accepted": true,
+    "external_anchor_never_created_from_unverified_local_passport": true,
+    "failed_trust_verification_never_silently_downgraded_to_success": true
+  },
+  "regression_suite": {
+    "backend_jest": { "passed": 341, "total": 341, "added_this_phase": 2 },
+    "backend_lint_errors": 0,
+    "backend_typecheck_errors": 0,
+    "chaincode_jest": { "passed": 47, "total": 47, "note": "unchanged since P8.2" },
+    "device_ai_pytest": {
+      "passed": 1109,
+      "total": 1110,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "pre_existing_baseline_failure": "test_benchmark_measures_latency_and_throughput (wall-clock timing flake, documented since P6.2, unchanged)"
+    },
+    "collector_app_flutter_test": { "passed": 22, "total": 22, "analyze_issues": 0 },
+    "consumer_app_flutter_test": { "passed": 18, "total": 18, "analyze_issues": 0 },
+    "frontend": { "typecheck_errors": 0, "lint_errors": 0, "build": "succeeds", "test_suite": "none exists (unchanged)" },
+    "total_passing": 1537
+  },
+  "test_accounting": {
+    "previous": 1535,
+    "added_this_phase": 2,
+    "removed_this_phase": 0,
+    "final_passing": 1537,
+    "final_pre_existing_unrelated_failures": 1
+  },
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "protected_assets_status": "6/6 MATCH",
+  "environmental_limitations": [
+    "Live Hyperledger Fabric peer BLOCKED BY ENVIRONMENT — external anchor provider is 'memory', disclosed in its own response, unchanged since P8.2",
+    "Android/iOS native builds unchanged from P8.3/P8.4, not re-attempted (no relevant code changed this phase)",
+    "backend/ Submission model and intelligence/device_ai AI/passport model remain architecturally disconnected, as documented since P6.5/P7.8/P6.7"
+  ],
+  "release_blockers": [],
+  "definition_of_done": {
+    "all_10_scenarios_executed_live": true,
+    "real_defect_found_root_caused_fixed_tested": true,
+    "invariants_explicitly_verified": true,
+    "full_regression_suite_fresh_no_fabrication": true,
+    "protected_assets_verified": true,
+    "scope_kept_narrow": true,
+    "environmental_limitations_honestly_reconfirmed": true
+  },
+  "next_task": "P8.6 — Performance & Load Validation"
+}

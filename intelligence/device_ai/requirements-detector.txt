@@ -1,0 +1,26 @@
+# Device Intelligence Engine — YOLO detector runtime dependencies.
+#
+# The detector subset of requirements-models.txt, installed into the runtime
+# image so the service can load a real checkpoint instead of falling back to
+# the deterministic mock detector (see inference/yolo_detector.py).
+#
+# Deliberately NOT included from requirements-models.txt:
+#   * open-clip-torch — with no local CLIP artifact under MODEL_DIR the real
+#     backend falls back to its `pretrained` tag, which downloads weights at
+#     first use (see inference/clip_encoder.py). The CLIP encoder stays on its
+#     mock path until a CLIP artifact is provisioned deliberately.
+#   * easyocr, onnx/onnxruntime, hydra-core, mlflow — not needed to serve
+#     detections; they belong to the training/OCR milestones.
+#
+# Versions are duplicated from requirements-models.txt and must stay in sync
+# with it.
+
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+torch==2.5.1
+torchvision==0.20.1
+ultralytics==8.3.58          # YOLO detector
+# ultralytics image I/O. The headless build needs no X libraries; the
+# Dockerfile also reads this pin as a constraint when it replaces the GUI
+# opencv-python that ultralytics pulls in.
+opencv-python-headless==4.10.0.84

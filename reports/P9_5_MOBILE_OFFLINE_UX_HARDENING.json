@@ -1,0 +1,123 @@
+{
+  "phase": "P9.5",
+  "title": "Mobile Offline-First + UX Hardening",
+  "status": "PASS",
+  "date": "2026-09-02",
+  "scope": [
+    "queue state model expansion (conflict status, nextRetryAt backoff field)",
+    "bounded exponential backoff retry",
+    "session-expiry recovery defect fix",
+    "crash-safety review",
+    "accessibility review",
+    "performance review (static, no device available)",
+    "test expansion",
+    "full-system regression"
+  ],
+  "queue_state_model": {
+    "statuses": ["pending", "syncing", "conflict", "failed"],
+    "conflict_trigger": "HTTP 409 from server, terminal immediately, never retried",
+    "failed_trigger": "MAX_ATTEMPTS (5) non-conflict failures exceeded",
+    "synced_representation": "removal from queue, no explicit synced status"
+  },
+  "backoff": {
+    "base_ms": 5000,
+    "multiplier": 2,
+    "cap_ms": 120000,
+    "field": "nextRetryAt",
+    "new_tests_per_app": 2
+  },
+  "defect_found_and_fixed": {
+    "id": "silent-session-expiry",
+    "description": "apiClient cleared tokens on a genuinely rejected refresh but never notified AuthContext, leaving the user stuck on authenticated screens issuing silent 401s with no path back to Login",
+    "fix": "client.ts exports setSessionExpiredHandler()/triggerSessionExpired(); AuthContext registers a handler on mount that flips to unauthenticated with a clear message",
+    "excluded_cases": [
+      "no refresh token present (never logged in)",
+      "network/timeout failure during refresh (not a real expiry)"
+    ],
+    "new_tests_per_app": 2,
+    "new_test_file": "src/auth/AuthContext.test.tsx"
+  },
+  "crash_safety_reviewed": [
+    "camera permission denied",
+    "malformed/unreadable QR code",
+    "network unavailable",
+    "API unavailable / 5xx",
+    "expired token",
+    "malformed server response (invalid JSON)"
+  ],
+  "accessibility": {
+    "new_elements": "conflict-state sections in SubmissionHistoryScreen (both apps)",
+    "attribute": "accessibilityRole=\"alert\"",
+    "regressions": "none"
+  },
+  "performance": {
+    "device_profiling": "BLOCKED - ENVIRONMENT (no physical device or emulator available)",
+    "static_review": [
+      "sequential sync batch with syncingRef guard, no overlapping concurrent request storms",
+      "no unbounded in-memory image retention",
+      "no infinitely-growing unpaginated lists at current pilot scale"
+    ]
+  },
+  "native_builds": {
+    "status": "BLOCKED - ENVIRONMENT",
+    "reason": "no Android SDK, no macOS/Xcode in this environment",
+    "fabricated": false
+  },
+  "tests": {
+    "collector_app": { "total": 32, "passed": 32, "prior_phase_total": 27 },
+    "consumer_app": { "total": 31, "passed": 31, "prior_phase_total": 26 },
+    "combined_total": 63,
+    "combined_prior_phase_total": 53
+  },
+  "full_system_regression": {
+    "backend_jest": { "passed": 341, "total": 341 },
+    "chaincode_jest": { "passed": 47, "total": 47 },
+    "device_ai_pytest": {
+      "tests": 1121,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "time_seconds": 177.938,
+      "timestamp": "2026-09-02T06:57:27.708389+05:30",
+      "hostname": "DESKTOP-TNKDHOM"
+    },
+    "frontend": { "typecheck": "clean", "lint": "clean", "modified_this_phase": false },
+    "collector_mobile": { "passed": 32, "total": 32 },
+    "consumer_mobile": { "passed": 31, "total": 31 }
+  },
+  "protected_assets": {
+    "verified_before_phase": true,
+    "verified_after_phase": true,
+    "results": {
+      "P4.4.2_YOLO11n": "MATCH",
+      "P4.11_Targeted_Aug": "MATCH",
+      "P4.12_YOLO11s": "MATCH",
+      "P4.14_Targeted_Aug": "MATCH",
+      "P4.5_Data_YAML": "MATCH",
+      "P4.7_Data_YAML": "MATCH"
+    },
+    "all_match": true
+  },
+  "files_changed": [
+    "mobile/collector_app/src/types/syncQueue.ts",
+    "mobile/consumer_app/src/types/syncQueue.ts",
+    "mobile/collector_app/src/storage/syncQueue.ts",
+    "mobile/consumer_app/src/storage/syncQueue.ts",
+    "mobile/collector_app/src/hooks/useSyncManager.ts",
+    "mobile/consumer_app/src/hooks/useSyncManager.ts",
+    "mobile/collector_app/src/hooks/useSyncManager.test.ts",
+    "mobile/consumer_app/src/hooks/useSyncManager.test.ts",
+    "mobile/collector_app/src/api/client.ts",
+    "mobile/consumer_app/src/api/client.ts",
+    "mobile/collector_app/src/auth/AuthContext.tsx",
+    "mobile/consumer_app/src/auth/AuthContext.tsx",
+    "mobile/collector_app/src/auth/AuthContext.test.tsx",
+    "mobile/consumer_app/src/auth/AuthContext.test.tsx",
+    "mobile/collector_app/src/screens/SubmissionHistoryScreen.tsx",
+    "mobile/consumer_app/src/screens/SubmissionHistoryScreen.tsx",
+    "reports/P9_5_MOBILE_OFFLINE_UX_HARDENING.md",
+    "reports/P9_5_MOBILE_OFFLINE_UX_HARDENING.json"
+  ],
+  "fabricated_results": false,
+  "final_verdict": "PASS"
+}

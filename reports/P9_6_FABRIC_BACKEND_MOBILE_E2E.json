@@ -1,0 +1,121 @@
+{
+  "phase": "P9.6",
+  "title": "Real Fabric<->Backend<->Mobile Cross-Role E2E",
+  "status": "PASS",
+  "date": "2026-09-02",
+  "fabric_network_availability": "AVAILABLE",
+  "network_reverification": {
+    "orderer_and_peers": "up, ~10h uptime, verified via docker ps",
+    "chaincode_as_a_service": "still running (pid 6560), 2 active grpc connections",
+    "installed_chaincode_package_id": "ecotrace-lifecycle_1.0:309aab6a93680ce53d855f7b6cd08a3e33a95dc0c251af8e858922c4559c4050"
+  },
+  "wiring": {
+    "method": "temporary gitignored docker-compose override, never committed",
+    "override_file": "blockchain/fabric-network/bootstrap/docker-compose.p96-fabric-override.yml",
+    "settings": {
+      "FABRIC_ENABLED": "true",
+      "EXTERNAL_TRUST_BACKEND": "fabric",
+      "FABRIC_MSP_ID": "Org1MSP",
+      "FABRIC_PEER_ENDPOINT": "peer0.org1.example.com:7051",
+      "FABRIC_GATEWAY_PEER_ENDPOINT": "host.docker.internal:7051"
+    },
+    "health_check_result": {
+      "status": "connected",
+      "fabric_enabled": true,
+      "message": "Fabric Gateway peer is reachable.",
+      "latency_ms": 15.41
+    }
+  },
+  "cross_role_e2e_scenario": {
+    "source_of_scenario": "mirrors intelligence/device_ai/tests/test_p78_e2e_demo_lifecycle.py, previously only run against a mocked in-memory external ledger",
+    "device_id": "DEV-2026--E2E-002-01",
+    "steps": [
+      { "step": 1, "action": "POST /devices/register", "role": "collector", "result": "class_id=5 (mouse), confidence=0.8897, real YOLO11 inference" },
+      { "step": 2, "action": "POST /devices/{id}/confirm", "role": "collector", "result": "DETECTED -> CONFIRMED" },
+      { "step": 3, "action": "POST /devices/{id}/finalize", "role": "collector", "result": "CONFIRMED -> REGISTERED" },
+      { "step": 4, "action": "POST /devices/{id}/enrich", "role": "collector", "result": "carbon_score=0.446" },
+      { "step": 5, "action": "GET /devices/{id}/passport", "role": "collector", "result": "passport generated" },
+      { "step": 6, "action": "GET /devices/{id}/passport/verify", "role": "collector", "result": "VERIFIED, fingerprint 54611c4454c3ddd3907add276f8e7d73b667546171dae0460c7220783d7eee80" },
+      { "step": 7, "action": "POST /devices/{id}/passport/anchor", "role": "collector", "result": "local anchor created, HTTP 201" },
+      { "step": 8, "action": "POST /devices/{id}/passport/external-anchor", "role": "collector", "result": "real Fabric write, tx=8190a5c181b0da852b2ece142edfbe8a2f968c1f030a39fbe14bdc1131891f9b, first attempt failed pre-registration (see findings), retry after real on-chain RegisterDevice succeeded" },
+      { "step": 9, "action": "GET /devices/{id}/trust/full", "role": "consumer", "result": "overall_status=VERIFIED (local and external independently reverified against live ledger)" },
+      { "step": 10, "action": "GET /devices/{id}/passport + /passport/verify", "role": "consumer", "result": "identical passport/fingerprint read back" }
+    ],
+    "cross_org_replication_proof": {
+      "method": "direct peer chaincode query against peer0.org2.example.com",
+      "queries": ["GetDevice", "GetDeviceAnchor"],
+      "result": "identical record and identical transaction_id (8190a5c1...) returned from Org2's independent peer"
+    }
+  },
+  "findings": [
+    {
+      "id": 1,
+      "severity": "real-defect",
+      "summary": "External-anchor write path assumes on-chain device pre-registration that no code path performs",
+      "root_cause": "FabricExternalTrustLedger.anchor() submits AnchorDevicePassport directly without a prior RegisterDevice call; ExternalTrustAnchor carries no ecoId/classId/deviceType to make that call possible",
+      "location": "intelligence/device_ai/devices/external_trust.py:339, devices/trust_anchor.py:724",
+      "live_evidence": "chaincode server log: 'Error: Device DEV-2026--E2E-002-01 not found'",
+      "action_taken": "documented, not fixed this phase (three-file architectural change, out of safe scope for this phase's remaining time); worked around via the same direct-CLI RegisterDevice method P9.2 established, to prove the write path itself is genuine once its precondition is met",
+      "recommended_for": "P9.7"
+    },
+    {
+      "id": 2,
+      "severity": "minor",
+      "summary": "Re-anchoring an unchanged fingerprint submits a redundant real on-chain write instead of skipping when is_new is already known False",
+      "action_taken": "documented, not fixed this phase",
+      "recommended_for": "P9.7"
+    },
+    {
+      "id": 3,
+      "severity": "minor",
+      "summary": "/passport/external-anchor route always returns HTTP 201 even when is_new=False, unlike the sibling /passport/anchor route's documented 200/201 split",
+      "location": "intelligence/device_ai/api/device_routes.py:788",
+      "action_taken": "documented, not fixed this phase",
+      "recommended_for": "P9.7"
+    }
+  ],
+  "failure_cases_tested": [
+    { "case": "AnchorDevicePassport for unregistered device", "result": "correctly rejected by chaincode" },
+    { "case": "GET /devices/{id}/trust/full for nonexistent device", "result": "clean HTTP 404 DEVICE_NOT_FOUND" },
+    { "case": "duplicate on-chain RegisterDevice", "result": "correctly rejected: already exists on-chain" },
+    { "case": "re-anchoring an already-anchored device", "result": "domain-level idempotent (is_new=false)" }
+  ],
+  "full_system_regression": {
+    "backend_jest": { "passed": 341, "total": 341 },
+    "chaincode_jest": { "passed": 47, "total": 47 },
+    "device_ai_pytest": { "tests": 1121, "errors": 0, "failures": 0, "skipped": 0, "time_seconds": 308.947, "timestamp": "2026-09-02T07:15:38.259134+05:30" },
+    "frontend": { "typecheck": "clean", "lint": "clean" },
+    "collector_mobile": { "passed": 32, "total": 32 },
+    "consumer_mobile": { "passed": 31, "total": 31 }
+  },
+  "protected_assets": {
+    "verified_after_phase": true,
+    "results": {
+      "P4.4.2_YOLO11n": "MATCH",
+      "P4.11_Targeted_Aug": "MATCH",
+      "P4.12_YOLO11s": "MATCH",
+      "P4.14_Targeted_Aug": "MATCH",
+      "P4.5_Data_YAML": "MATCH",
+      "P4.7_Data_YAML": "MATCH"
+    },
+    "all_match": true
+  },
+  "demo_stack_restored": {
+    "device_ai_recreated_to_default": true,
+    "fabric_enabled_after_restore": false,
+    "verified_via": "GET /system/blockchain/health -> status=disabled"
+  },
+  "files_changed_tracked_source": [],
+  "files_changed_gitignored_only": [
+    "blockchain/fabric-network/bootstrap/docker-compose.p96-fabric-override.yml",
+    "blockchain/fabric-network/bootstrap/query_installed.sh",
+    "blockchain/fabric-network/bootstrap/register_p96_device.sh",
+    "blockchain/fabric-network/bootstrap/query_org2.sh"
+  ],
+  "report_files": [
+    "reports/P9_6_FABRIC_BACKEND_MOBILE_E2E.md",
+    "reports/P9_6_FABRIC_BACKEND_MOBILE_E2E.json"
+  ],
+  "fabricated_results": false,
+  "final_verdict": "PASS"
+}

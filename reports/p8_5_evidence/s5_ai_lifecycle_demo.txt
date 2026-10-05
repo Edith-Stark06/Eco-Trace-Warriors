@@ -1,0 +1,45 @@
+======================================================================
+EcoTrace India - End-to-End Device Lifecycle Demonstration
+Target: http://localhost:8100
+======================================================================
+
+[1/10] Checking service health
+    status=healthy inference_mode=single_model
+
+[2/10] Registering a device from a capture
+    device_id=DEV-2026-066B779C-01 device_type=mouse
+
+[3/10] Confirming the device (DETECTED -> CONFIRMED)
+    {
+  "current_state": "CONFIRMED"
+}
+
+[4/10] Finalizing registration (CONFIRMED -> REGISTERED)
+    {
+  "current_state": "REGISTERED"
+}
+
+[5/10] Enriching with device intelligence (brand/condition/material/carbon)
+    carbon_score=0.446
+
+[6/10] Generating the Device Passport
+    eco_id=ET-2026-E08AA5A7 carbon_score=0.446
+
+[7/10] Verifying the Device Passport (local)
+    verification_status=VERIFIED fingerprint=a2a3a12ea4a95fb9...
+
+[8/10] Creating a local Trust Anchor
+    anchor_id=anc-476be61bb533 status=ANCHORED
+
+[9/10] Creating an external (blockchain-abstraction) Trust Anchor - MOCKED unless FABRIC_ENABLED=true against a live peer
+    provider=hyperledger_fabric status=ANCHORED
+
+[10/10] Verifying full trust status + consumer-style read query
+    local=VERIFIED external=VERIFIED overall=VERIFIED
+    read-back device_id=DEV-2026-066B779C-01 (the 'consumer query' read path)
+
+======================================================================
+Demo complete - 10/10 steps succeeded.
+======================================================================
+
+NOTE - honestly disclosed scope: this demonstrates the real, working device intelligence lifecycle end-to-end. It does NOT demonstrate a live Hyperledger Fabric anchor (no Fabric network exists in this environment - see reports/P6_2_FABRIC_GATEWAY_INTEGRATION.md) and does NOT demonstrate a dashboard visualization of this specific device (the frontend's Submission model and this AI device-lifecycle model are architecturally disconnected - see reports/P6_5_BACKEND_BLOCKCHAIN_INTEGRATION.md and reports/P7_8_DEMO_ENVIRONMENT.md).

@@ -1,0 +1,76 @@
+{
+  "source": "datasets/raw",
+  "generated_at": "2026-01-02T03:04:05+00:00",
+  "statistics": {
+    "total_images": 3,
+    "total_size_bytes": 25177,
+    "total_size_mb": 0.024,
+    "format_counts": {
+      "PNG": 3
+    },
+    "mode_counts": {
+      "RGB": 3
+    },
+    "resolution": {
+      "min_width": 64,
+      "max_width": 64,
+      "min_height": 64,
+      "max_height": 64,
+      "mean_width": 64.0,
+      "mean_height": 64.0
+    },
+    "quality": {
+      "blurry": 1,
+      "dark": 1,
+      "bright": 0,
+      "low_resolution": 0,
+      "corrupted": 0,
+      "mean_blur_score": 494.79,
+      "mean_brightness": 87.63
+    },
+    "duplicates": {
+      "groups": 1,
+      "images": 1
+    }
+  },
+  "duplicates": {
+    "total_images": 3,
+    "num_duplicates": 1,
+    "num_unique": 2,
+    "pairs": [
+      {
+        "source": "a.png",
+        "duplicate": "dup.png",
+        "distance": 0,
+        "exact": true
+      }
+    ]
+  },
+  "annotations": {
+    "total_labels": 1,
+    "total_boxes": 1,
+    "is_valid": false,
+    "class_counts": {
+      "0": 1
+    },
+    "images_without_labels": [
+      "b.png",
+      "dup.png"
+    ],
+    "labels_without_images": [],
+    "issues": [
+      {
+        "file": "b.png",
+        "line": 0,
+        "code": "MISSING_LABEL",
+        "message": "image has no matching label file"
+      },
+      {
+        "file": "dup.png",
+        "line": 0,
+        "code": "MISSING_LABEL",
+        "message": "image has no matching label file"
+      }
+    ]
+  }
+}

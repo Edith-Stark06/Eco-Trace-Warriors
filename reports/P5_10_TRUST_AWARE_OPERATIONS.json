@@ -1,0 +1,53 @@
+{
+  "phase": "P5.10",
+  "title": "Trust-Aware Device Operations",
+  "status": "COMPLETED",
+  "timestamp": "2026-08-30T11:27:35Z",
+  "git": {
+    "branch": "develop",
+    "head": "fb9b084e727ef14a4bff9b0e7814c884b7b7157f"
+  },
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "trust_states": [
+    "UNANCHORED",
+    "ANCHORED",
+    "VERIFIED",
+    "MISMATCH",
+    "STALE"
+  ],
+  "freshness_policy": {
+    "setting_name": "trust_anchor_max_age_days",
+    "default_days": 90,
+    "unlimited_supported": true
+  },
+  "status_precedence": [
+    "1. Missing device -> DeviceNotFoundError (HTTP 404)",
+    "2. No anchor -> UNANCHORED",
+    "3. Invalid passport (integrity failure) -> MISMATCH",
+    "4. Anchor exists + fingerprint divergence -> MISMATCH",
+    "5. Anchor exists + passport verified + fingerprint matches + age > max_age -> STALE",
+    "6. Anchor exists + passport verified + fingerprint matches + age <= max_age -> VERIFIED"
+  ],
+  "api_endpoints": {
+    "get_trust": "GET /devices/{device_id}/trust (Strictly Read-Only, HTTP 200 / 404)",
+    "post_reanchor": "POST /devices/{device_id}/passport/reanchor (Explicit Re-anchor, HTTP 200)"
+  },
+  "read_write_boundaries": {
+    "get_trust_writes": 0,
+    "get_trust_audit_events": 0,
+    "get_trust_mutations": 0
+  },
+  "test_metrics": {
+    "p510_tests_passed": 18,
+    "p4_p5_core_suite_passed": 168,
+    "full_active_suite_passed": 973,
+    "failures": 0
+  }
+}

@@ -1,0 +1,141 @@
+{
+  "phase": "P9.1",
+  "title": "Real Deployment Environment",
+  "status": "COMPLETE WITH ENVIRONMENTAL LIMITATIONS",
+  "scope": "Harden the local/demo Docker Compose stack toward a reproducible production-like deployment: verify env-var config, secrets hygiene, health checks, service dependencies, migration startup, graceful shutdown, restart behavior, log hygiene; add optional local/demo TLS termination on the frontend where infrastructure genuinely permits it.",
+  "baseline": {
+    "branch": "develop",
+    "head_before": "6f027c3347872b8243dc8481bd6e8f0bc5320b24",
+    "origin_develop_before": "6f027c3347872b8243dc8481bd6e8f0bc5320b24",
+    "working_tree_before": "clean",
+    "p8_verdict": "COMPLETE WITH ENVIRONMENTAL LIMITATIONS",
+    "protected_assets_verified_before": true
+  },
+  "implementation": {
+    "new_capability": "Optional local/demo TLS termination on the frontend nginx container, selected at container startup based on certificate presence; default plain-HTTP behavior fully unaffected.",
+    "components": [
+      "deployment/tls/generate_local_cert.sh (new) - self-signed cert generator, local/demo only",
+      "frontend/nginx.tls.conf (new) - HTTPS server block + HTTP->HTTPS redirect template",
+      "frontend/nginx.conf (unchanged content, comment updated) - default HTTP-only config",
+      "frontend/docker-entrypoint-tls.sh (new) - idempotent config selection on every container start",
+      "frontend/Dockerfile (modified) - stages both configs, wires new entrypoint, TLS-aware healthcheck",
+      "docker-compose.yml (modified) - FRONTEND_TLS_PORT mapping, tls volume mount, TLS-aware healthcheck",
+      ".gitignore (modified) - ignore generated deployment/tls/*.crt and *.key"
+    ],
+    "reused_from_prior_phases": [
+      "SERVICE_API_KEY middleware (P8.7) - unchanged",
+      "secure_url_guard.dart (P8.7) - unchanged",
+      "Prisma/Alembic explicit migration policy (documented P7.10/11_DEPLOYMENT.md) - unchanged, re-verified"
+    ]
+  },
+  "files_changed": [
+    ".gitignore",
+    "deployment/tls/generate_local_cert.sh",
+    "frontend/nginx.conf",
+    "frontend/nginx.tls.conf",
+    "frontend/docker-entrypoint-tls.sh",
+    "frontend/Dockerfile",
+    "docker-compose.yml",
+    "reports/P9_1_REAL_DEPLOYMENT.md",
+    "reports/P9_1_REAL_DEPLOYMENT.json"
+  ],
+  "tests": [
+    {"name": "docker compose build --no-cache (backend, device-ai, frontend)", "result": "PASS — VERIFIED", "detail": "12m38.8s, exit code 0, all 3 images built"},
+    {"name": "docker compose up -d from cold stop, freshly-built images", "result": "PASS — VERIFIED", "detail": "all 4 services healthy within 37s"},
+    {"name": "API health smoke tests", "result": "PASS — VERIFIED", "detail": "backend /api/v1/health 200, device-ai /health 200"},
+    {"name": "Inter-service call: backend -> device-ai blockchain-health proxy", "result": "PASS — VERIFIED", "detail": "honest status=disabled, fabricEnabled=false"},
+    {"name": "Correlation ID header present", "result": "PASS — VERIFIED", "detail": "x-request-id present on all responses"},
+    {"name": "docker compose stop graceful shutdown", "result": "PASS — VERIFIED", "detail": "2.4s total; clean SIGTERM handling all 4 services; Postgres clean checkpoint"},
+    {"name": "Full-stack restart behavior (cold stop -> up)", "result": "PASS — VERIFIED"},
+    {"name": "TLS opt-in: cert present", "result": "PASS — VERIFIED", "detail": "HTTPS 200 on 8443, HTTP 301 redirect to correct port on 8080, healthy"},
+    {"name": "TLS opt-in: cert removed, restart idempotency", "result": "PASS — VERIFIED", "detail": "clean fallback to plain HTTP after fixing defect #4, RestartCount=0, healthy"},
+    {"name": "Live container log secret-scan (4 services)", "result": "PASS — VERIFIED", "detail": "no password/secret/token/key leakage; authorization header [REDACTED]"},
+    {"name": "Source-tree hardcoded-secret grep", "result": "PASS — VERIFIED", "detail": "only hit was a third-party library docstring example (pydantic)"},
+    {"name": "Migration status vs live DB (Prisma + Alembic)", "result": "PASS — VERIFIED", "detail": "Prisma: up to date (6 migrations); Alembic: 003_add_p511_external_trust_anchors (head)"},
+    {"name": "Backend regression suite", "result": "PASS — VERIFIED", "detail": "341/341 passed, 27/27 suites"},
+    {"name": "device_ai regression suite", "result": "PASS — VERIFIED", "detail": "1121/1121 passed, 0 errors, 0 failures (junitxml authoritative)"},
+    {"name": "Chaincode regression suite", "result": "PASS — VERIFIED", "detail": "47/47 passed"},
+    {"name": "Frontend typecheck / lint / build", "result": "PASS — VERIFIED", "detail": "all clean, build succeeded in 4.97s"},
+    {"name": "Real cloud deployment", "result": "BLOCKED — ENVIRONMENT", "detail": "no cloud credentials exist anywhere in this repo/environment; never invented"},
+    {"name": "Protected asset verification (6/6)", "result": "PASS — VERIFIED", "detail": "all MATCH before and after"}
+  ],
+  "failures_found_and_fixed": [
+    {
+      "id": 1,
+      "description": "Windows Git-Bash/MSYS path-mangling of openssl -subj argument",
+      "root_cause": "MSYS auto-converts leading-slash CLI arguments into Windows paths",
+      "fix": "export MSYS_NO_PATHCONV=1 and MSYS2_ARG_CONV_EXCL=* before the openssl call; no-op on real Linux/macOS",
+      "verified": true
+    },
+    {
+      "id": 2,
+      "description": "HTTP->HTTPS redirect targeted the implicit default port 443 instead of the actual host-mapped 8443",
+      "root_cause": "nginx has no knowledge of Docker's external port mapping",
+      "fix": "templated __TLS_PORT__ placeholder substituted via sed at container startup from FRONTEND_TLS_PORT",
+      "verified": true
+    },
+    {
+      "id": 3,
+      "description": "Healthcheck failed when TLS active because it always probed plain HTTP unconditionally",
+      "root_cause": "Dockerfile HEALTHCHECK and compose healthcheck: (which overrides it) were not TLS-aware",
+      "fix": "both checks now branch on certificate-file presence, wget --no-check-certificate for HTTPS case (safe, container-internal loopback only)",
+      "verified": true
+    },
+    {
+      "id": 4,
+      "description": "Non-idempotent entrypoint across docker compose restart: removing a previously-mounted cert and restarting crashed the container into a restart loop",
+      "root_cause": "docker compose restart reuses the same container's writable filesystem layer; the entrypoint's no-cert branch never actively restored the plain-HTTP config, only printed a message, assuming default.conf was already in its as-built state",
+      "fix": "staged an immutable copy of the original HTTP-only config (nginx.http.conf) at a fixed path in the image; the no-cert branch now explicitly cp's it into conf.d/default.conf on every single start regardless of prior state",
+      "verified": true,
+      "note": "most significant defect found this phase; full bidirectional cycle re-verified after fix"
+    },
+    {
+      "id": 5,
+      "description": "intelligence/device_ai local .venv missing cryptography, grpcio, protobuf (all pinned in requirements.txt for the P6.2 Fabric Gateway client)",
+      "root_cause": "stale local venv, not a repository defect; a blind pip install -r requirements.txt triggered an unrelated numpy source-rebuild failure (no prebuilt numpy 2.2.1 wheel for Python 3.14)",
+      "fix": "installed the three pinned packages directly (all had prebuilt Windows wheels); left the already-installed numpy 2.5.1 untouched",
+      "verified": true,
+      "note": "environment-sync fix, not a code change; restored full 1121-test suite to a runnable, passing state"
+    }
+  ],
+  "security_observations": [
+    "No secrets logged anywhere across all 4 services (explicit scan performed)",
+    "No hardcoded secrets in project source (explicit grep performed; only hit was a third-party library docstring)",
+    "Self-signed TLS cert explicitly documented as local/demo-only and gitignored",
+    "SERVICE_API_KEY (P8.7) and secure_url_guard.dart (P8.7) unchanged and unaffected"
+  ],
+  "environmental_limitations": [
+    {
+      "item": "Real cloud deployment",
+      "classification": "BLOCKED — ENVIRONMENT",
+      "detail": "No cloud provider credentials exist in this repository or environment; the P9 order explicitly forbids inventing them."
+    },
+    {
+      "item": "Live Hyperledger Fabric network",
+      "classification": "BLOCKED — ENVIRONMENT",
+      "detail": "Unchanged from P8; no peer/orderer/CA binaries or channel artifacts exist. Addressed in depth in P9.2."
+    },
+    {
+      "item": "Unified reverse proxy across the whole stack (single origin for frontend+backend+device-ai)",
+      "classification": "NOT APPLICABLE",
+      "detail": "Deliberately scoped out — would require reworking CORS/VITE_API_BASE_URL and rewriting already-hardened P7.5/P8.7 architecture for no P9.1-mandated benefit. The narrower optional-TLS-on-frontend implementation fully satisfies P9.1's own conditional instruction."
+    }
+  ],
+  "protected_asset_verification": {
+    "p442_yolo11n": {"expected": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92", "result": "MATCH"},
+    "p411_yolo11n_targeted_aug": {"expected": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c", "result": "MATCH"},
+    "p412_yolo11s": {"expected": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc", "result": "MATCH"},
+    "p414_yolo11n_targeted_aug": {"expected": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81", "result": "MATCH"},
+    "p45_data_yaml": {"expected": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b", "result": "MATCH"},
+    "p47_final_data_yaml": {"expected": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284", "result": "MATCH"},
+    "all_match": true
+  },
+  "git_state": {
+    "branch": "develop",
+    "commit_message": "feat(p9): establish production-like deployment environment",
+    "pushed_to": "origin/develop",
+    "force_push": false,
+    "history_rewritten": false
+  },
+  "final_verdict": "COMPLETE WITH ENVIRONMENTAL LIMITATIONS"
+}

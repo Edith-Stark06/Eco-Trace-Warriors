@@ -1,0 +1,81 @@
+{
+  "name": "device_ai_register_ml_inference",
+  "levels": [
+    {
+      "concurrency": 1,
+      "total_requests": 20,
+      "wall_elapsed_s": 0.4772,
+      "throughput_rps": 41.91,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "200": 20
+      },
+      "latency_ms": {
+        "min": 7.46,
+        "mean": 21.27,
+        "p50": 18.19,
+        "p95": 33.68,
+        "p99": 36.5,
+        "max": 37.21
+      }
+    },
+    {
+      "concurrency": 10,
+      "total_requests": 20,
+      "wall_elapsed_s": 0.1312,
+      "throughput_rps": 152.41,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "200": 20
+      },
+      "latency_ms": {
+        "min": 40.05,
+        "mean": 54.79,
+        "p50": 54.93,
+        "p95": 67.09,
+        "p99": 68.66,
+        "max": 69.06
+      }
+    },
+    {
+      "concurrency": 25,
+      "total_requests": 25,
+      "wall_elapsed_s": 0.1378,
+      "throughput_rps": 181.38,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "200": 25
+      },
+      "latency_ms": {
+        "min": 47.32,
+        "mean": 82.62,
+        "p50": 84.48,
+        "p95": 95.52,
+        "p99": 96.29,
+        "max": 96.44
+      }
+    },
+    {
+      "concurrency": 50,
+      "total_requests": 50,
+      "wall_elapsed_s": 0.3689,
+      "throughput_rps": 135.54,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "200": 50
+      },
+      "latency_ms": {
+        "min": 91.21,
+        "mean": 187.01,
+        "p50": 169.2,
+        "p95": 250.84,
+        "p99": 254.02,
+        "max": 254.45
+      }
+    }
+  ]
+}

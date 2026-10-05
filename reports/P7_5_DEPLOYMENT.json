@@ -1,0 +1,65 @@
+{
+  "phase": "P7.5",
+  "title": "Deployment & Containerization",
+  "status": "PASS",
+  "timestamp": "2026-09-01T00:00:00Z",
+  "docker_audit_findings": [
+    { "id": 1, "component": "backend_dockerfile", "classification": "PASS", "summary": "well-formed, built and run for real for the first time this phase" },
+    { "id": 2, "component": "device_ai_dockerfile", "classification": "FAIL_THEN_FIXED", "summary": "sqlalchemy/psycopg/alembic missing from requirements.txt despite being imported unconditionally at module load time; container crashed on startup with ModuleNotFoundError; never caught because no clean docker build had been run in this project's history" },
+    { "id": 3, "component": "frontend_dockerfile", "classification": "MISSING_THEN_CREATED", "summary": "did not exist at all; created multi-stage build (node build -> nginx runtime) with SPA-fallback routing" },
+    { "id": 4, "component": "docker_compose_yml", "classification": "INCOMPLETE_THEN_FIXED", "summary": "only defined postgres; rewritten to wire postgres+backend+device-ai+frontend with health-gated depends_on and internal networking" },
+    { "id": 5, "component": "frontend_dockerignore", "classification": "MISSING_THEN_CREATED", "summary": "backend had one, frontend did not" }
+  ],
+  "real_defect_found": {
+    "component": "intelligence/device_ai",
+    "description": "requirements.txt was missing sqlalchemy, psycopg, and alembic despite them being required at module import time (not gated behind DEVICE_BACKEND=postgres) since at least P5.4/P5.9/P5.11; the production Docker image would crash-loop in any real deployment",
+    "root_cause": "these packages were only ever present because every local dev environment had them installed ad hoc; never captured in requirements.txt; never caught because no clean container build had ever been run",
+    "fix": "added sqlalchemy==2.0.52, psycopg[binary]==3.3.4, alembic==1.19.1 to requirements.txt, pinned to versions already exercised by the full test suite",
+    "verification": "rebuilt the image, container now starts cleanly and passes its HEALTHCHECK; full Python regression suite re-run at 1102/1102"
+  },
+  "live_verification": {
+    "full_stack_docker_compose_up": "all 4 services (postgres, backend, device-ai, frontend) reached healthy",
+    "frontend_smoke_test": { "GET /": 200, "GET /admin/dashboard (SPA route)": 200 },
+    "backend_smoke_test": { "GET /health": 200, "GET /ready": "database connected, real containerized Postgres" },
+    "cross_container_proxy": "backend reached device-ai by its Compose DNS name (http://device-ai:8100) over the internal bridge network, got a real (not mocked) disabled Fabric status back",
+    "device_ai_smoke_test": { "GET /health": "200, status healthy" },
+    "data_safety": "pre-existing 35-device dataset in ecotrace-postgres survived the compose recreate (same named volume eco-trace-warriors_postgres_data) and a full down/up cycle",
+    "graceful_shutdown": "docker compose down: all containers stopped cleanly, no forced kills; standalone backend/device-ai containers individually stop-tested with exit code 0 and clean SIGTERM log lines",
+    "current_state": "stack left running (all healthy) at end of phase — useful groundwork for P7.8/P7.9; tear down with docker compose down"
+  },
+  "fabric_status": "not started, honestly — no peer/orderer/CA binaries or channel artifacts exist anywhere in this repository (re-verified this phase by evidence, not carried forward as assumption); FABRIC_ENABLED=false verified live as status:disabled, not fabricated as connected",
+  "tests": {
+    "python_device_ai_full_suite": { "passed": 1102, "total": 1102 },
+    "container_smoke_tests": "all passed (see live_verification)",
+    "full_stack_health_checks": "4/4 services healthy"
+  },
+  "security_considerations": [
+    "no hardcoded secrets in docker-compose.yml, all ${VAR:-placeholder}",
+    "frontend image serves only built static assets, no backend proxying, no sensitive VITE_*-prefixed vars",
+    "backend container hardcodes NODE_ENV=production, proving env.schema.ts's production safety checks are live (compose had to supply real-looking JWT secrets to even start)"
+  ],
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "protected_assets_status": "6/6 MATCH (before and after)",
+  "environmental_limitations": [
+    "No Hyperledger Fabric network exists anywhere in this repository or environment — not started, not claimed as running, honestly disclosed"
+  ],
+  "release_blockers": [],
+  "definition_of_done": {
+    "every_dockerfile_audited": true,
+    "missing_frontend_dockerfile_created_and_verified": true,
+    "docker_compose_wires_every_runnable_service": true,
+    "full_stack_started_and_cross_service_communication_proven_live": true,
+    "preexisting_data_verified_intact": true,
+    "fabric_absence_reverified_by_evidence": true,
+    "protected_assets_verified": true,
+    "no_unrelated_refactoring_no_destructive_volume_ops": true
+  },
+  "next_task": "P7.6 — Mobile Production Readiness"
+}

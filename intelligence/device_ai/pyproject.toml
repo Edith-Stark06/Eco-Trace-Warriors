@@ -1,0 +1,76 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ecotrace-device-ai"
+version = "1.0.0"
+description = "EcoTrace India — Device Intelligence Engine (DIE) AI microservice"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+
+# Runtime dependencies are managed via requirements*.txt for reproducible,
+# layered Docker builds. This section mirrors the core set for tooling that
+# reads pyproject metadata.
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "python-multipart>=0.0.20",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.7",
+    "pillow>=11",
+    "numpy>=2.2",
+    "loguru>=0.7",
+]
+
+[tool.setuptools]
+packages = ["device_ai"]
+
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+known_first_party = ["device_ai", "tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+src = ["device_ai"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "A", "C4", "SIM", "ANN", "D"]
+ignore = [
+    "D203",   # one-blank-line-before-class (conflicts with D211)
+    "D213",   # multi-line-summary-second-line (conflicts with D212)
+    "D107",   # __init__ docstring (documented via the class docstring)
+    "ANN401", # allow typing.Any where explicitly justified
+    "B008",   # Depends() in defaults is the idiomatic FastAPI pattern
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests may skip docstrings and type annotations for brevity.
+"tests/*" = ["D", "ANN"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["device_ai", "tests"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra -q"
+testpaths = ["tests"]
+pythonpath = [".."]

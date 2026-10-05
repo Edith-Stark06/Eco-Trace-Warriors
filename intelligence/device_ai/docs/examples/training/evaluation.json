@@ -1,0 +1,45 @@
+{
+  "benchmark": {
+    "batch_size": null,
+    "device": "",
+    "latency_ms": null,
+    "note": "Inference benchmarking is deferred to model implementation; no model is trained in this milestone.",
+    "status": "placeholder",
+    "throughput_fps": null
+  },
+  "confusion_matrix": {
+    "labels": [
+      "battery",
+      "phone",
+      "laptop"
+    ],
+    "matrix": [
+      [
+        3,
+        0,
+        0
+      ],
+      [
+        0,
+        2,
+        1
+      ],
+      [
+        0,
+        0,
+        2
+      ]
+    ]
+  },
+  "dataset_version": "v1",
+  "generated_at": "2026-07-31T12:00:00",
+  "metrics": {
+    "accuracy": 0.875,
+    "f1": 0.8666666666666667,
+    "precision": 0.8888888888888888,
+    "recall": 0.8888888888888888
+  },
+  "model_name": "device-detector",
+  "model_version": "1.0.0",
+  "num_samples": 8
+}

@@ -1,0 +1,14 @@
+node_modules
+dist
+coverage
+.env
+*.log
+.husky/*
+!.husky/install.mjs
+tests
+jest.config.cjs
+eslint.config.mjs
+.prettierrc.json
+.prettierignore
+Dockerfile
+.dockerignore

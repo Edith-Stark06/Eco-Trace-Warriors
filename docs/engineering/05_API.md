@@ -1,0 +1,621 @@
+# 05 — API
+
+# EcoTrace India — REST API Standards & Contract
+
+Version: 1.0
+
+Status: Active
+
+---
+
+# Table of Contents
+
+1. [Purpose](#purpose)
+2. [General Conventions](#general-conventions)
+3. [Versioning](#versioning)
+4. [Authentication & Authorization](#authentication--authorization)
+5. [Request & Response Format](#request--response-format)
+6. [Error Contract](#error-contract)
+7. [HTTP Status Codes](#http-status-codes)
+8. [Pagination, Filtering & Sorting](#pagination-filtering--sorting)
+9. [Endpoint Catalog](#endpoint-catalog)
+10. [Internal AI Service API](#internal-ai-service-api)
+11. [Validation Rules](#validation-rules)
+12. [Documentation Requirements](#documentation-requirements)
+
+---
+
+# Purpose
+
+This document defines the REST API conventions and the endpoint contract exposed by the EcoTrace India backend. All clients (React Native mobile apps, React dashboard) consume this API exclusively (`03_ARCHITECTURE.md`).
+
+This is a **contract document** — request/response shapes are normative; implementation details belong in `06_BACKEND.md`.
+
+---
+
+# General Conventions
+
+- Base path: `/api/v1`
+- Resources are **plural nouns** in kebab-case: `/devices`, `/collection-requests`
+- No verbs in URLs; actions are expressed via HTTP method or sub-resources (`POST /devices/{id}/verification`)
+- JSON only (`Content-Type: application/json`), UTF-8
+- Field names in `camelCase`
+- Timestamps in ISO 8601 UTC (`2026-07-20T10:30:00Z`)
+- IDs are UUIDs; the public device identifier is the `ecoId`
+
+---
+
+# Versioning
+
+- URL versioning: `/api/v1/...`
+- Breaking changes require a new version; `v1` contracts stay backward compatible.
+- Additive changes (new optional fields, new endpoints) are non-breaking and allowed within `v1`.
+- Deprecations are announced in this document and carried for at least one release cycle.
+
+---
+
+# Authentication & Authorization
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API as Backend API
+
+    Client->>API: POST /api/v1/auth/login (credentials)
+    API-->>Client: accessToken (JWT) + refreshToken
+    Client->>API: GET /api/v1/devices (Authorization: Bearer <JWT>)
+    API->>API: Verify signature, expiry, role claim
+    API-->>Client: 200 resource / 401 / 403
+```
+
+- **Scheme:** JWT bearer tokens in the `Authorization` header.
+- Access tokens are short-lived; refresh tokens rotate via `POST /auth/refresh`.
+- The access JWT carries `sub` (user ID), `email`, and `role` (see `04_DATABASE.md` → `UserRole`). The refresh JWT carries only `sub` and a unique `jti`.
+- Refresh tokens are persisted **only as SHA-256 hashes** (`refresh_tokens` table) and are revocable: rotation on refresh, revocation on logout, family-wide revocation on reuse of a rotated token.
+- **Role enforcement is server-side per endpoint** (see catalog below). Client-side role checks are UX only, never security.
+- Public endpoints: registration, login, health check. Everything else requires authentication.
+
+---
+
+# Request & Response Format
+
+Success envelope:
+
+```json
+{
+  "success": true,
+  "data": {},
+  "meta": { "page": 1, "pageSize": 20, "total": 143 }
+}
+```
+
+- `data` holds the resource or array of resources.
+- `meta` appears only on paginated list responses.
+
+---
+
+# Error Contract
+
+All errors — validation, auth, business, server — use one shape:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "DEVICE_NOT_FOUND",
+    "message": "No device exists with the given EcoID.",
+    "details": [{ "field": "ecoId", "issue": "not_found" }]
+  }
+}
+```
+
+- `code` is a stable, SCREAMING_SNAKE machine-readable identifier.
+- `message` is safe for display; it never leaks internals (stack traces, SQL, file paths).
+- `details` is optional, used mainly for field-level validation errors.
+- Known database (Prisma) errors are translated centrally by the global error handler into semantic responses with safe, generic messages: a unique-constraint violation (`P2002`) → `409 CONFLICT`; a missing required record (`P2025`) → `404 NOT_FOUND`. Any other Prisma error remains a generic `500` (logged server-side; internals never returned).
+
+---
+
+# HTTP Status Codes
+
+| Code | Use                                                         |
+| ---- | ----------------------------------------------------------- |
+| 200  | Successful read or update                                   |
+| 201  | Resource created                                            |
+| 204  | Successful delete / no body                                 |
+| 400  | Validation failure, malformed request                       |
+| 401  | Missing or invalid authentication                           |
+| 403  | Authenticated but not authorized (wrong role/ownership)     |
+| 404  | Resource not found                                          |
+| 409  | Conflict (duplicate registration, invalid state transition) |
+| 422  | Semantically invalid business operation                     |
+| 429  | Rate limit exceeded                                         |
+| 500  | Unhandled server error (logged; generic message returned)   |
+
+---
+
+# Pagination
+
+List endpoints use validated offset-based pagination via query parameters:
+
+| Parameter | Example      | Default | Constraints            |
+| --------- | ------------ | ------- | ---------------------- |
+| `limit`   | `?limit=25`  | `50`    | integer, `1`–`100`     |
+| `offset`  | `?offset=40` | `0`     | integer, `>= 0`        |
+
+Both parameters are optional and coerced from the query string; a request that
+omits them returns the first 50 rows. Out-of-range or non-numeric values fail
+validation and return `400 VALIDATION_ERROR`. Results keep the standard
+response envelope — `data` is the row array (no wrapper `meta` block); ordering
+is `createdAt` descending (newest first) and is not client-configurable.
+
+Endpoints supporting pagination:
+
+- `GET /submissions`
+- `GET /collector/submissions`
+- `GET /recycler/submissions`
+- `GET /rewards/history`
+
+Sorting and field filtering are not yet implemented.
+
+---
+
+# Endpoint Catalog
+
+Role legend: `C` Consumer, `CO` Collector, `R` Recycler, `G` Government, `A` Admin, `*` any authenticated, `pub` public.
+
+## Auth
+
+| Method | Path             | Roles | Description                         |
+| ------ | ---------------- | ----- | ----------------------------------- |
+| POST   | `/auth/register` | pub   | Create consumer account             |
+| POST   | `/auth/login`    | pub   | Obtain access + refresh tokens      |
+| POST   | `/auth/refresh`  | pub   | Rotate tokens                       |
+| POST   | `/auth/logout`   | pub   | Revoke a refresh token (idempotent) |
+| GET    | `/auth/me`       | *     | Current user profile                |
+
+### POST /auth/register — 201
+
+Request:
+
+```json
+{
+  "email": "asha@example.com",
+  "password": "s3cure-password",
+  "confirmPassword": "s3cure-password",
+  "fullName": "Asha Kumar",
+  "phone": "9876543210",
+  "region": "TN"
+}
+```
+
+`phone` and `region` are optional. Passwords: 8–128 chars; `confirmPassword` must match. Duplicate email → `409 CONFLICT`.
+
+Response `data`:
+
+```json
+{
+  "user": {
+    "id": "uuid",
+    "fullName": "Asha Kumar",
+    "email": "asha@example.com",
+    "phone": "9876543210",
+    "region": "TN",
+    "role": "CONSUMER",
+    "emailVerified": false,
+    "createdAt": "2026-07-22T10:30:00.000Z"
+  },
+  "accessToken": "<jwt>",
+  "refreshToken": "<jwt>"
+}
+```
+
+### POST /auth/login — 200
+
+Request: `{ "email": "...", "password": "..." }`. Response `data`: same shape as register.
+Invalid credentials → `401 UNAUTHORIZED` with a generic message (no user enumeration). Deactivated accounts are rejected.
+
+### POST /auth/refresh — 200
+
+Request: `{ "refreshToken": "<jwt>" }`. Response `data`: `{ "accessToken": "<jwt>", "refreshToken": "<jwt>" }`.
+Refresh tokens are **single-use**: each refresh revokes the presented token and issues a new pair. Reusing a rotated token revokes **all** of the user's sessions and returns `401`. Invalid/expired/unknown tokens → `401`.
+
+### POST /auth/logout — 200
+
+Request: `{ "refreshToken": "<jwt>" }`. Response `data`: `{ "loggedOut": true }`.
+Idempotent — unknown or already-revoked tokens still return `200`.
+
+### GET /auth/me — 200
+
+Requires `Authorization: Bearer <accessToken>`. Response `data`: the `user` object shape from register.
+Missing/invalid token → `401`.
+
+## Submissions
+
+E-waste pickup submissions created by consumers, plus the collector workflow
+that drives a submission from assignment through collection, and the recycler
+workflow that continues it through processing. Consumers create and manage their
+own submissions; Admin/Government assign a collector and later a recycler; the
+assigned collector accepts, starts, and completes the pickup; the assigned
+recycler then processes the collected e-waste and records material recovery.
+
+| Method | Path                                 | Roles | Description                                                     |
+| ------ | ------------------------------------ | ----- | --------------------------------------------------------------- |
+| POST   | `/submissions`                       | C     | Create an e-waste pickup submission (status `PENDING`)          |
+| GET    | `/submissions`                       | *     | List submissions (owner sees own only; admin/government see all — P8.5) |
+| GET    | `/submissions/{id}`                  | *     | Submission detail (owner, or any admin/government — P8.5)       |
+| PATCH  | `/submissions/{id}`                  | *     | Update a submission (owner while `PENDING`; admin always)       |
+| DELETE | `/submissions/{id}`                  | *     | Delete a submission (owner while `PENDING`; admin always)       |
+| PATCH  | `/submissions/{id}/assign`           | A, G  | Assign a collector (`PENDING → ASSIGNED`)                       |
+| PATCH  | `/submissions/{id}/accept`           | CO    | Assigned collector accepts (`ASSIGNED → ACCEPTED`)              |
+| PATCH  | `/submissions/{id}/start`            | CO    | Assigned collector starts pickup (`ACCEPTED → IN_PROGRESS`)     |
+| PATCH  | `/submissions/{id}/complete`         | CO    | Assigned collector completes pickup (`IN_PROGRESS → COLLECTED`) |
+| GET    | `/collector/submissions`             | CO    | Collector dashboard: own active assignments, newest first       |
+| PATCH  | `/submissions/{id}/assign-recycler`  | A, G  | Assign a recycler to a collected submission                     |
+| PATCH  | `/submissions/{id}/recycle/start`    | R     | Assigned recycler starts processing (`COLLECTED → RECYCLING`)   |
+| PATCH  | `/submissions/{id}/recycle/complete` | R     | Assigned recycler records recovery (`RECYCLING → RECYCLED`)     |
+| GET    | `/recycler/submissions`              | R     | Recycler dashboard: own active assignments, newest first        |
+| PATCH  | `/submissions/{id}/device-link`      | CO, A | Cross-reference this submission with a device_ai device (P10.1) |
+| GET    | `/submissions/by-device/{identifier}`| *     | Resolve the Submission lifecycle for a device_id/eco_id (P10.1) |
+
+`SubmissionStatus`: `PENDING`, `ASSIGNED`, `ACCEPTED`, `IN_PROGRESS`, `COLLECTED`, `RECYCLING`, `RECYCLED`, `COMPLETED`, `REJECTED` (see `04_DATABASE.md`).
+
+**Submission state machine.** Status changes are governed by a single
+transition validator in the submission service:
+
+```
+PENDING → ASSIGNED → ACCEPTED → IN_PROGRESS → COLLECTED → RECYCLING → RECYCLED
+```
+
+Any transition not on this path is rejected with `409 CONFLICT`. An Admin may
+override and (re)assign a submission — collector or recycler — regardless of its
+current status; Government must follow the strict path (collector assignment
+only while `PENDING`; recycler assignment only while `COLLECTED`).
+
+### POST /submissions — 201
+
+Consumer-only. Request:
+
+```json
+{
+  "category": "Laptop",
+  "description": "Old work laptop",
+  "estimatedWeight": 2.5,
+  "address": "12 MG Road, Bengaluru",
+  "latitude": 12.9716,
+  "longitude": 77.5946,
+  "imageUrls": ["https://cdn.example.com/a.jpg"]
+}
+```
+
+`description` and `imageUrls` are optional. `estimatedWeight` must be positive; `latitude` ∈ [-90, 90]; `longitude` ∈ [-180, 180]. The owner and `PENDING` status are set server-side; any client-supplied status is ignored. Non-consumer roles → `403`.
+
+Response `data`:
+
+```json
+{
+  "id": "uuid",
+  "userId": "uuid",
+  "category": "Laptop",
+  "description": "Old work laptop",
+  "estimatedWeight": 2.5,
+  "address": "12 MG Road, Bengaluru",
+  "latitude": 12.9716,
+  "longitude": 77.5946,
+  "imageUrls": ["https://cdn.example.com/a.jpg"],
+  "status": "PENDING",
+  "assignedCollectorId": null,
+  "assignedRecyclerId": null,
+  "pickupScheduledAt": null,
+  "completedAt": null,
+  "processingStartedAt": null,
+  "recycledAt": null,
+  "recyclerNotes": null,
+  "recoveredWeight": null,
+  "materialRecovery": null,
+  "deviceId": null,
+  "ecoId": null,
+  "createdAt": "2026-07-22T10:30:00.000Z",
+  "updatedAt": "2026-07-22T10:30:00.000Z"
+}
+```
+
+`deviceId`/`ecoId` (P10.1) are `null` until a collector (or admin) links the submission to a device_ai Device via `PATCH /submissions/{id}/device-link`; they stay `null` forever for historical submissions never paired with a device — this is expected, not an error.
+
+### GET /submissions — 200
+
+Response `data`: an array of submission objects, newest first. A consumer receives only their own submissions; an admin receives all. Supports `limit`/`offset` pagination (see [Pagination](#pagination)).
+
+### GET /submissions/{id} — 200
+
+Response `data`: a single submission object. A consumer may read only their own submission; an admin may read any. To avoid leaking existence, a submission owned by another user returns `404`, not `403`.
+
+### PATCH /submissions/{id} — 200
+
+Partial update; at least one editable field must be provided (`category`, `description`, `estimatedWeight`, `address`, `latitude`, `longitude`, `imageUrls`). Owners may edit only while `status == PENDING`; an admin may edit at any time. Owner editing after assignment → `403`. Non-owner (non-admin) → `404`. Response `data`: the updated submission object.
+
+### DELETE /submissions/{id} — 204
+
+No response body. Owners may delete only while `status == PENDING`; an admin may delete at any time. Owner deleting after assignment → `403`. Non-owner (non-admin) → `404`.
+
+### PATCH /submissions/{id}/assign — 200
+
+Admin/Government only (`403` for any other role — a collector can never assign, including themselves). Request:
+
+```json
+{ "collectorId": "uuid" }
+```
+
+`collectorId` is required and must be a UUID naming an **active** user with the `COLLECTOR` role; otherwise `404 NOT_FOUND` (`Collector not found.`). An unknown submission → `404`. Government assigning a submission that is not `PENDING` → `409 CONFLICT`; an Admin may override and assign at any status. On success the submission moves to `ASSIGNED` with `assignedCollectorId` set. Response `data`: the updated submission object.
+
+### PATCH /submissions/{id}/accept — 200
+
+Collector only. The caller must be the assigned collector, else `404` (a collector must not learn about submissions that are not theirs). Requires `status == ASSIGNED`, else `409`. Moves the submission to `ACCEPTED`.
+
+### PATCH /submissions/{id}/start — 200
+
+Collector only, assigned collector only (`404` otherwise). Requires `status == ACCEPTED`, else `409`. Moves the submission to `IN_PROGRESS` and stamps `pickupScheduledAt` with the server clock.
+
+### PATCH /submissions/{id}/complete — 200
+
+Collector only, assigned collector only (`404` otherwise). Requires `status == IN_PROGRESS`, else `409`. Moves the submission to `COLLECTED`.
+
+The three transition endpoints carry no request body — only the `:id` path parameter is validated.
+
+### GET /collector/submissions — 200
+
+Collector only. Response `data`: an array of the authenticated collector's **active** assignments — submissions in `ASSIGNED`, `ACCEPTED`, or `IN_PROGRESS` assigned to them — newest first. `COLLECTED` and later statuses are excluded. Supports `limit`/`offset` pagination (see [Pagination](#pagination)). Other roles → `403`.
+
+### PATCH /submissions/{id}/assign-recycler — 200
+
+Admin/Government only (`403` for any other role — a recycler can never assign, including themselves). Request:
+
+```json
+{ "recyclerId": "uuid" }
+```
+
+`recyclerId` is required and must be a UUID naming an **active** user with the `RECYCLER` role; otherwise `404 NOT_FOUND` (`Recycler not found.`). An unknown submission → `404`. Government assigning a submission that is not `COLLECTED` → `409 CONFLICT`; an Admin may override and assign at any status. Assignment sets `assignedRecyclerId` and does **not** change the submission status (the recycler advances it via the transition endpoints below). Response `data`: the updated submission object.
+
+### PATCH /submissions/{id}/recycle/start — 200
+
+Recycler only. The caller must be the assigned recycler, else `404` (a recycler must not learn about submissions that are not theirs). Requires `status == COLLECTED`, else `409`. Moves the submission to `RECYCLING` and stamps `processingStartedAt` with the server clock. Carries no request body — only the `:id` path parameter is validated.
+
+### PATCH /submissions/{id}/recycle/complete — 200
+
+Recycler only, assigned recycler only (`404` otherwise). Requires `status == RECYCLING`, else `409`. Records the recovery outcome and moves the submission to `RECYCLED`, stamping `recycledAt` with the server clock. Request:
+
+```json
+{
+  "recoveredWeight": 12.5,
+  "recyclerNotes": "Separated lithium batteries.",
+  "materialRecovery": {
+    "plastic": 3.2,
+    "metal": 6.1,
+    "glass": 3.2
+  }
+}
+```
+
+`recoveredWeight` is required and must be positive. `recyclerNotes` is optional (≤ 2000 chars). `materialRecovery` is an optional object mapping material names to non-negative recovered weights. Response `data`: the updated submission object with `recoveredWeight`, `recyclerNotes`, and `materialRecovery` populated.
+
+### GET /recycler/submissions — 200
+
+Recycler only. Response `data`: an array of the authenticated recycler's **active** assignments — submissions in `COLLECTED` or `RECYCLING` assigned to them — newest first. `RECYCLED` and later statuses are excluded. Supports `limit`/`offset` pagination (see [Pagination](#pagination)). Other roles → `403`.
+
+### PATCH /submissions/{id}/device-link — 200 (P10.1)
+
+Collector (assigned collector only, else `404`) or Admin (any submission). Cross-references this submission with a device_ai Device — the smallest safe link between the two otherwise-independent domains (`03_ARCHITECTURE.md` rule 6). Request:
+
+```json
+{ "deviceId": "DEV-2026-3EDB1D84-01", "ecoId": "ET-2026-5ED1280B" }
+```
+
+`deviceId` is required (non-empty string). `ecoId` is optional — device_ai does not assign an EcoID until later enrichment/anchoring, so the collector app's real call typically omits it and re-linking later to add it is expected. Linking a `deviceId`/`ecoId` already linked to a *different* submission → `409 CONFLICT` (unique constraint). Response `data`: the updated submission object with `deviceId`/`ecoId` set.
+
+### GET /submissions/by-device/{identifier} — 200 (P10.1)
+
+Any authenticated role. `{identifier}` is a device_id or eco_id. Resolves the submission linked to that device and returns a trimmed **`SubmissionLifecycleView`**, not the full submission — no collector/recycler user ids, address, or imagery, since this is served to the Consumer Device Passport:
+
+```json
+{
+  "submissionId": "uuid",
+  "status": "RECYCLED",
+  "collectorAssigned": true,
+  "pickupAccepted": true,
+  "pickupStarted": true,
+  "collected": true,
+  "recyclingStarted": true,
+  "recycled": true,
+  "pickupStartedAt": "2026-07-22T11:00:00.000Z",
+  "recyclingStartedAt": "2026-07-23T09:00:00.000Z",
+  "recycledAt": "2026-07-23T09:30:00.000Z",
+  "recoveredWeight": 2.3,
+  "co2Saved": 62.5,
+  "energySaved": 37.5,
+  "landfillDiverted": 2.5
+}
+```
+
+Every field reuses a value the Submission domain already persists (the sustainability figures come from the reward module's calculation at `recycle/complete` time — never recomputed here). Visibility matches `GET /submissions/{id}`: the submission's owner, an admin/government actor, or the assigned collector/recycler; anyone else, or a device with no linked submission, → `404` (never `403`, to avoid leaking whether a device/submission exists).
+
+## Devices
+
+| Method | Path                       | Roles | Description                                                      |
+| ------ | -------------------------- | ----- | ---------------------------------------------------------------- |
+| POST   | `/devices`                 | C     | Register device; triggers AI classification and EcoID generation |
+| GET    | `/devices`                 | *     | List own devices (admin: all, filterable)                        |
+| GET    | `/devices/{ecoId}`         | *     | Device detail with lifecycle history                             |
+| GET    | `/devices/{ecoId}/qr`      | C, A  | QR code payload for the device                                   |
+| GET    | `/devices/{ecoId}/history` | *     | Lifecycle events incl. blockchain tx references                  |
+
+## Collection
+
+| Method | Path                               | Roles    | Description                            |
+| ------ | ---------------------------------- | -------- | -------------------------------------- |
+| POST   | `/collection-requests`             | C        | Request pickup for a device            |
+| GET    | `/collection-requests`             | C, CO, A | List (scoped by role)                  |
+| PATCH  | `/collection-requests/{id}/assign` | A        | Assign a collector                     |
+| PATCH  | `/collection-requests/{id}/status` | CO       | Update status (state machine enforced) |
+| POST   | `/collection-requests/{id}/verify` | CO       | Verify device at pickup (QR scan)      |
+
+## Recycling
+
+| Method | Path                                | Roles   | Description                           |
+| ------ | ----------------------------------- | ------- | ------------------------------------- |
+| POST   | `/recycling/intake`                 | R       | Record device intake at facility      |
+| POST   | `/recycling/{deviceId}/process`     | R       | Record material recovery & completion |
+| GET    | `/recycling/records`                | R, G, A | Processing reports                    |
+| GET    | `/certificates/{certificateNumber}` | *       | Verify a recycling certificate        |
+
+## Rewards
+
+| Method | Path                    | Roles | Description       |
+| ------ | ----------------------- | ----- | ----------------- |
+| GET    | `/rewards/balance`      | C     | GreenCoin balance |
+| GET    | `/rewards/transactions` | C     | Reward history    |
+| POST   | `/rewards/redeem`       | C     | Redeem GreenCoins |
+
+## Analytics
+
+Implemented in `backend/src/modules/analytics/` — a read-only reporting layer
+aggregating the existing Submission, User, and RewardTransaction tables (no
+new domain tables). Response shapes match `frontend/src/types/analytics.ts`.
+
+| Method | Path                              | Roles | Description                                  |
+| ------ | --------------------------------- | ----- | -------------------------------------------- |
+| GET    | `/analytics/overview`             | G, A  | National statistics                          |
+| GET    | `/analytics/regions`              | G, A  | Regional breakdown / heatmap data            |
+| GET    | `/analytics/forecast`             | G, A  | Real LSTM daily e-waste weight forecast (P10.1) — `?horizon=<1-90>`, default 30 |
+| GET    | `/analytics/environmental-impact` | G, A  | Impact metrics                               |
+
+Notes:
+
+- `/analytics/regions` groups by the submission owner's `User.region` (the
+  only location-classification field that exists today — `Submission` itself
+  only has free-text `address`/`latitude`/`longitude`). `state`, `latitude`,
+  and `longitude` in the response are always `null`: there is no per-region
+  state or coordinate data to report, and parsing them out of free-text
+  addresses would be a guessed business rule, not a real one. Submissions
+  whose owner has no `region` set are grouped under `"Unspecified"`.
+- `/analytics/environmental-impact.treesEquivalent` is always `null` — no
+  validated kg-CO2-to-trees conversion factor exists in this codebase.
+- `/analytics/forecast` (P10.1) trains/serves a small LSTM
+  (`intelligence/device_ai/forecasting/`) on the real daily e-waste
+  **recycled weight** history — one real observation per calendar date
+  (UTC), summing same-day submissions, built from `Submission.recycledAt`
+  + `Submission.recoveredWeight` (the only lifecycle timestamp paired with
+  an actually-*measured* weight; `estimatedWeight` is a consumer's guess at
+  creation time, and `completedAt` is never written anywhere in this
+  codebase). Missing calendar days within the observed range are zero-filled
+  (a real "nothing recycled that day" fact, not invented data) before
+  windowing.
+
+  Response (`DemandForecast`, additive over the original provisional shape —
+  see `frontend/src/types/analytics.ts`):
+  `status` is one of `OK` / `INSUFFICIENT_HISTORICAL_DATA` /
+  `MODEL_BACKEND_UNAVAILABLE` / `SERVICE_UNAVAILABLE`. Only `OK` populates
+  `points` (future days) with real predictions; the other three leave
+  `points`/`evaluation` empty/null and set `reason` to a human-readable
+  explanation plus `historyDays`/`minHistoryDaysRequired` — **no status ever
+  returns a fabricated prediction, confidence interval, or accuracy figure**.
+  `history` carries recent real (zero-filled) daily observations for
+  ACTUAL-vs-FORECAST display. `evaluation` (`rmse`/`mae`/`mape`/
+  `trainSamples`/`valSamples`) is computed from a real chronological
+  (never-shuffled) holdout split every time the model (re)trains.
+  `predictedSubmissions` and `confidence` on each forecast point are always
+  `null` — no submission-count model or calibrated prediction interval is
+  computed; reporting either would be a fabricated value.
+
+  Minimum data requirement: `forecast_min_history_days` (default 30,
+  `FORECAST_MIN_HISTORY_DAYS` in device_ai) zero-filled calendar days, or
+  `lookback + 15` (10 training + 5 validation sliding windows) if larger —
+  whichever is stricter. Below this, `INSUFFICIENT_HISTORICAL_DATA` is
+  returned truthfully rather than training on too little data.
+
+  Training strategy: the backend sends the full real daily series on every
+  request; device_ai retrains only when no cached model exists for that
+  exact series (content-hash + lookback match) or `force_retrain` is passed
+  — never on every request. At daily granularity this naturally caps
+  retraining to at most once per new day's data. Trained weights, the
+  scaler/window companion JSON, and the evaluation report are persisted via
+  the existing training platform's `ArtifactManager`/`ModelRegistry`
+  (`intelligence/device_ai/training/registry/`, reused as-is) under
+  `ARTIFACT_DIR` (a named Docker volume, `device_ai_artifacts`, so a trained
+  model survives a container restart).
+
+## System
+
+| Method | Path      | Roles | Description                                            |
+| ------ | --------- | ----- | ------------------------------------------------------ |
+| GET    | `/health` | pub   | Liveness/readiness for deployment (`11_DEPLOYMENT.md`) |
+
+---
+
+# Internal AI Service API
+
+The AI service (`08_AI.md`, `intelligence/device_ai/`) exposes its own HTTP
+API on port 8100. **Corrected P8.9**: earlier revisions of this section
+described a `/internal/classify`/`/internal/forecast`/`/internal/fraud-check`
+contract that was never built — the real, shipped API is the device
+registration/passport/trust lifecycle below, verified live throughout
+P5–P8 (most recently P8.5's full E2E validation and P8.8's demo scripts).
+It is reached both by the backend's one, read-only proxy call
+(`GET /system/blockchain/health`, via `blockchain.service.ts`) **and**
+directly by evaluators/demo scripts (`scripts/demo/run_demo.py`,
+`scripts/demo/run_scenarios.py`) — the docker-compose stack maps this
+service's port to the host for exactly that reason (P7.5/P8.8), so "only
+the backend calls it" was also inaccurate and has been corrected.
+
+| Method | Path                                    | Description                                          |
+| ------ | ---------------------------------------- | ----------------------------------------------------- |
+| GET    | `/health`, `/version`, `/metrics`, `/`   | Service meta/health — always public (see auth below)  |
+| POST   | `/devices/register`                      | Register a device from one or more captured images    |
+| GET    | `/devices/{device_id}`                   | Device record read-back                               |
+| POST   | `/devices/{device_id}/confirm`           | `DETECTED → CONFIRMED`                                 |
+| POST   | `/devices/{device_id}/finalize`          | `CONFIRMED → REGISTERED`                               |
+| POST   | `/devices/{device_id}/enrich`            | Brand/condition/material/carbon intelligence           |
+| GET    | `/devices/{device_id}/intelligence`      | Enrichment read-back                                   |
+| GET    | `/devices/{device_id}/history`, `/events`| Audit trail                                            |
+| GET    | `/devices/{device_id}/passport`          | Generate/read the Device Passport                      |
+| GET    | `/devices/{device_id}/passport/verify`   | Local passport verification (recomputes fingerprint)   |
+| POST/GET | `/devices/{device_id}/passport/anchor` | Create / read the local Trust Anchor                   |
+| GET    | `/devices/{device_id}/passport/anchor/verify` | Local anchor vs. current passport — `VERIFIED\|MISMATCH` |
+| POST   | `/devices/{device_id}/passport/reanchor` | Re-anchor locally after a legitimate data change        |
+| POST/GET | `/devices/{device_id}/passport/external-anchor` | Create / read the external (blockchain-abstraction) Trust Anchor — **refuses** (`PASSPORT_NOT_ANCHORABLE`) if the local passport isn't `VERIFIED` (P8.5, live-verified) |
+| GET    | `/devices/{device_id}/passport/external-anchor/verify` | External anchor vs. current fingerprint |
+| GET    | `/devices/{device_id}/trust`, `/trust/full` | Local / full (local + external) trust status         |
+| POST   | `/forecast/ewaste`                       | Train/reuse-cached + predict daily recycled weight (P10.1) — proxied by the backend's `GET /analytics/forecast` |
+| GET    | `/system/blockchain/health`              | Fabric Gateway connectivity — public, no auth required |
+
+Internal APIs follow the same envelope and error contract as the public API.
+
+## Service authentication (P8.7)
+
+This service has **no auth of its own by default** — `Settings.
+service_api_key` is unset unless explicitly configured, matching every
+prior phase's local-dev/demo behavior. When it **is** set (required in
+`ENVIRONMENT=production`, enforced by `configs/settings.py`'s
+`_validate_production_safety`), every route above except the public meta
+endpoints and `/system/blockchain/health` requires a matching
+`X-Service-Api-Key` header, enforced by `api/service_auth.py`'s
+`ServiceApiKeyMiddleware` — see `reports/P8_7_SECURITY_AUDIT.md` §2 for
+the full rationale and live verification.
+
+---
+
+# Validation Rules
+
+- Every endpoint validates its request body, params, and query with a schema (Zod on the backend — see `06_BACKEND.md`).
+- Validation failures return `400` with field-level `details`.
+- Ownership checks (a consumer can only act on their own devices) are enforced in the application layer and return `403` on violation.
+- State transitions (device, collection) are validated against the canonical enums in `04_DATABASE.md`; invalid transitions return `409`.
+
+---
+
+# Documentation Requirements
+
+Per `CLAUDE.md` API rules:
+
+- Every new or changed endpoint updates this catalog **in the same PR**.
+- Each endpoint's implementation must match the documented roles, status codes, and shapes.
+- An OpenAPI specification generated from the backend is a planned enhancement (`12_ROADMAP.md`); until then, this document is the contract.

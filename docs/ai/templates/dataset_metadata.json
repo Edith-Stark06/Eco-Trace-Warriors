@@ -1,0 +1,77 @@
+{
+  "_comment": "TEMPLATE — Dataset v1.0 release metadata for the DIE YOLO detector (P4.1.4 PART 7). Placeholder values only; no real images. Fill at release time (see docs/engineering/device_dataset_acquisition.md section 8). Do not hardcode the taxonomy — read it from dataset/taxonomy.py.",
+  "dataset_name": "device-detection",
+  "dataset_version": "1.0.0",
+  "taxonomy_version": "1.0.0",
+  "created_at": "YYYY-MM-DDTHH:MM:SS+00:00",
+  "created_by": "<release-owner>",
+  "description": "Device-detection Dataset v1.0 for the EcoTrace DIE YOLO detector.",
+  "num_classes": 19,
+  "class_names": [
+    "laptop", "smartphone", "tablet", "desktop", "server", "monitor",
+    "crt_monitor", "television", "printer", "keyboard", "mouse", "router",
+    "power_supply", "cable", "camera", "game_console", "smartwatch",
+    "headphones", "battery"
+  ],
+  "totals": {
+    "total_images": 0,
+    "total_annotations": 0,
+    "negative_images": 0,
+    "total_size_mb": 0.0
+  },
+  "split": {
+    "policy": "70/20/10",
+    "seed": 42,
+    "train_images": 0,
+    "val_images": 0,
+    "test_images": 0
+  },
+  "class_distribution": {
+    "laptop": {"images": 0, "boxes": 0, "min_target": 300, "recommended_target": 600, "ideal_target": 1000},
+    "smartphone": {"images": 0, "boxes": 0, "min_target": 300, "recommended_target": 600, "ideal_target": 1000},
+    "tablet": {"images": 0, "boxes": 0, "min_target": 200, "recommended_target": 400, "ideal_target": 700},
+    "desktop": {"images": 0, "boxes": 0, "min_target": 200, "recommended_target": 400, "ideal_target": 700},
+    "server": {"images": 0, "boxes": 0, "min_target": 150, "recommended_target": 300, "ideal_target": 500},
+    "monitor": {"images": 0, "boxes": 0, "min_target": 250, "recommended_target": 500, "ideal_target": 800},
+    "crt_monitor": {"images": 0, "boxes": 0, "min_target": 150, "recommended_target": 300, "ideal_target": 500},
+    "television": {"images": 0, "boxes": 0, "min_target": 250, "recommended_target": 500, "ideal_target": 800},
+    "printer": {"images": 0, "boxes": 0, "min_target": 200, "recommended_target": 400, "ideal_target": 700},
+    "keyboard": {"images": 0, "boxes": 0, "min_target": 200, "recommended_target": 400, "ideal_target": 700},
+    "mouse": {"images": 0, "boxes": 0, "min_target": 200, "recommended_target": 400, "ideal_target": 700},
+    "router": {"images": 0, "boxes": 0, "min_target": 200, "recommended_target": 400, "ideal_target": 700},
+    "power_supply": {"images": 0, "boxes": 0, "min_target": 200, "recommended_target": 400, "ideal_target": 700},
+    "cable": {"images": 0, "boxes": 0, "min_target": 200, "recommended_target": 400, "ideal_target": 700},
+    "camera": {"images": 0, "boxes": 0, "min_target": 200, "recommended_target": 400, "ideal_target": 700},
+    "game_console": {"images": 0, "boxes": 0, "min_target": 150, "recommended_target": 300, "ideal_target": 500},
+    "smartwatch": {"images": 0, "boxes": 0, "min_target": 200, "recommended_target": 400, "ideal_target": 700},
+    "headphones": {"images": 0, "boxes": 0, "min_target": 200, "recommended_target": 400, "ideal_target": 700},
+    "battery": {"images": 0, "boxes": 0, "min_target": 200, "recommended_target": 400, "ideal_target": 700}
+  },
+  "sources": [
+    {
+      "source": "<source-identifier>",
+      "family": "public_annotated | community | open_media | manufacturer | self_collected | synthetic",
+      "license": "CC-BY-4.0 | CC0 | Apache-2.0 | public_domain | proprietary",
+      "attribution": "<author / source URL when CC-BY/CC-BY-SA>",
+      "image_count": 0,
+      "classes": ["<class-name>"]
+    }
+  ],
+  "quality_gates": {
+    "gate_a_report": "<path to ImageValidator report>",
+    "gate_b_report": "<path to AnnotationStatistics report>",
+    "min_resolution_px": 32,
+    "max_resolution_px": 12000,
+    "max_file_size_bytes": 10485760,
+    "blur_threshold": 100.0,
+    "brightness_window": [40.0, 220.0],
+    "duplicate_hamming_threshold": 5,
+    "sample_review_pct": 5,
+    "sample_review_min_agreement_pct": 95
+  },
+  "checksums": {
+    "content_hash": "<content-addressed version id>",
+    "manifest": "<path to per-image checksum manifest>"
+  },
+  "notes": "TEMPLATE ONLY — replace all placeholders at release time."
+}

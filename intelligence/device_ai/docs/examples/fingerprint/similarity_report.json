@@ -1,0 +1,81 @@
+{
+  "default_metric": "cosine",
+  "devices": [
+    "laptop_dell",
+    "phone_apple",
+    "tablet_samsung"
+  ],
+  "dimension": 512,
+  "encoder_name": "clip",
+  "encoder_version": "mock-clip-1.0.0",
+  "generated_at": "2026-08-01T12:00:00+00:00",
+  "match_threshold": 0.85,
+  "metrics": {
+    "cosine": {
+      "intra_device_similarity": 1.0,
+      "max_inter_device_similarity": 0.516686,
+      "min_inter_device_similarity": 0.483186,
+      "similarity_matrix": {
+        "laptop_dell": {
+          "laptop_dell": 1.0,
+          "phone_apple": 0.507836,
+          "tablet_samsung": 0.483186
+        },
+        "phone_apple": {
+          "laptop_dell": 0.507836,
+          "phone_apple": 1.0,
+          "tablet_samsung": 0.516686
+        },
+        "tablet_samsung": {
+          "laptop_dell": 0.483186,
+          "phone_apple": 0.516686,
+          "tablet_samsung": 1.0
+        }
+      }
+    },
+    "euclidean": {
+      "intra_device_similarity": 1.0,
+      "max_inter_device_similarity": 0.418337,
+      "min_inter_device_similarity": 0.410207,
+      "similarity_matrix": {
+        "laptop_dell": {
+          "laptop_dell": 1.0,
+          "phone_apple": 0.416131,
+          "tablet_samsung": 0.410207
+        },
+        "phone_apple": {
+          "laptop_dell": 0.416131,
+          "phone_apple": 1.0,
+          "tablet_samsung": 0.418337
+        },
+        "tablet_samsung": {
+          "laptop_dell": 0.410207,
+          "phone_apple": 0.418337,
+          "tablet_samsung": 1.0
+        }
+      }
+    },
+    "manhattan": {
+      "intra_device_similarity": 1.0,
+      "max_inter_device_similarity": 0.037593,
+      "min_inter_device_similarity": 0.036366,
+      "similarity_matrix": {
+        "laptop_dell": {
+          "laptop_dell": 1.0,
+          "phone_apple": 0.037529,
+          "tablet_samsung": 0.036366
+        },
+        "phone_apple": {
+          "laptop_dell": 0.037529,
+          "phone_apple": 1.0,
+          "tablet_samsung": 0.037593
+        },
+        "tablet_samsung": {
+          "laptop_dell": 0.036366,
+          "phone_apple": 0.037593,
+          "tablet_samsung": 1.0
+        }
+      }
+    }
+  }
+}

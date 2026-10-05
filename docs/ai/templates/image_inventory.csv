@@ -1,0 +1,13 @@
+# TEMPLATE — image_inventory.csv (P4.1.5 PART 3). One row per submitted image.
+# filename is the join key across provenance + labels; it must match on disk and never change after upload.
+# filename convention: <class_name>_<source_tag>_<seq>.<ext>  (applied at capture; importer preserves it).
+# class_name must be a canonical taxonomy class (code-owned).
+# license must permit ML training + redistribution. capture_date is ISO-8601.
+# condition: working | damaged | dismantled | unknown
+# flags: ';'-separated subset of {difficult, occluded, multi_object, negative} or empty.
+# self_check: pass | fail  — contributor's §5 self-check result.
+# intake_status: pending | accepted | rejected  — set by the data engineer at intake.
+filename,class_name,contributor_id,source_tag,license,attribution_url,capture_date,condition,flags,self_check,intake_status,rejection_reason,notes
+laptop_field_000001.jpg,laptop,CTR001,field,CC-BY-4.0,https://example.org/alice,2026-08-05,working,,pass,pending,,EXAMPLE ROW - replace
+crt_monitor_partnerX_000004.png,crt_monitor,CTR003,partnerX,CC0-1.0,,2026-08-05,damaged,difficult,pass,pending,,EXAMPLE ROW - under-served class
+power_supply_web_000012.webp,power_supply,CTR002,web,CC-BY-SA-4.0,https://example.org/carol,2026-08-06,unknown,multi_object;occluded,pass,pending,,EXAMPLE ROW - multi-object scene

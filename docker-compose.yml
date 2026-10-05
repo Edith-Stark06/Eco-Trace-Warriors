@@ -1,0 +1,216 @@
+# EcoTrace India — local/demo full-stack compose (P7.5).
+#
+# `docker compose up --build` starts every service that can genuinely run
+# in this environment: Postgres, the Node backend, the Python device
+# intelligence service, and the static frontend. Real, live-verified this
+# phase (see reports/P7_5_DEPLOYMENT.md) — not just statically reviewed.
+#
+# What this file deliberately does NOT start: a Hyperledger Fabric network.
+# No peer/orderer/CA binaries or channel artifacts exist anywhere in this
+# repository — adding Fabric services here would either silently fail to
+# start or require inventing a network this project has never actually
+# built. FABRIC_ENABLED stays false by default (see intelligence/device_ai/
+# .env.example); the backend's blockchain health route and the frontend's
+# BlockchainHealthCard both already degrade honestly when Fabric is
+# unavailable (P6.2/P6.5/P6.6) — that degradation is the correct behavior
+# here too, not a gap this compose file needs to work around.
+
+services:
+  postgres:
+    image: postgres:16
+
+    container_name: ecotrace-postgres
+
+    restart: unless-stopped
+
+    # Values fall back to the same local-dev defaults this compose file
+    # always used, so `docker compose up` still works with no .env present.
+    # Override POSTGRES_PASSWORD (at minimum) for anything beyond local dev.
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ecotrace}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ecotrace123}
+      POSTGRES_DB: ${POSTGRES_DB:-ecotrace}
+
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ecotrace} -d ${POSTGRES_DB:-ecotrace}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+
+    container_name: ecotrace-backend
+
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    # The image hardcodes NODE_ENV=production (backend/Dockerfile), so
+    # env.schema.ts's production-safety checks are active here: a real
+    # DATABASE_URL and non-placeholder JWT secrets are required, not the
+    # dev-insecure-* fallbacks. These are local-dev-only example values —
+    # override every one of them for anything beyond `docker compose up`
+    # on a laptop.
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ecotrace}:${POSTGRES_PASSWORD:-ecotrace123}@postgres:5432/${POSTGRES_DB:-ecotrace}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-compose-local-dev-access-secret-CHANGE-ME-0}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-compose-local-dev-refresh-secret-CHANGE-ME}
+      # cors.middleware.ts is a strict allowlist (no wildcard/pattern
+      # support, by design — see its own comment), so every browser origin
+      # this compose stack is expected to serve must be listed explicitly.
+      # Default covers every local-dev frontend that talks to this backend:
+      # the Vite dashboard (8080 prod-style preview, 5173 `vite dev`, plus
+      # the LAN IP Vite prints for device testing) and Expo Web's Collector
+      # app, which binds 8081 normally but falls back to 8082 when 8081 is
+      # already in use (both are listed so either works without reconfig).
+      # A real deployment overrides CORS_ORIGINS with its actual origin(s)
+      # — this default is never appropriate beyond a laptop.
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:5173,http://localhost:8081,http://localhost:8082}
+      DEVICE_AI_SERVICE_URL: http://device-ai:8100
+
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
+  device-ai:
+    build:
+      context: ./intelligence/device_ai
+
+    container_name: ecotrace-device-ai
+
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    # DEVICE_BACKEND/TRUST_ANCHOR_BACKEND default to "memory" (see
+    # intelligence/device_ai/.env.example) — Postgres is available to this
+    # service but not required unless explicitly switched to "postgres"
+    # here.
+    #
+    # SERVICE_API_KEY (P8.7): this service has no auth layer of its own —
+    # empty here (open) matches every prior phase's local/demo behavior.
+    # Set it for anything beyond `docker compose up` on a laptop; see
+    # intelligence/device_ai/.env.example and api/service_auth.py.
+    environment:
+      ENVIRONMENT: ${DEVICE_AI_ENVIRONMENT:-development}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-ecotrace}:${POSTGRES_PASSWORD:-ecotrace123}@postgres:5432/${POSTGRES_DB:-ecotrace}
+      SERVICE_API_KEY: ${SERVICE_API_KEY:-}
+      # Selects the mounted checkpoint below; resolved relative to MODEL_DIR
+      # (/app/models, set in the Dockerfile) when not absolute.
+      DETECTOR_WEIGHTS: best.pt
+      # Same allowlist and rationale as the backend service's CORS_ORIGINS
+      # above (CHANGE-009) — the Collector app calls this service directly
+      # from the browser (POST /devices/register etc.), not only through
+      # the Node backend, so it needs the same origin allowlist.
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:5173,http://localhost:8081,http://localhost:8082}
+
+    # The P4.4.2 YOLO11n reference checkpoint (single_model inference mode,
+    # see configs/settings.py) is a protected training artifact, not
+    # application code, so it is mounted read-only rather than copied into
+    # the image.
+    #
+    # This does NOT mount from ECOTRACE_DATASET_ROOT (the authoritative
+    # dataset location — see acquisition/config.py — currently an external
+    # exFAT/removable drive). Docker Desktop's WSL2 backend cannot reliably
+    # bind-mount file contents from that filesystem type (confirmed
+    # 2026-09): directory listings inside the container come back empty
+    # even though the same files are correct and hash-verified from native
+    # Windows/git-bash tools, and neither a container restart nor `wsl
+    # --shutdown` fixes it. If this ever silently mounts empty again and
+    # the detector falls back to its mock implementation (yolo_detector.py),
+    # check `docker exec <container> ls /app/models` first.
+    #
+    # Instead, docker_data/device_ai/models/ is a small NTFS-side mirror
+    # (gitignored — see .gitignore) holding only this one checkpoint, kept
+    # in sync manually when the authoritative copy changes. It is NOT the
+    # dataset, just the one artifact this service needs; ECOTRACE_DATASET_ROOT
+    # stays a Python/application-side setting only and is never referenced
+    # here.
+    volumes:
+      - type: bind
+        source: ./docker_data/device_ai/models
+        target: /app/models
+        read_only: true
+      # Trained model artifacts (forecasting LSTM checkpoints, the JSON model
+      # registry, evaluation reports — see forecasting/service.py and
+      # training/registry/) live under /app/artifacts, which the Dockerfile
+      # creates as a writable directory inside the container's own layer. A
+      # named volume persists that directory across container
+      # recreate/rebuild so a trained forecast model survives a redeploy
+      # instead of silently vanishing and forcing a retrain.
+      - device_ai_artifacts:/app/artifacts
+
+    ports:
+      - "${DEVICE_AI_PORT:-8100}:8100"
+
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8100/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Vite bakes this into the bundle at BUILD time (see
+        # frontend/Dockerfile's own note) — it is the browser's own URL to
+        # the backend, not a container-to-container address, so it must
+        # stay a host-reachable URL (the mapped BACKEND_PORT), never the
+        # `backend` service DNS name.
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000/api/v1}
+
+    container_name: ecotrace-frontend
+
+    restart: unless-stopped
+
+    depends_on:
+      backend:
+        condition: service_healthy
+
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+      - "${FRONTEND_TLS_PORT:-8443}:443"
+
+    # Optional local/demo TLS (P9.1): mounting an empty deployment/tls/ is
+    # safe (no error) — docker-entrypoint-tls.sh only enables HTTPS when it
+    # actually finds tls.crt/tls.key inside. Generate them with
+    # `bash deployment/tls/generate_local_cert.sh`; a real deployment
+    # mounts a real CA-issued cert at the same two filenames instead.
+    # FRONTEND_TLS_PORT is passed through so the HTTP->HTTPS redirect names
+    # the correct host-mapped port (must match the mapping on the left above).
+    environment:
+      FRONTEND_TLS_PORT: ${FRONTEND_TLS_PORT:-8443}
+
+    volumes:
+      - ./deployment/tls:/etc/nginx/tls:ro
+
+    healthcheck:
+      test: ["CMD-SHELL", "if [ -f /etc/nginx/tls/tls.crt ]; then wget --no-check-certificate -qO- https://127.0.0.1:443/; else wget -qO- http://127.0.0.1:80/; fi"]
+      interval: 15s
+      timeout: 5s
+      start_period: 5s
+      retries: 3
+
+volumes:
+  postgres_data:
+  device_ai_artifacts:

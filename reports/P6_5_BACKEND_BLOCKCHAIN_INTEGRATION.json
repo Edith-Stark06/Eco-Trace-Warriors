@@ -1,0 +1,86 @@
+{
+  "phase": "P6.5",
+  "title": "Backend Blockchain Integration",
+  "status": "PARTIAL_HEALTH_PROXY_REAL_DEVICE_LEVEL_BLOCKED_ON_SCHEMA_DECISION",
+  "timestamp": "2026-09-01T00:00:00Z",
+  "p62_audit": {
+    "device_ai_suite_passed": 1072,
+    "device_ai_suite_total": 1073,
+    "device_ai_suite_note": "1 pre-existing unrelated failure (test_detector_benchmark.py timing artifact), unchanged from P6.2",
+    "chaincode_tests_passed": 45,
+    "chaincode_tests_total": 45,
+    "backend_baseline_passed": 312,
+    "backend_baseline_total": 312,
+    "conclusion": "P6.2's blockchain integration remains fully working and untouched; nothing to fix"
+  },
+  "architectural_finding": {
+    "gap": "backend/'s Submission model (prisma/schema.prisma) has no deviceId/passportFingerprint/ecoId field; zero relationship to intelligence/device_ai's DeviceRecord/DevicePassport",
+    "verification": "grep for passportFingerprint/DevicePassport/device_ai/8100 across backend/src returned zero matches before this phase",
+    "fabric_ai_clients_confirmed_placeholders": "backend/src/infrastructure/fabric/fabric.client.ts and infrastructure/ai/ai.client.ts explicitly marked Phase 7/Phase 8, zero import sites",
+    "decision": "device-level integration requires a real schema/product decision (e.g. adding devicePassportFingerprint to Submission) out of this phase's scope per Phase 13 constraints and CLAUDE.md's schema-change rules; not attempted unilaterally"
+  },
+  "what_was_built": {
+    "description": "Real, working, read-only blockchain health proxy from backend/ to the Python intelligence/device_ai service's P6.2 Fabric Gateway health check",
+    "new_module": "backend/src/modules/blockchain/ (service, controller, routes, types)",
+    "new_route": "GET /api/v1/system/blockchain/health (public, no auth, like /health and /ready)",
+    "new_config": ["DEVICE_AI_SERVICE_URL (default http://localhost:8100)", "DEVICE_AI_TIMEOUT_MS (default 5000)"],
+    "degradation_behavior": "network failure/timeout/non-OK/malformed payload all resolve to status: proxy_unreachable with HTTP 200, never a fabricated 'connected' status, never a 5xx for an unreachable upstream",
+    "http_client": "Node 18+ built-in global fetch, no new dependency added",
+    "write_side_status": "submitTransaction/evaluateTransaction remain the Phase-7 placeholder — only the health/query side was connected, honestly"
+  },
+  "test_metrics": {
+    "backend_test_passed": 323,
+    "backend_test_total": 323,
+    "backend_new_tests": 11,
+    "backend_new_unit_tests": 7,
+    "backend_new_integration_tests": 4,
+    "backend_lint_errors": 0,
+    "backend_lint_note": "12 real @typescript-eslint findings fixed in new test files (require-await, unnecessary type assertion)",
+    "backend_typecheck_errors": 0,
+    "device_ai_suite_passed": 1072,
+    "device_ai_suite_total": 1073,
+    "chaincode_tests_passed": 45,
+    "chaincode_tests_total": 45
+  },
+  "protected_assets_sha256": {
+    "p442_yolo11n": "c40a4afccacbbde89fce2a3a5fb73467e8614dc09365ea4678b24f7ad9218e92",
+    "p411_yolo11n_targeted_aug": "ca10aaf0de5cc6e24874a24a472b5cf8135f7163f7b54289a74554265a97355c",
+    "p412_yolo11s": "96f156d0a46240f6a67187704f91f8a7b1e675e1b94246cf0d83f19f3f0380bc",
+    "p414_yolo11n_targeted_aug": "8fdb02a43db526f7ebb4ba413e6e3dcf5d8eb516590bcd0120d26118e79e9d81",
+    "p45_data_yaml": "b5fae47d73ec30698d9825cb04c06722bc1cb41d687a917bb208f1bd1c3bdf5b",
+    "p47_final_data_yaml": "5daa90ae1ebca5fe7b5578dd37530e5eba90b47ce7873c35e133e51f7e60e284"
+  },
+  "protected_assets_status": "ALL MATCH",
+  "files_changed": [
+    "backend/.env.example",
+    "backend/src/app.ts",
+    "backend/src/shared/config/config.ts",
+    "backend/src/shared/config/env.schema.ts",
+    "backend/src/modules/blockchain/blockchain.service.ts",
+    "backend/src/modules/blockchain/blockchain.controller.ts",
+    "backend/src/modules/blockchain/blockchain.routes.ts",
+    "backend/src/modules/blockchain/blockchain.types.ts",
+    "backend/src/modules/blockchain/index.ts",
+    "backend/tests/unit/blockchain.service.test.ts",
+    "backend/tests/integration/blockchain.test.ts",
+    "reports/P6_5_BACKEND_BLOCKCHAIN_INTEGRATION.md",
+    "reports/P6_5_BACKEND_BLOCKCHAIN_INTEGRATION.json"
+  ],
+  "limitations": [
+    "No device-level blockchain integration (anchor/verify a specific submission's passport) — blocked on a real schema/product decision",
+    "FabricClient.submitTransaction/.evaluateTransaction remain unimplemented placeholders in backend/",
+    "Health proxy adds one extra network hop (mobile -> backend -> device_ai)",
+    "No caching of the health result — every call makes a fresh upstream request"
+  ],
+  "definition_of_done": {
+    "p62_integration_reverified_green": true,
+    "architectural_gap_documented_not_papered_over": true,
+    "real_health_integration_built": true,
+    "honest_graceful_degradation": true,
+    "no_unjustified_schema_change": true,
+    "backend_tests_lint_typecheck_clean": true,
+    "p5_p61_p62_regressions_green": true,
+    "protected_assets_match": true
+  },
+  "next_task": "P6.6 — Admin Dashboard"
+}

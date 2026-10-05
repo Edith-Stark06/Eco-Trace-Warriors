@@ -1,0 +1,130 @@
+# Environmental conversion-factor catalogue for the Environmental Intelligence
+# Engine (M1.11).
+#
+# This file is DATA, not code: it holds the versioned, per-material-category
+# conversion factors the engine uses to turn recovered mass into an avoided
+# environmental burden (the carbon, energy and water saved by recovering a
+# material rather than producing it from virgin feedstock). It can be reviewed,
+# extended or corrected as life-cycle-assessment (LCA) sources improve, without
+# touching the engine. A strict loader (environmental/factors.py) validates every
+# entry on load and rejects anything malformed, so a bad catalogue never silently
+# degrades the engine.
+#
+# Top-level keys
+#   version   Semantic version string, stamped onto every produced report.
+#   default   Conservative fallback factor applied to any material category this
+#             catalogue does not explicitly name (so a newly added category never
+#             crashes the engine). Same fields as a factor entry.
+#   factors   MaterialCategory wire value -> conversion factor. Allowed keys:
+#             ferrous_metal, non_ferrous_metal, precious_metal, critical_material,
+#             rare_earth, plastic, glass, ceramic, battery_material, hazardous,
+#             other.
+#
+# Factor entry fields
+#   carbon_kg_per_kg  Kilograms of CO2e avoided per kilogram recovered (>= 0).
+#   energy_mj_per_kg  Megajoules of primary energy avoided per kilogram (>= 0).
+#   water_l_per_kg    Litres of freshwater avoided per kilogram (>= 0).
+#   critical          Whether the category counts toward critical-material
+#                     recovery (default false). True for precious metals,
+#                     critical materials and rare earths.
+#   notes             Optional short rationale/source (provenance; not scored).
+#
+# The figures below are order-of-magnitude aggregates drawn from published
+# secondary-vs-primary production LCA literature (ecoinvent-style ranges). They
+# are intentionally conservative and are meant to be refined against a citable
+# source before any external reporting.
+
+version: "1.0.0"
+
+default:
+  carbon_kg_per_kg: 1.5
+  energy_mj_per_kg: 20.0
+  water_l_per_kg: 20.0
+  critical: false
+  notes: >-
+    Conservative generic factor for an unclassified recovered material. Roughly
+    the profile of mixed metal/plastic scrap.
+
+factors:
+  ferrous_metal:
+    carbon_kg_per_kg: 1.5
+    energy_mj_per_kg: 20.0
+    water_l_per_kg: 20.0
+    critical: false
+    notes: Steel from recycled scrap (EAF) vs primary (BF-BOF) production.
+
+  non_ferrous_metal:
+    carbon_kg_per_kg: 9.0
+    energy_mj_per_kg: 120.0
+    water_l_per_kg: 80.0
+    critical: false
+    notes: Aluminium/copper aggregate; secondary smelting vs primary ore.
+
+  precious_metal:
+    carbon_kg_per_kg: 1000.0
+    energy_mj_per_kg: 15000.0
+    water_l_per_kg: 1000.0
+    critical: true
+    notes: >-
+      Gold/silver/palladium aggregate. Embodied burden of virgin extraction is
+      enormous, so even milligram recoveries avoid a large burden.
+
+  critical_material:
+    carbon_kg_per_kg: 30.0
+    energy_mj_per_kg: 400.0
+    water_l_per_kg: 200.0
+    critical: true
+    notes: Cobalt/tantalum/indium aggregate; primary extraction is energy-heavy.
+
+  rare_earth:
+    carbon_kg_per_kg: 30.0
+    energy_mj_per_kg: 400.0
+    water_l_per_kg: 200.0
+    critical: true
+    notes: Neodymium/dysprosium aggregate; mining and separation are intensive.
+
+  plastic:
+    carbon_kg_per_kg: 2.0
+    energy_mj_per_kg: 60.0
+    water_l_per_kg: 50.0
+    critical: false
+    notes: Mechanically recycled thermoplastic vs virgin polymer from naphtha.
+
+  glass:
+    carbon_kg_per_kg: 0.6
+    energy_mj_per_kg: 8.0
+    water_l_per_kg: 10.0
+    critical: false
+    notes: Cullet remelting vs virgin batch (sand/soda-ash/limestone).
+
+  ceramic:
+    carbon_kg_per_kg: 0.8
+    energy_mj_per_kg: 12.0
+    water_l_per_kg: 15.0
+    critical: false
+    notes: Aggregate/mineral reuse; modest avoided firing energy.
+
+  battery_material:
+    carbon_kg_per_kg: 8.0
+    energy_mj_per_kg: 100.0
+    water_l_per_kg: 120.0
+    critical: false
+    notes: >-
+      Recovered lithium/nickel/cobalt salts vs primary; high water burden of
+      brine and leaching avoided.
+
+  hazardous:
+    carbon_kg_per_kg: 1.0
+    energy_mj_per_kg: 10.0
+    water_l_per_kg: 10.0
+    critical: false
+    notes: >-
+      Conservative avoided-production credit; the value of handling hazardous
+      material is captured by the hazard-reduction score, not this factor.
+
+  other:
+    carbon_kg_per_kg: 1.5
+    energy_mj_per_kg: 20.0
+    water_l_per_kg: 20.0
+    critical: false
+    notes: Mixed/uncategorized recoverable material; matches the default.

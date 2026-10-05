@@ -1,0 +1,83 @@
+{
+  "name": "backend_auth_login_bcrypt",
+  "url": "http://localhost:3000/api/v1/auth/login",
+  "method": "POST",
+  "levels": [
+    {
+      "concurrency": 1,
+      "total_requests": 60,
+      "wall_elapsed_s": 0.6396,
+      "throughput_rps": 93.8,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "429": 60
+      },
+      "latency_ms": {
+        "min": 4.89,
+        "mean": 10.45,
+        "p50": 6.75,
+        "p95": 25.26,
+        "p99": 27.63,
+        "max": 27.68
+      }
+    },
+    {
+      "concurrency": 10,
+      "total_requests": 60,
+      "wall_elapsed_s": 0.1701,
+      "throughput_rps": 352.64,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "429": 60
+      },
+      "latency_ms": {
+        "min": 9.77,
+        "mean": 25.2,
+        "p50": 25.64,
+        "p95": 29.75,
+        "p99": 33.54,
+        "max": 35.28
+      }
+    },
+    {
+      "concurrency": 25,
+      "total_requests": 60,
+      "wall_elapsed_s": 0.1889,
+      "throughput_rps": 317.7,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "429": 60
+      },
+      "latency_ms": {
+        "min": 12.23,
+        "mean": 51.47,
+        "p50": 53.83,
+        "p95": 73.31,
+        "p99": 75.15,
+        "max": 75.86
+      }
+    },
+    {
+      "concurrency": 50,
+      "total_requests": 60,
+      "wall_elapsed_s": 0.2033,
+      "throughput_rps": 295.17,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "429": 60
+      },
+      "latency_ms": {
+        "min": 11.54,
+        "mean": 59.71,
+        "p50": 65.89,
+        "p95": 88.47,
+        "p99": 93.51,
+        "max": 97.75
+      }
+    }
+  ]
+}

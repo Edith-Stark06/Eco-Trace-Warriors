@@ -1,0 +1,8 @@
+# TEMPLATE — collection_log.csv (P4.1.4 PART 7). One row per acquired batch.
+# Placeholder rows only; no real images. Fill during Stage 1 (acquire).
+# license must permit ML training + redistribution, or the batch is excluded.
+# family: public_annotated | community | open_media | manufacturer | self_collected | synthetic
+batch_id,collection_date,source,family,license,attribution_url,contributor,target_classes,image_count,accepted_count,rejected_count,rejection_reason,notes
+EXAMPLE-0001,2026-01-01,open_images_v7,public_annotated,CC-BY-4.0,https://storage.googleapis.com/openimages,team_ecotrace,laptop;smartphone,500,480,20,duplicate_or_low_res,verify counts before import
+EXAMPLE-0002,2026-01-01,field_collection_2026,self_collected,CC-BY-4.0,,team_ecotrace,crt_monitor;battery,120,120,0,,indian e-waste yard batch
+EXAMPLE-0003,2026-01-01,synthetic_augmentation,synthetic,derived,,team_ecotrace,battery,80,80,0,,capped at <=20% of class

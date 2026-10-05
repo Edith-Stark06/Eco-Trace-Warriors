@@ -1,0 +1,304 @@
+{
+  "blur_threshold": 100.0,
+  "blurry_count": 4,
+  "contact_sheet": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/laptop/contact_sheet.jpg",
+  "qa_status": "QA_PENDING",
+  "tiles": [
+    {
+      "blur": 45.55,
+      "box_count": 1,
+      "class_ids": [
+        0
+      ],
+      "filename": "00767fb6565581c6.jpg",
+      "height": 1024,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/laptop/previews/qa01_00767fb6565581c6.jpg",
+      "qa_id": 1,
+      "stem": "00767fb6565581c6",
+      "width": 768
+    },
+    {
+      "blur": 665.15,
+      "box_count": 2,
+      "class_ids": [
+        0,
+        0
+      ],
+      "filename": "00b1a3014b6d62a1.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/laptop/previews/qa02_00b1a3014b6d62a1.jpg",
+      "qa_id": 2,
+      "stem": "00b1a3014b6d62a1",
+      "width": 1024
+    },
+    {
+      "blur": 348.38,
+      "box_count": 1,
+      "class_ids": [
+        0
+      ],
+      "filename": "0171ad35f1651698.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/laptop/previews/qa03_0171ad35f1651698.jpg",
+      "qa_id": 3,
+      "stem": "0171ad35f1651698",
+      "width": 1024
+    },
+    {
+      "blur": 365.69,
+      "box_count": 5,
+      "class_ids": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "filename": "14587a599414300c.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/laptop/previews/qa04_14587a599414300c.jpg",
+      "qa_id": 4,
+      "stem": "14587a599414300c",
+      "width": 1024
+    },
+    {
+      "blur": 957.8,
+      "box_count": 1,
+      "class_ids": [
+        0
+      ],
+      "filename": "190cc7b67a9c450c.jpg",
+      "height": 680,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/laptop/previews/qa05_190cc7b67a9c450c.jpg",
+      "qa_id": 5,
+      "stem": "190cc7b67a9c450c",
+      "width": 1024
+    },
+    {
+      "blur": 349.89,
+      "box_count": 3,
+      "class_ids": [
+        0,
+        0,
+        0
+      ],
+      "filename": "1f2c4a9277907198.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/laptop/previews/qa06_1f2c4a9277907198.jpg",
+      "qa_id": 6,
+      "stem": "1f2c4a9277907198",
+      "width": 1024
+    },
+    {
+      "blur": 340.92,
+      "box_count": 1,
+      "class_ids": [
+        0
+      ],
+      "filename": "29cad80c5bb8ef66.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/laptop/previews/qa07_29cad80c5bb8ef66.jpg",
+      "qa_id": 7,
+      "stem": "29cad80c5bb8ef66",
+      "width": 1024
+    },
+    {
+      "blur": 588.41,
+      "box_count": 1,
+      "class_ids": [
+        0
+      ],
+      "filename": "350358911f3842de.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/laptop/previews/qa08_350358911f3842de.jpg",
+      "qa_id": 8,
+      "stem": "350358911f3842de",
+      "width": 1024
+    },
+    {
+      "blur": 430.98,
+      "box_count": 2,
+      "class_ids": [
+        0,
+        0
+      ],
+      "filename": "38eff60d1aefddf3.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/laptop/previews/qa09_38eff60d1aefddf3.jpg",
+      "qa_id": 9,
+      "stem": "38eff60d1aefddf3",
+      "width": 1024
+    },
+    {
+      "blur": 390.27,
+      "box_count": 5,
+      "class_ids": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "filename": "4642b8dade65b547.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/laptop/previews/qa10_4642b8dade65b547.jpg",
+      "qa_id": 10,
+      "stem": "4642b8dade65b547",
+      "width": 1024
+    },
+    {
+      "blur": 141.02,
+      "box_count": 1,
+      "class_ids": [
+        0
+      ],
+      "filename": "4f9e2b95c779cb86.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/laptop/previews/qa11_4f9e2b95c779cb86.jpg",
+      "qa_id": 11,
+      "stem": "4f9e2b95c779cb86",
+      "width": 1024
+    },
+    {
+      "blur": 661.49,
+      "box_count": 1,
+      "class_ids": [
+        0
+      ],
+      "filename": "52ebe809668cd8fb.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/laptop/previews/qa12_52ebe809668cd8fb.jpg",
+      "qa_id": 12,
+      "stem": "52ebe809668cd8fb",
+      "width": 679
+    },
+    {
+      "blur": 414.25,
+      "box_count": 1,
+      "class_ids": [
+        0
+      ],
+      "filename": "7323935a99cd80c5.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/laptop/previews/qa13_7323935a99cd80c5.jpg",
+      "qa_id": 13,
+      "stem": "7323935a99cd80c5",
+      "width": 1024
+    },
+    {
+      "blur": 58.69,
+      "box_count": 1,
+      "class_ids": [
+        0
+      ],
+      "filename": "79182035199f2b58.jpg",
+      "height": 1024,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/laptop/previews/qa14_79182035199f2b58.jpg",
+      "qa_id": 14,
+      "stem": "79182035199f2b58",
+      "width": 1024
+    },
+    {
+      "blur": 220.25,
+      "box_count": 1,
+      "class_ids": [
+        0
+      ],
+      "filename": "936a6d462e9d4873.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/laptop/previews/qa15_936a6d462e9d4873.jpg",
+      "qa_id": 15,
+      "stem": "936a6d462e9d4873",
+      "width": 1024
+    },
+    {
+      "blur": 321.04,
+      "box_count": 1,
+      "class_ids": [
+        0
+      ],
+      "filename": "ac7e045453c729aa.jpg",
+      "height": 768,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/laptop/previews/qa16_ac7e045453c729aa.jpg",
+      "qa_id": 16,
+      "stem": "ac7e045453c729aa",
+      "width": 1024
+    },
+    {
+      "blur": 59.96,
+      "box_count": 1,
+      "class_ids": [
+        0
+      ],
+      "filename": "bc3873e0c9ada07c.jpg",
+      "height": 768,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/laptop/previews/qa17_bc3873e0c9ada07c.jpg",
+      "qa_id": 17,
+      "stem": "bc3873e0c9ada07c",
+      "width": 1024
+    },
+    {
+      "blur": 77.04,
+      "box_count": 1,
+      "class_ids": [
+        0
+      ],
+      "filename": "ca77666f682b922f.jpg",
+      "height": 680,
+      "is_blurry": true,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/laptop/previews/qa18_ca77666f682b922f.jpg",
+      "qa_id": 18,
+      "stem": "ca77666f682b922f",
+      "width": 1024
+    },
+    {
+      "blur": 136.55,
+      "box_count": 1,
+      "class_ids": [
+        0
+      ],
+      "filename": "d07df89600fdda6f.jpg",
+      "height": 683,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/laptop/previews/qa19_d07df89600fdda6f.jpg",
+      "qa_id": 19,
+      "stem": "d07df89600fdda6f",
+      "width": 1024
+    },
+    {
+      "blur": 239.56,
+      "box_count": 3,
+      "class_ids": [
+        0,
+        0,
+        0
+      ],
+      "filename": "e850cbfc139cbf51.jpg",
+      "height": 1024,
+      "is_blurry": false,
+      "preview": "dataset_acquisition/review/p4_3_6_expansion_qa_v1/laptop/previews/qa20_e850cbfc139cbf51.jpg",
+      "qa_id": 20,
+      "stem": "e850cbfc139cbf51",
+      "width": 768
+    }
+  ],
+  "total_images": 20,
+  "total_objects": 34
+}

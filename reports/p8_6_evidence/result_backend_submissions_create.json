@@ -1,0 +1,81 @@
+{
+  "name": "backend_submissions_create_db_write",
+  "levels": [
+    {
+      "concurrency": 1,
+      "total_requests": 30,
+      "wall_elapsed_s": 0.7031,
+      "throughput_rps": 42.67,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "201": 30
+      },
+      "latency_ms": {
+        "min": 7.93,
+        "mean": 23.21,
+        "p50": 21.09,
+        "p95": 38.22,
+        "p99": 44.13,
+        "max": 45.35
+      }
+    },
+    {
+      "concurrency": 10,
+      "total_requests": 30,
+      "wall_elapsed_s": 0.1544,
+      "throughput_rps": 194.33,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "201": 30
+      },
+      "latency_ms": {
+        "min": 16.88,
+        "mean": 42.05,
+        "p50": 44.72,
+        "p95": 52.95,
+        "p99": 54.94,
+        "max": 55.7
+      }
+    },
+    {
+      "concurrency": 25,
+      "total_requests": 30,
+      "wall_elapsed_s": 0.2277,
+      "throughput_rps": 131.74,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "201": 30
+      },
+      "latency_ms": {
+        "min": 29.14,
+        "mean": 101.1,
+        "p50": 106.73,
+        "p95": 134.32,
+        "p99": 138.26,
+        "max": 139.31
+      }
+    },
+    {
+      "concurrency": 50,
+      "total_requests": 50,
+      "wall_elapsed_s": 0.2586,
+      "throughput_rps": 193.37,
+      "error_count": 0,
+      "error_rate_pct": 0.0,
+      "status_breakdown": {
+        "201": 50
+      },
+      "latency_ms": {
+        "min": 23.18,
+        "mean": 113.18,
+        "p50": 124.22,
+        "p95": 142.16,
+        "p99": 144.45,
+        "max": 145.38
+      }
+    }
+  ]
+}

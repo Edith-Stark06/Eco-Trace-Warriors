@@ -1,0 +1,26 @@
+# TEMPLATE — collection_progress.csv (P4.1.5 PART 3). One row per taxonomy class (0-18).
+# Class ids/names are code-owned: components/data/components.yaml via dataset/taxonomy.py.
+# Do NOT reorder or rename classes here — mirror the code.
+# Targets are per-class image counts (see docs/engineering/device_dataset_acquisition.md).
+# status: not_started | collecting | annotating | in_review | ready | blocked
+# All count columns start at 0; the collection lead updates them from intake reports.
+class_id,class_name,min_target,recommended_target,ideal_target,captured,accepted,rejected,imported,gate_a_passed,annotated,reviewed,duplicates_dropped,status,owner,last_updated,notes
+0,laptop,150,300,500,0,0,0,0,0,0,0,0,not_started,,2026-08-07,
+1,smartphone,150,300,500,0,0,0,0,0,0,0,0,not_started,,2026-08-07,
+2,tablet,150,300,500,0,0,0,0,0,0,0,0,not_started,,2026-08-07,
+3,desktop,150,300,500,0,0,0,0,0,0,0,0,not_started,,2026-08-07,
+4,server,150,300,500,0,0,0,0,0,0,0,0,not_started,,2026-08-07,under-served: prioritise
+5,monitor,150,300,500,0,0,0,0,0,0,0,0,not_started,,2026-08-07,
+6,crt_monitor,150,300,500,0,0,0,0,0,0,0,0,not_started,,2026-08-07,under-served: prioritise
+7,television,150,300,500,0,0,0,0,0,0,0,0,not_started,,2026-08-07,
+8,printer,150,300,500,0,0,0,0,0,0,0,0,not_started,,2026-08-07,
+9,keyboard,150,300,500,0,0,0,0,0,0,0,0,not_started,,2026-08-07,
+10,mouse,150,300,500,0,0,0,0,0,0,0,0,not_started,,2026-08-07,
+11,router,150,300,500,0,0,0,0,0,0,0,0,not_started,,2026-08-07,
+12,power_supply,150,300,500,0,0,0,0,0,0,0,0,not_started,,2026-08-07,under-served: prioritise
+13,cable,150,300,500,0,0,0,0,0,0,0,0,not_started,,2026-08-07,under-served: prioritise
+14,camera,150,300,500,0,0,0,0,0,0,0,0,not_started,,2026-08-07,
+15,game_console,150,300,500,0,0,0,0,0,0,0,0,not_started,,2026-08-07,under-served: prioritise
+16,smartwatch,150,300,500,0,0,0,0,0,0,0,0,not_started,,2026-08-07,
+17,headphones,150,300,500,0,0,0,0,0,0,0,0,not_started,,2026-08-07,
+18,battery,150,300,500,0,0,0,0,0,0,0,0,not_started,,2026-08-07,under-served: prioritise

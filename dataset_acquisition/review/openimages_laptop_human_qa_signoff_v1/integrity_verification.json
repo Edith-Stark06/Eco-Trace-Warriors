@@ -1,0 +1,32 @@
+{
+  "all_unchanged": true,
+  "blur_threshold": 100.0,
+  "canonical_diff": {
+    "added": [],
+    "modified": [],
+    "removed": []
+  },
+  "canonical_files_checked": 40,
+  "canonical_staging": "dataset_acquisition/staging/openimages_laptop_canonical_v1",
+  "canonical_staging_unchanged": true,
+  "certifies_pilot": false,
+  "ecotrace_class": "laptop",
+  "ecotrace_class_id": 0,
+  "is_dataset_v1": false,
+  "is_released": false,
+  "package": "human-qa-signoff",
+  "pilot": "openimages-laptop",
+  "pilot_status": "PILOT_REVIEW_REQUIRED",
+  "review_root": "dataset_acquisition/review/openimages_laptop_human_qa_signoff_v1",
+  "signoff_timestamp": "2026-08-09T00:00:00+00:00",
+  "signoff_version": "openimages-laptop-human-qa-signoff-v1",
+  "source_diff": {
+    "added": [],
+    "modified": [],
+    "removed": []
+  },
+  "source_files_checked": 42,
+  "source_staging": "dataset_acquisition/staging/openimages_laptop_v1",
+  "source_staging_unchanged": true,
+  "sprint": "P4.2.5"
+}
