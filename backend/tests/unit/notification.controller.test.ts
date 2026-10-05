@@ -20,13 +20,11 @@ function buildService(
   return {
     createNotification: jest.fn().mockResolvedValue(publicNotification),
     listForUser: jest.fn().mockResolvedValue([publicNotification]),
-    markRead: jest
-      .fn()
-      .mockResolvedValue({
-        ...publicNotification,
-        readAt: '2026-07-21T00:00:00.000Z',
-        isRead: true,
-      }),
+    markRead: jest.fn().mockResolvedValue({
+      ...publicNotification,
+      readAt: '2026-07-21T00:00:00.000Z',
+      isRead: true,
+    }),
     ...overrides,
   } as jest.Mocked<NotificationService>;
 }

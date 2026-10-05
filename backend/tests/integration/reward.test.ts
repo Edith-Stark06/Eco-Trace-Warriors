@@ -10,6 +10,7 @@ import {
   activeRecycler,
   createSeededSubmissionRepository,
 } from '../helpers/in-memory-submission-repository';
+import { createInMemoryNotificationRepository } from '../helpers/in-memory-notification-repository';
 import { createInMemoryRewardRepository } from '../helpers/in-memory-reward-repository';
 
 const TEST_ENV = { NODE_ENV: 'test', LOG_LEVEL: 'fatal', BCRYPT_ROUNDS: '4' } as const;
@@ -55,6 +56,7 @@ function buildApp(): Express {
     logger,
     submissionRepository: seeded.repository,
     rewardRepository: createInMemoryRewardRepository(),
+    notificationRepository: createInMemoryNotificationRepository(),
   });
 }
 
