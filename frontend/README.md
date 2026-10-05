@@ -1,6 +1,6 @@
 # EcoTrace India — Frontend
 
-React web dashboard for the **EcoTrace India** e-waste lifecycle management platform (IEEE YESIST 2026).
+React web dashboard for the **EcoTrace India** e-waste lifecycle management platform.
 
 > **Status:** Sprint 9.8 — Admin Dashboard (system administration).
 > Building on the foundation (9.1), authentication (9.2), the shared dashboard

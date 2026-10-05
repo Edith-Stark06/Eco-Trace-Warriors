@@ -35,7 +35,7 @@ The handbook defines **standards, conventions, and architecture decisions** — 
 
 - AI engineering agents (Claude Code and others, per `AGENTS.md`)
 - Human contributors and reviewers
-- IEEE YESIST 2026 evaluators reviewing engineering rigor
+- Technical reviewers and auditors assessing engineering rigor
 
 ---
 

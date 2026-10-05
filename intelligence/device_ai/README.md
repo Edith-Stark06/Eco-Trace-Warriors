@@ -1478,5 +1478,5 @@ Each mock is a drop-in behind an abstract interface in
 
 ---
 
-_Part of **EcoTrace India** — IEEE YESIST 2026. See top-level `PROJECT.md`,
+_Part of **EcoTrace India**. See top-level `PROJECT.md`,
 `CLAUDE.md`, `AGENTS.md` and `docs/engineering/` for platform-wide standards._

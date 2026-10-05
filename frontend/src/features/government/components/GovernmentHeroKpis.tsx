@@ -11,7 +11,7 @@ interface GovernmentHeroKpisProps {
 }
 
 /**
- * Headline KPI band for the Government dashboard — the four numbers a judge
+ * Headline KPI band for the Government dashboard — the four numbers a viewer
  * should see first. Combines two independent real endpoints
  * (GET /analytics/overview + GET /analytics/environmental-impact); every
  * figure is proxied as-is, nothing is computed or estimated here.

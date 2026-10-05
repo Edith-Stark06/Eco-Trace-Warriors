@@ -234,6 +234,6 @@ barcode/QR decoding and the optional fingerprint-identity seam.
 
 ---
 
-_Part of **EcoTrace India** — IEEE YESIST 2026. See the module
+_Part of **EcoTrace India**. See the module
 [`README.md`](../README.md) and `docs/engineering/` for platform-wide
 standards._

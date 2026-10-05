@@ -84,7 +84,7 @@ Most tests are unit tests. Integration tests cover boundaries (HTTP, database, A
 
 ## End-to-end tests
 
-Minimum journeys (aligned with the IEEE demonstration):
+Minimum journeys (aligned with the product demonstration):
 
 1. Register → login → register device → receive EcoID/QR.
 2. Request collection → assign collector → verify → collect.
