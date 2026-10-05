@@ -7,3 +7,7 @@ __pycache__/
 # Temporary review scratch dirs and timestamped backups (never commit)
 review/tmp_*/
 review/**/*.backup_*.json
+# Third-party sample images rendered into QA review packages (regenerable by
+# the build_*_qa scripts; never commit — attribution/size)
+review/**/previews/
+review/**/contact_sheet*.jpg
