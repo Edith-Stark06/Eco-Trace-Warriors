@@ -174,7 +174,7 @@ Chaincode rules:
 - `GET /devices/{id}/trust/full` reports `provider: "memory"`, `external_status` computed against `InMemoryExternalTrustLedger` — a real, deterministic, in-process reference ledger (not a stub that always says "VERIFIED"; it genuinely tracks anchored fingerprints and reports `MISMATCH`/`NOT_FOUND` correctly).
 - `GET /system/blockchain/health` reports `{"status": "disabled", ...}`.
 
-This is the correct default for anyone running the demo stack without the ~350MB of Fabric binaries/images and the local network — including a judge or reviewer who just runs `docker compose up --build`.
+This is the correct default for anyone running the demo stack without the ~350MB of Fabric binaries/images and the local network — including a reviewer who just runs `docker compose up --build`.
 
 ---
 

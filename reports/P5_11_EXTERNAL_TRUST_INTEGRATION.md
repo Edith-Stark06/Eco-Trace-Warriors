@@ -10,7 +10,7 @@ The system introduces a blockchain-agnostic domain layer (`ExternalTrustAnchor`,
 
 ## 1. Blockchain Infrastructure Discovered
 
-1. **Architecture & Standards**: [`docs/engineering/09_BLOCKCHAIN.md`](file:///d:/Documents/Projects/Eco-Trace-Warriors/docs/engineering/09_BLOCKCHAIN.md) documents the IEEE YESIST 2026 target architecture:
+1. **Architecture & Standards**: [`docs/engineering/09_BLOCKCHAIN.md`](file:///d:/Documents/Projects/Eco-Trace-Warriors/docs/engineering/09_BLOCKCHAIN.md) documents the target architecture:
    - Channel: `ecotrace-channel`
    - Organizations: `EcoTraceOrg`
    - On-chain data: `EcoID`, `eventType`, `timestamp`, and SHA-256 record/passport hash link (`passport_fingerprint`).

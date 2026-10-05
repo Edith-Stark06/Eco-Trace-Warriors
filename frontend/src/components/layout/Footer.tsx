@@ -13,7 +13,7 @@ export function Footer() {
     <footer className="border-t bg-background px-4 py-3 text-xs text-muted-foreground">
       <div className="flex flex-col items-center justify-between gap-1 sm:flex-row">
         <span>
-          © {year} {env.appName} · IEEE YESIST 2026
+          © {year} {env.appName}
         </span>
         <span>v{env.appVersion}</span>
       </div>

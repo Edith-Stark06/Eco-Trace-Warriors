@@ -16,7 +16,7 @@ Status: Active
 4. [Milestone Exit Criteria](#milestone-exit-criteria)
 5. [Dependency Map](#dependency-map)
 6. [Risk Register](#risk-register)
-7. [Post-Competition Roadmap](#post-competition-roadmap)
+7. [Post-Release Roadmap](#post-release-roadmap)
 
 ---
 
@@ -44,7 +44,7 @@ flowchart LR
     P8 --> P9
     P9 --> P10[Phase 10<br/>Dashboard]
     P10 --> P11[Phase 11<br/>Deployment]
-    P11 --> P12[Phase 12<br/>IEEE Demo]
+    P11 --> P12[Phase 12<br/>Release Demo]
     style P0 fill:#e8f5e9
     style P1 fill:#e8f5e9
 ```
@@ -121,7 +121,7 @@ Phases 0–2 are complete (repository, this handbook, and the backend foundation
 - E2E suite green against the composed stack (`10_TESTING.md`)
 - Backup/restore rehearsed
 
-## Phase 12 — IEEE Demonstration
+## Phase 12 — Release Demonstration
 
 - Demo dataset seeded; demo script rehearsed end-to-end
 - Presentation materials; fallback plan for offline demo (local stack)
@@ -179,7 +179,7 @@ Engineering mitigations for the risks named in `PROJECT.md`:
 
 ---
 
-# Post-Competition Roadmap
+# Post-Release Roadmap
 
 From `PROJECT.md` → Future Roadmap, in engineering terms (not scheduled):
 

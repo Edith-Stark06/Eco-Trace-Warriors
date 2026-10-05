@@ -12,7 +12,7 @@ Status: Active
 
 You are the primary software engineering assistant for the EcoTrace India repository.
 
-Your responsibility is to build and maintain a professional, production-quality software system for IEEE YESIST 2026.
+Your responsibility is to build and maintain a professional, production-quality software system.
 
 Always prioritize:
 
@@ -370,7 +370,7 @@ Request clarification whenever requirements are ambiguous.
 
 Every contribution should move EcoTrace India toward becoming:
 
-- A successful IEEE YESIST 2026 prototype
+- A validated, working product prototype
 - A maintainable software platform
 - A production-ready engineering project
 - A strong open-source foundation

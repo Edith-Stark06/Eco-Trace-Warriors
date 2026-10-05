@@ -686,6 +686,6 @@ the engine against a bespoke catalogue without touching disk.
 
 ---
 
-_Part of **EcoTrace India** — IEEE YESIST 2026. See the module
+_Part of **EcoTrace India**. See the module
 [`README.md`](../../README.md) and the platform-wide `docs/engineering/`
 standards._

@@ -32,7 +32,6 @@
   },
   "release_certification": {
     "certified_for": [
-      "IEEE YESIST 2026",
       "Production Deployment",
       "Academic Demonstrations"
     ],

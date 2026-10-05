@@ -2,7 +2,6 @@
 
 > **AI-Powered, Blockchain-Ready E-Waste Lifecycle Management Platform**
 
-[![IEEE YESIST 2026](https://img.shields.io/badge/IEEE-YESIST%202026-blue)](#)
 [![Status](https://img.shields.io/badge/Status-Pilot%20Validated-success)](#)
 [![License](https://img.shields.io/badge/License-MIT-green)](#)
 
@@ -16,8 +15,6 @@ Gateway-client) Hyperledger Fabric integration, two React Native (Expo)
 mobile apps, and a React operator dashboard, connecting Consumers, Collectors,
 Recyclers, and Government/Admin oversight around one transparent
 submission-to-recycling workflow.
-
-Developed for **IEEE YESIST 2026**.
 
 **New here? Start with [`QUICKSTART.md`](QUICKSTART.md)** — running demo
 in under 10 minutes.
@@ -190,7 +187,7 @@ Never committed directly to `main`; history is never rewritten (see
 
 ## 👥 Team
 
-**EcoTrace India Team** — IEEE YESIST 2026
+**EcoTrace India Team**
 
 ## 📄 License
 
